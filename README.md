@@ -1,2 +1,2 @@
-# CSE4214-Ecommerce-SRS
+# CSE4214-Ecommerce-Lab
 CSE 4214 Intro to SE: Lab 1 group repository
