@@ -1,0 +1,17 @@
+﻿@page "/"
+@using BlazorQuickStart.Services
+@inject UserState User
+@inject NavigationManager Nav
+
+<h3>Home</h3>
+
+@if (!User.IsLoggedIn)
+{
+    <p>You are not logged in. <a href="/login">Go to Login</a></p>
+}
+else
+{
+    <p>Welcome, <b>@(User.Username ?? "Guest")</b>!</p>
+    <p>Your role is: <b>@User.Role</b></p>
+    <p><a href="/account">Go to Account</a></p>
+}
