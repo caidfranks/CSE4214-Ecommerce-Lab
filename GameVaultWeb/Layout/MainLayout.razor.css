@@ -1,77 +1,105 @@
-.page {
+/* Top Header Styles */
+.top-header {
+    background: #ffffff;
+    border-bottom: 2px solid #e0e0e0;
+    padding: 1rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.site-logo {
+    font-size: 1.5rem;
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+    .site-logo:hover {
+        color: #0a58ca;
+    }
+
+.header-search {
+    max-width: 600px;
+}
+
+    .header-search .form-control {
+        border-left: none;
+    }
+
+    .header-search .input-group-text {
+        background: white;
+        border-right: none;
+    }
+
+.header-actions {
+    white-space: nowrap;
+}
+
+.header-icon {
     position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-main {
-    flex: 1;
-}
-
-.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}
-
-.top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+    font-size: 1.8rem;
+    color: #212529;
+    text-decoration: none;
+    transition: color 0.2s;
     display: flex;
     align-items: center;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
+    .header-icon:hover {
+        color: #0d6efd;
     }
 
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
+.cart-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 10px;
+}
+
+.user-name {
+    font-size: 0.95rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+/* Page Layout */
+.page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.page-content {
+    display: flex;
+    flex: 1;
+}
+
+/* Adjust existing content spacing */
+.content {
+    padding-top: 1rem !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .top-header {
+        padding: 0.75rem 1rem;
     }
 
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
+    .header-search {
+        display: none;
     }
 
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
+    .user-name {
+        display: none;
     }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
+    .site-logo {
+        font-size: 1.2rem;
     }
 }
 
-@media (min-width: 641px) {
-    .page {
-        flex-direction: row;
-    }
-
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
-    }
-
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
-    }
-}
