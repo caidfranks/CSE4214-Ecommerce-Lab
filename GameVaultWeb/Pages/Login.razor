@@ -1,11 +1,11 @@
 @page "/login"
-@using BlazorQuickStart.Services
+@using GameVaultWeb.Services
 @inject NavigationManager Nav
 @inject UserState User
 
 <h3>Login</h3>
 
-<EditForm Model="@model" OnValidSubmit="@HandleLogin">
+<EditForm Model="@model" OnValidSubmit="@HandleLogin" FormName="loginForm">
     <DataAnnotationsValidator />
     <div style="margin-bottom:8px;">
         <label>Username</label><br />
