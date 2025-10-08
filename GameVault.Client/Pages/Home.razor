@@ -1,0 +1,25 @@
+﻿@page "/"
+@inject Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+@if (AuthService.IsAuthenticated)
+{
+    <p>User: @AuthService.CurrentUserId</p>
+    <button @onclick="Logout">Logout</button>
+}
+else
+{
+    <button @onclick="GoToCustomerRegister">Customer Sign Up</button>
+    <button @onclick="GoToVendorRegister">Vendor Sign Up</button>
+    <p><a href="/login">Login</a></p>
+}
+
+@code {
+    private void GoToCustomerRegister() => Navigation.NavigateTo("/register/customer");
+    private void GoToVendorRegister() => Navigation.NavigateTo("/register/vendor");
+
+    private void Logout()
+    {
+        AuthService.Logout();
+    }
+}
