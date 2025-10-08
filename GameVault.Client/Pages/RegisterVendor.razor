@@ -1,0 +1,41 @@
+﻿@page "/register/vendor"
+@inject Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+<input type="email"    @bind="email"               placeholder="email" />
+<input type="password" @bind="password"            placeholder="password" />
+<input type="text"     @bind="displayName"         placeholder="your name" />
+<input type="text"     @bind="businessName"        placeholder="business name" />
+<textarea               @bind="businessDescription" placeholder="business description"></textarea>
+
+<button @onclick="Register">Submit</button>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <p style="color:red">@error</p>
+}
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string displayName = "";
+    private string businessName = "";
+    private string businessDescription = "";
+    private string? error;
+
+    private async Task Register()
+    {
+        error = null;
+        var res = await AuthService.RegisterVendorAsync(
+            email, password, displayName, businessName, businessDescription);
+
+        if (res?.Success == true)
+        {
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            error = res?.Message ?? "Registration failed";
+        }
+    }
+}
