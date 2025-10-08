@@ -1,0 +1,36 @@
+﻿@page "/register/customer"
+@inject Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+<input type="email"    @bind="email"       placeholder="email" />
+<input type="password" @bind="password"    placeholder="password" />
+<input type="text"     @bind="displayName" placeholder="display name (optional)" />
+
+<button @onclick="Register">Register</button>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <p style="color:red">@error</p>
+}
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string? displayName;
+    private string? error;
+
+    private async Task Register()
+    {
+        error = null;
+
+        var res = await AuthService.RegisterCustomerAsync(email, password, displayName);
+        if (res?.Success == true)
+        {
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            error = res?.Message ?? "Registration failed";
+        }
+    }
+}
