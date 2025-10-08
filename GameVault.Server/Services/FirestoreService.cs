@@ -2,6 +2,7 @@
 using Google.Cloud.Firestore.V1;
 using Google.Apis.Auth.OAuth2;
 using Grpc.Auth;
+using Grpc.Core;
 
 namespace GameVault.Server.Services;
 
@@ -11,23 +12,46 @@ public class FirestoreService : IFirestoreService
 
     public FirestoreService(IConfiguration configuration)
     {
-        var projectId = configuration["Firebase:ProjectId"];
-        var clientEmail = configuration["Firebase:ClientEmail"];
-        var privateKey = configuration["Firebase:PrivateKey"];
 
-        var credential = GoogleCredential.FromJson($@"{{
-            ""type"": ""service_account"",
-            ""project_id"": ""{projectId}"",
-            ""client_email"": ""{clientEmail}"",
-            ""private_key"": ""{privateKey?.Replace("\\n", "\n")}""
-        }}");
 
-        var firestoreClientBuilder = new FirestoreClientBuilder
+        string emulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
+        if (string.IsNullOrEmpty(emulatorHost))
         {
-            ChannelCredentials = credential.ToChannelCredentials()
-        };
-        
-        _firestoreDb = FirestoreDb.Create(projectId, firestoreClientBuilder.Build());
+            // Handle the case where the emulator variable is not set
+            // throw new InvalidOperationException("FIRESTORE_EMULATOR_HOST environment variable not set.");
+            var projectId = configuration["Firebase:ProjectId"];
+            var clientEmail = configuration["Firebase:ClientEmail"];
+            var privateKey = configuration["Firebase:PrivateKey"];
+
+            var credential = GoogleCredential.FromJson($@"{{
+                ""type"": ""service_account"",
+                ""project_id"": ""{projectId}"",
+                ""client_email"": ""{clientEmail}"",
+                ""private_key"": ""{privateKey?.Replace("\\n", "\n")}""
+            }}");
+
+            var firestoreClientBuilder = new FirestoreClientBuilder
+            {
+                ChannelCredentials = credential.ToChannelCredentials()
+            };
+
+            _firestoreDb = FirestoreDb.Create(projectId, firestoreClientBuilder.Build());
+        }
+        else
+        {
+            Console.WriteLine("Connecting to local firestore emulator.");
+
+            var projectId = configuration["Firebase:ProjectId"];
+
+            // Manually configure the FirestoreClientBuilder
+            var firestoreClientBuilder = new FirestoreClientBuilder
+            {
+                Endpoint = emulatorHost,
+                ChannelCredentials = ChannelCredentials.Insecure
+            };
+
+            _firestoreDb = FirestoreDb.Create(projectId, firestoreClientBuilder.Build());
+        }
     }
 
     public async Task<T?> GetDocumentAsync<T>(string collection, string documentId) where T : class
@@ -62,7 +86,7 @@ public class FirestoreService : IFirestoreService
         var docRef = _firestoreDb.Collection(collection).Document(documentId);
         await docRef.SetAsync(data, SetOptions.MergeAll);
     }
-    
+
     public async Task DeleteDocumentAsync(string collection, string documentId)
     {
         var docRef = _firestoreDb.Collection(collection).Document(documentId);
