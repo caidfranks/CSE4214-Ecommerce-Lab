@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using GameVault.Server.Models;
 using GameVault.Server.Services;
 
@@ -10,11 +10,94 @@ public class AuthController : ControllerBase
 {
     private readonly IFirebaseAuthService _firebaseAuth;
     private readonly IFirestoreService _firestore;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore)
+    public AuthController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, IConfiguration configuration)
     {
         _firebaseAuth = firebaseAuth;
         _firestore = firestore;
+        _configuration = configuration;
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
+    {
+        var apiKey = _configuration["Firebase:ApiKey"];
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            return StatusCode(500, new AuthResponse
+            {
+                Success = false,
+                Message = "Firebase configuration error"
+            });
+        }
+        
+        using var httpClient = new HttpClient();
+        var firebaseAuthUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={apiKey}";
+        
+        string? emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST");
+        if (!string.IsNullOrEmpty(emulatorHost))
+        {
+            firebaseAuthUrl = $"http://{emulatorHost}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={apiKey}";
+        }
+
+        var loginData = new
+        {
+            email = request.Email,
+            password = request.Password,
+            returnSecureToken = true
+        };
+
+        var response = await httpClient.PostAsJsonAsync(firebaseAuthUrl, loginData);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = "Invalid email or password"
+            });
+        }
+
+        var firebaseResponse = await response.Content.ReadFromJsonAsync<FirebaseLoginResponse>();
+        
+        if (firebaseResponse == null || string.IsNullOrEmpty(firebaseResponse.IdToken))
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = "Login failed"
+            });
+        }
+
+        var user = await _firestore.GetDocumentAsync<User>("users", firebaseResponse.LocalId);
+
+        if (user == null)
+        {
+            return NotFound(new AuthResponse
+            {
+                Success = false,
+                Message = "User profile not found"
+            });
+        }
+
+        return Ok(new AuthResponse
+        {
+            Success = true,
+            Message = "Login successful",
+            UserId = firebaseResponse.LocalId,
+            IdToken = firebaseResponse.IdToken,
+            User = new UserProfile
+            {
+                UserId = user.UserId ?? string.Empty,
+                Email = user.Email ?? string.Empty,
+                DisplayName = user.DisplayName,
+                Role = user.Role ?? string.Empty,
+                ApprovalStatus = user.ApprovalStatus,
+                BusinessName = user.BusinessName,
+                CreatedAt = user.CreatedAt
+            }
+        });
     }
     
     [HttpPost("register/customer")]
@@ -131,4 +214,20 @@ public class AuthController : ControllerBase
             }
         });
     }
+}
+
+public class LoginRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
+public class FirebaseLoginResponse
+{
+    public string IdToken { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string RefreshToken { get; set; } = string.Empty;
+    public string ExpiresIn { get; set; } = string.Empty;
+    public string LocalId { get; set; } = string.Empty;
+    public bool Registered { get; set; }
 }
