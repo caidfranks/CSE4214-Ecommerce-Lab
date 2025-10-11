@@ -17,6 +17,26 @@ public class AuthService
     public bool IsAuthenticated => !string.IsNullOrEmpty(_currentToken);
     public string? CurrentUserId => _currentUserId;
 
+    public async Task<AuthResponse> LoginAsync(string email, string password)
+    {
+        var request = new
+        {
+            Email = email,
+            Password = password
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("api/auth/login", request);
+        var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+        
+        if (result?.Success == true && result.IdToken != null)
+        {
+            _currentToken = result.IdToken;
+            _currentUserId = result.UserId;
+        }
+
+        return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
+    }
+
     public async Task<AuthResponse> RegisterCustomerAsync(string email, string password, string? displayName)
     {
         var request = new
