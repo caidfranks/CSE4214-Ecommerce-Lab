@@ -20,7 +20,6 @@
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
-
         @if (AuthService.IsAuthenticated)
         {
             <div class="nav-item px-3">
@@ -28,7 +27,6 @@
                     <span class="bi bi-controller" aria-hidden="true"></span> Games
                 </NavLink>
             </div>
-
             @if (IsVendor)
             {
                 <div class="nav-item px-3">
@@ -37,14 +35,12 @@
                     </NavLink>
                 </div>
             }
-
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="profile">
                     <span class="bi bi-person" aria-hidden="true"></span> Profile
                 </NavLink>
             </div>
         }
-
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="about">
                 <span class="bi bi-info-circle" aria-hidden="true"></span> About

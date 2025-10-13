@@ -43,7 +43,6 @@ public class UsersController : ControllerBase
         if (!string.IsNullOrEmpty(request.DisplayName))
             user.DisplayName = request.DisplayName;
 
-
         user.UpdatedAt = DateTime.UtcNow;
 
         await _firestore.SetDocumentAsync("users", userId, user);
