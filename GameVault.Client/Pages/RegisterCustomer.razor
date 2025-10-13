@@ -1,0 +1,192 @@
+﻿@page "/register/customer"
+@inject Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h1 class="auth-title">Join GameVault</h1>
+            <p class="auth-subtitle">Create your customer account</p>
+        </div>
+
+        <form class="auth-form" @onsubmit="Register" @onsubmit:preventDefault="true">
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email"
+                    class="form-control @(emailError != null ? "is-invalid" : "")" 
+                    @bind="email" 
+                    @oninput="ClearEmailError"
+                    placeholder="Enter your email"
+                    required />
+                @if (emailError != null)
+                {
+                    <div class="invalid-feedback">@emailError</div>
+                }
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <div class="password-input-group">
+                    <input 
+                        type="@(showPassword ? "text" : "password")" 
+                        id="password"
+                        class="form-control @(passwordError != null ? "is-invalid" : "")" 
+                        @bind="password" 
+                        @oninput="ClearPasswordError"
+                        placeholder="Create a password"
+                        required />
+                    <button 
+                        type="button" 
+                        class="password-toggle" 
+                        @onclick="TogglePasswordVisibility"
+                        title="@(showPassword ? "Hide password" : "Show password")">
+                        <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                    </button>
+                </div>
+                @if (passwordError != null)
+                {
+                    <div class="invalid-feedback">@passwordError</div>
+                }
+            </div>
+
+            <div class="form-group">
+                <label for="displayName" class="form-label">Display Name (Optional)</label>
+                <input 
+                    type="text" 
+                    id="displayName"
+                    class="form-control" 
+                    @bind="displayName" 
+                    placeholder="How should we call you?" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    @error
+                </div>
+            }
+
+            <button 
+                type="submit" 
+                class="btn btn-primary" 
+                disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border-sm me-2"></span>
+                    @("Creating Account...")
+                }
+                else
+                {
+                    <i class="bi bi-person-plus me-2"></i>
+                    @("Create Account")
+                }
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p class="auth-footer-text">
+                Already have an account? 
+                <a href="/login" class="auth-link">Sign in here</a>
+            </p>
+            <p class="auth-footer-text">
+                Want to sell games? 
+                <a href="/register/vendor" class="auth-link">Register as Vendor</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string email = "";
+    private string password = "";
+    private string? displayName;
+    private string? error;
+    private string? emailError;
+    private string? passwordError;
+    private bool isLoading = false;
+    private bool showPassword = false;
+
+    private void ClearEmailError()
+    {
+        emailError = null;
+        error = null;
+    }
+
+    private void ClearPasswordError()
+    {
+        passwordError = null;
+        error = null;
+    }
+
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
+
+    private bool ValidateForm()
+    {
+        bool isValid = true;
+        emailError = null;
+        passwordError = null;
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            emailError = "Email is required";
+            isValid = false;
+        }
+        else if (!email.Contains("@") || !email.Contains("."))
+        {
+            emailError = "Please enter a valid email address";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            passwordError = "Password is required";
+            isValid = false;
+        }
+        else if (password.Length < 6)
+        {
+            passwordError = "Password must be at least 6 characters";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private async Task Register()
+    {
+        if (!ValidateForm())
+        {
+            return;
+        }
+
+        isLoading = true;
+        error = null;
+
+        try
+        {
+            var result = await AuthService.RegisterCustomerAsync(email, password, displayName);
+            
+            if (result?.Success == true)
+            {
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                error = result?.Message ?? "Registration failed. Please try again.";
+            }
+        }
+        catch (Exception)
+        {
+            error = "An unexpected error occurred. Please try again later.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}
