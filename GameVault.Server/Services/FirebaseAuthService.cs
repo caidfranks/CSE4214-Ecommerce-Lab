@@ -48,15 +48,38 @@ public class FirebaseAuthService : IFirebaseAuthService
 
     public async Task<string?> CreateUserAsync(string email, string password)
     {
-        var userArgs = new UserRecordArgs
+        try
         {
-            Email = email,
-            Password = password,
-            EmailVerified = false
-        };
+            var userArgs = new UserRecordArgs
+            {
+                Email = email,
+                Password = password,
+                EmailVerified = false
+            };
 
-        var userRecord = await _firebaseAuth.CreateUserAsync(userArgs);
-        return userRecord.Uid;
+            var userRecord = await _firebaseAuth.CreateUserAsync(userArgs);
+            return userRecord.Uid;
+        }
+        catch (FirebaseAuthException ex)
+        {
+            // Handle specific Firebase Auth errors based on the error message
+            if (ex.Message.Contains("EMAIL_EXISTS") || ex.Message.Contains("email already exists"))
+            {
+                throw new InvalidOperationException("An account with this email already exists. Please use a different email or try logging in instead.");
+            }
+            else if (ex.Message.Contains("INVALID_EMAIL") || ex.Message.Contains("invalid email"))
+            {
+                throw new InvalidOperationException("The email address is invalid. Please provide a valid email address.");
+            }
+            else if (ex.Message.Contains("WEAK_PASSWORD") || ex.Message.Contains("weak password"))
+            {
+                throw new InvalidOperationException("The password is too weak. Please choose a stronger password.");
+            }
+            else
+            {
+                throw new InvalidOperationException($"Authentication error: {ex.Message}");
+            }
+        }
     }
 
     public async Task<FirebaseUserInfo?> GetUserAsync(string userId)
