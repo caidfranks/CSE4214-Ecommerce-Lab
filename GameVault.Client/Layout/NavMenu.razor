@@ -1,6 +1,12 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">GameVault.Client</a>
+        <a class="navbar-brand" href="">
+            <i class="bi bi-controller me-2"></i>
+            GameVault
+        </a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -14,14 +20,34 @@
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
+
+        @if (AuthService.IsAuthenticated)
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="games">
+                    <span class="bi bi-controller" aria-hidden="true"></span> Games
+                </NavLink>
+            </div>
+
+            @if (IsVendor)
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="vendor-dashboard">
+                        <span class="bi bi-shop" aria-hidden="true"></span> Vendor Dashboard
+                    </NavLink>
+                </div>
+            }
+
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="profile">
+                    <span class="bi bi-person" aria-hidden="true"></span> Profile
+                </NavLink>
+            </div>
+        }
+
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            <NavLink class="nav-link" href="about">
+                <span class="bi bi-info-circle" aria-hidden="true"></span> About
             </NavLink>
         </div>
         <div class="nav-item px-3">
@@ -30,15 +56,129 @@
             </NavLink>
         </div>
     </nav>
+
+    <div class="nav-auth-section">
+        @if (AuthService.IsAuthenticated)
+        {
+            <div class="nav-item px-3">
+                <div class="user-info">
+                    <i class="bi bi-person-circle me-2"></i>
+                    <span class="user-name">@AuthService.CurrentUser?.DisplayName</span>
+                </div>
+            </div>
+            <div class="nav-item px-3">
+                <button class="nav-link logout-button" @onclick="HandleLogout">
+                    <span class="bi bi-box-arrow-right" aria-hidden="true"></span> Logout
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="login">
+                    <span class="bi bi-box-arrow-in-right" aria-hidden="true"></span> Login
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="register-customer">
+                    <span class="bi bi-person-plus" aria-hidden="true"></span> Sign Up
+                </NavLink>
+            </div>
+        }
+    </div>
 </div>
+
+<style>
+    .nav-auth-section {
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.9rem;
+        padding: 0.75rem 0;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .user-name {
+        font-weight: 600;
+        margin-left: 0.5rem;
+    }
+
+    .logout-button {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        padding: 0.75rem;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .logout-button:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+    }
+
+    .navbar-brand {
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        font-size: 1.25rem;
+        color: white;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .navbar-brand:hover {
+        color: #e2e8f0;
+    }
+
+    .nav-link {
+        transition: all 0.2s ease;
+        border-radius: 0.5rem;
+        margin: 0.25rem 0;
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+    }
+
+    .nav-link.active {
+        background: rgba(255, 255, 255, 0.15);
+        font-weight: 600;
+    }
+</style>
 
 @code {
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private bool IsVendor => AuthService.CurrentUser?.Role == "Vendor";
 
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void HandleLogout()
+    {
+        AuthService.Logout();
+        Navigation.NavigateTo("/");
     }
 }
