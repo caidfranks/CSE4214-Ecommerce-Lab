@@ -14,5 +14,8 @@
     <PackageReference Include="Square" Version="42.0.2" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\GameVault.Shared\GameVault.Shared.csproj" />
+  </ItemGroup>
 
 </Project>

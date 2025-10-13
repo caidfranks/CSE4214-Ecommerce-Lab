@@ -3,6 +3,7 @@ using Google.Cloud.Firestore.V1;
 using Google.Apis.Auth.OAuth2;
 using Grpc.Auth;
 using Grpc.Core;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace GameVault.Server.Services;
 
@@ -85,6 +86,12 @@ public class FirestoreService : IFirestoreService
     {
         var docRef = _firestoreDb.Collection(collection).Document(documentId);
         await docRef.SetAsync(data, SetOptions.MergeAll);
+    }
+
+    public async Task<DocumentReference> AddDocumentAsync<T>(string collection, T data) where T : class
+    {
+        DocumentReference docId = await _firestoreDb.Collection(collection).AddAsync(data);
+        return docId;
     }
 
     public async Task DeleteDocumentAsync(string collection, string documentId)

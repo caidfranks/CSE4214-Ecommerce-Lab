@@ -42,7 +42,7 @@ public class UsersController : ControllerBase
 
         if (!string.IsNullOrEmpty(request.DisplayName))
             user.DisplayName = request.DisplayName;
-        
+
 
         user.UpdatedAt = DateTime.UtcNow;
 
@@ -55,8 +55,8 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<List<User>>> GetPendingVendors()
     {
         var pendingVendors = await _firestore.QueryDocumentsAsync<User>(
-            "users", 
-            "ApprovalStatus", 
+            "users",
+            "ApprovalStatus",
             nameof(ApprovalStatus.Pending)
         );
 
@@ -94,10 +94,10 @@ public class UsersController : ControllerBase
 
         await _firestore.SetDocumentAsync("users", request.VendorUserId, user);
 
-        return Ok(new 
-        { 
+        return Ok(new
+        {
             message = request.Approved ? "Vendor approved successfully" : "Vendor rejected",
-            user 
+            user
         });
     }
 
