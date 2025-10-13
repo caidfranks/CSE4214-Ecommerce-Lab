@@ -483,11 +483,4 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# Compilation results
 release
-
-# Firebase Secrets
-gamevault-*-*.json
-
-# Firebase local developoment cache
-.firebase_data
