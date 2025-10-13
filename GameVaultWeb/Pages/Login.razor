@@ -1,0 +1,48 @@
+@page "/login"
+@using BlazorQuickStart.Services
+@inject NavigationManager Nav
+@inject UserState User
+
+<h3>Login</h3>
+
+<EditForm Model="@model" OnValidSubmit="@HandleLogin">
+    <DataAnnotationsValidator />
+    <div style="margin-bottom:8px;">
+        <label>Username</label><br />
+        <InputText @bind-Value="model.Username" />
+    </div>
+    <div style="margin-bottom:8px;">
+        <label>Password</label><br />
+        <InputText @bind-Value="model.Password" type="password" />
+    </div>
+    <div style="margin-bottom:8px;">
+        <label>Role</label><br />
+        <InputSelect @bind-Value="model.Role">
+            <option>Customer</option>
+            <option>Vendor</option>
+            <option>Admin</option>
+        </InputSelect>
+    </div>
+    <button type="submit">Login</button>
+</EditForm>
+
+@code {
+    private LoginModel model = new();
+
+    private void HandleLogin()
+    {
+        User.IsLoggedIn = true;
+        User.Username = string.IsNullOrWhiteSpace(model.Username) ? "Guest" : model.Username;
+        User.Role = string.IsNullOrWhiteSpace(model.Role) ? "Customer" : model.Role;
+
+        // home
+        Nav.NavigateTo("/");
+    }
+
+    public class LoginModel
+    {
+        public string? Username { get; set; }
+        public string? Password { get; set; }
+        public string Role { get; set; } = "Customer";
+    }
+}
