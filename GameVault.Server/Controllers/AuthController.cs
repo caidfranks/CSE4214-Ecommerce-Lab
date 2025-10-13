@@ -103,73 +103,111 @@ public class AuthController : ControllerBase
     [HttpPost("register/customer")]
     public async Task<ActionResult<AuthResponse>> RegisterCustomer([FromBody] RegisterCustomerRequest request)
     {
-        var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
-
-        var user = new User
+        try
         {
-            UserId = userId!,
-            Email = request.Email,
-            DisplayName = request.DisplayName ?? string.Empty,
-            Role = nameof(UserRole.Customer),
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+            var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
 
-        await _firestore.SetDocumentAsync("users", userId!, user);
-
-        return Ok(new AuthResponse
-        {
-            Success = true,
-            Message = "Customer account created successfully",
-            UserId = userId,
-            User = new UserProfile
+            var user = new User
             {
-                UserId = user.UserId,
-                Email = user.Email,
-                DisplayName = user.DisplayName,
-                Role = user.Role,
-                CreatedAt = user.CreatedAt
-            }
-        });
+                UserId = userId!,
+                Email = request.Email,
+                DisplayName = request.DisplayName ?? string.Empty,
+                Role = nameof(UserRole.Customer),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _firestore.SetDocumentAsync("users", userId!, user);
+
+            return Ok(new AuthResponse
+            {
+                Success = true,
+                Message = "Customer account created successfully",
+                UserId = userId,
+                User = new UserProfile
+                {
+                    UserId = user.UserId,
+                    Email = user.Email,
+                    DisplayName = user.DisplayName,
+                    Role = user.Role,
+                    CreatedAt = user.CreatedAt
+                }
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new AuthResponse
+            {
+                Success = false,
+                Message = "An unexpected error occurred while creating your account. Please try again later."
+            });
+        }
     }
 
     [HttpPost("register/vendor")]
     public async Task<ActionResult<AuthResponse>> RegisterVendor([FromBody] RegisterVendorRequest request)
     {
-        var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
-        
-        var user = new User
+        try
         {
-            UserId = userId!,
-            Email = request.Email,
-            DisplayName = request.DisplayName ?? string.Empty,
-            Role = nameof(UserRole.Vendor),
-            ApprovalStatus = nameof(ApprovalStatus.Pending),
-            BusinessName = request.BusinessName,
-            BusinessDescription = request.BusinessDescription,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        await _firestore.SetDocumentAsync("users", userId!, user);
-
-        return Ok(new AuthResponse
-        {
-            Success = true,
-            Message = "Vendor application submitted. Please wait for admin approval.",
-            UserId = userId,
-            User = new UserProfile
+            var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
+            
+            var user = new User
             {
-                UserId = user.UserId,
-                Email = user.Email,
-                DisplayName = user.DisplayName,
-                Role = user.Role,
-                ApprovalStatus = user.ApprovalStatus,
-                BusinessName = user.BusinessName,
-                BusinessDescription = user.BusinessDescription,
-                CreatedAt = user.CreatedAt
-            }
-        });
+                UserId = userId!,
+                Email = request.Email,
+                DisplayName = request.DisplayName ?? string.Empty,
+                Role = nameof(UserRole.Vendor),
+                ApprovalStatus = nameof(ApprovalStatus.Pending),
+                BusinessName = request.BusinessName,
+                BusinessDescription = request.BusinessDescription,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _firestore.SetDocumentAsync("users", userId!, user);
+
+            return Ok(new AuthResponse
+            {
+                Success = true,
+                Message = "Vendor application submitted. Please wait for admin approval.",
+                UserId = userId,
+                User = new UserProfile
+                {
+                    UserId = user.UserId,
+                    Email = user.Email,
+                    DisplayName = user.DisplayName,
+                    Role = user.Role,
+                    ApprovalStatus = user.ApprovalStatus,
+                    BusinessName = user.BusinessName,
+                    BusinessDescription = user.BusinessDescription,
+                    CreatedAt = user.CreatedAt
+                }
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new AuthResponse
+            {
+                Success = false,
+                Message = "An unexpected error occurred while creating your vendor account. Please try again later."
+            });
+        }
     }
 
     [HttpPost("verify")]

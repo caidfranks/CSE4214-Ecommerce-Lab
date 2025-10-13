@@ -8,6 +8,7 @@ public class AuthService
     private readonly HttpClient _httpClient;
     private string? _currentUserId;
     private string? _currentToken;
+    private UserProfile? _currentUser;
 
     public AuthService(HttpClient httpClient)
     {
@@ -16,6 +17,7 @@ public class AuthService
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_currentToken);
     public string? CurrentUserId => _currentUserId;
+    public UserProfile? CurrentUser => _currentUser;
 
     public async Task<AuthResponse> LoginAsync(string email, string password)
     {
@@ -32,6 +34,7 @@ public class AuthService
         {
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
+            _currentUser = result.User;
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
@@ -53,6 +56,7 @@ public class AuthService
         {
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
+            _currentUser = result.User;
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
@@ -81,6 +85,7 @@ public class AuthService
         {
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
+            _currentUser = result.User;
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
@@ -90,6 +95,7 @@ public class AuthService
     {
         _currentToken = null;
         _currentUserId = null;
+        _currentUser = null;
     }
 }
 

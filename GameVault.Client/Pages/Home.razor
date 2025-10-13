@@ -2,21 +2,90 @@
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
 
-@if (AuthService.IsAuthenticated)
-{
-    <p>User: @AuthService.CurrentUserId</p>
-    <button @onclick="Logout">Logout</button>
-}
-else
-{
-    <button @onclick="GoToCustomerRegister">Customer Sign Up</button>
-    <button @onclick="GoToVendorRegister">Vendor Sign Up</button>
-    <p><a href="/login">Login</a></p>
-}
+<div class="home-container">
+    <div class="home-card">
+        <div class="auth-header">
+            <h1 class="home-title">Welcome to GameVault</h1>
+            <p class="home-subtitle">Games for gamers</p>
+        </div>
+
+        @if (AuthService.IsAuthenticated)
+        {
+            <div class="user-info">
+                <div class="user-welcome">
+                    <i class="bi bi-person-circle me-2"></i>
+                    Welcome back, @AuthService.CurrentUser?.DisplayName!
+                </div>
+                <div class="user-details">
+                    <p><strong>Role:</strong> @AuthService.CurrentUser?.Role</p>
+                    @if (AuthService.CurrentUser?.Role == "Vendor")
+                    {
+                        <p><strong>Business:</strong> @AuthService.CurrentUser?.BusinessName</p>
+                        <p><strong>Status:</strong> @AuthService.CurrentUser?.ApprovalStatus</p>
+                    }
+                </div>
+            </div>
+
+            <div class="home-buttons">
+                <button class="home-button home-button-primary" @onclick="GoToGames">
+                    <i class="bi bi-controller me-2"></i>
+                    Browse Games
+                </button>
+                
+                @if (AuthService.CurrentUser?.Role == "Vendor")
+                {
+                    <button class="home-button home-button-secondary" @onclick="GoToVendorDashboard">
+                        <i class="bi bi-shop me-2"></i>
+                        Vendor Dashboard
+                    </button>
+                }
+                
+                <button class="home-button home-button-outline" @onclick="GoToProfile">
+                    <i class="bi bi-person me-2"></i>
+                    My Profile
+                </button>
+                
+                <button class="home-button home-button-outline" @onclick="Logout">
+                    <i class="bi bi-box-arrow-right me-2"></i>
+                    Logout
+                </button>
+            </div>
+        }
+        else
+        {
+            <div class="home-buttons">
+                <button class="home-button home-button-primary" @onclick="GoToCustomerRegister">
+                    <i class="bi bi-person-plus me-2"></i>
+                    Join as Customer
+                </button>
+                
+                <button class="home-button home-button-secondary" @onclick="GoToVendorRegister">
+                    <i class="bi bi-shop me-2"></i>
+                    Become a Vendor
+                </button>
+                
+                <a href="/login" class="home-button home-button-outline">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    Sign In
+                </a>
+            </div>
+
+            <div class="auth-footer">
+                <p class="auth-footer-text">
+                    <i class="bi bi-info-circle me-2"></i>
+                    New to GameVault? Create an account to start buying and selling games!
+                </p>
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     private void GoToCustomerRegister() => Navigation.NavigateTo("/register/customer");
     private void GoToVendorRegister() => Navigation.NavigateTo("/register/vendor");
+    private void GoToGames() => Navigation.NavigateTo("/games");
+    private void GoToVendorDashboard() => Navigation.NavigateTo("/vendor-dashboard");
+    private void GoToProfile() => Navigation.NavigateTo("/profile");
 
     private void Logout()
     {
