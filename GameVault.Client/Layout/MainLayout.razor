@@ -1,0 +1,45 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <div class="top-row-content">
+                <a href="/about" class="top-row-link">
+                    <i class="bi bi-info-circle me-2"></i>
+                    About GameVault
+                </a>
+            </div>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<style>
+    .top-row-content {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        width: 100%;
+    }
+    
+    .top-row-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+        display: flex;
+        align-items: center;
+    }
+    
+    .top-row-link:hover {
+        color: #5a67d8;
+        text-decoration: underline;
+    }
+</style>
