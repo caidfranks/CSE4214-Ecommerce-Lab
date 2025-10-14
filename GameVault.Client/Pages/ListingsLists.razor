@@ -1,0 +1,111 @@
+﻿@page "/viewListings/{StatusFilter}"
+@inject IJSRuntime JS
+
+<h3>@PageTitle</h3>
+<header>
+    <nav>
+        <ul>
+            <li><p><a href="/viewListings/pendingListings">Pending Listings</a></p></li>
+            <li><p><a href="/viewListings/publishedListings">Published Listings</a></p></li>
+            <li><p><a href="/viewListings/removedListings">Removed Listings</a></p></li>
+            <li><p><a href="/viewListings/unpublishedListings">Unpublished Listings</a></p></li>
+        </ul>
+    </nav>
+</header>
+
+@if (entries == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (entries.Count == 0)
+{
+    <p><em>No accounts found with status "@StatusFilter".</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>User</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in entries)
+            {
+                <tr>
+                    <td>@entry.Name</td>
+                    <td>@entry.User</td>
+                    <td>@entry.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter] public string StatusFilter { get; set; } = string.Empty;
+    private List<FirebaseEntry> entries;
+
+    private string PageTitle =>
+        StatusFilter switch
+        {
+            "pendingListings" => "Pending Product Listings",
+            "publishedListings" => "Published Product Listings",
+            "removedListings" => "Removed Product Listings",
+            "unpublishedListings" => "Unpublished Product Listings",
+            _ => "Listings"
+        };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            var data = await JS.InvokeAsync<object[]>("firebaseInterop.getAllDocs", "Listings");
+            entries = new List<FirebaseEntry>();
+
+            if (data != null)
+            {
+                foreach (var item in data)
+                {
+                    if (item is System.Text.Json.JsonElement json)
+                    {
+                        var entry = new FirebaseEntry
+                        {
+                            Name = json.TryGetProperty("name", out var nameProp) ? nameProp.GetString() :
+                                   json.TryGetProperty("Name", out nameProp) ? nameProp.GetString() : "",
+                            User = json.TryGetProperty("user", out var userProp) ? userProp.GetString() :
+                                     json.TryGetProperty("User", out userProp) ? userProp.GetString() : "",
+                            Status = json.TryGetProperty("status", out var statusProp) ? statusProp.GetString() :
+                                     json.TryGetProperty("Status", out statusProp) ? statusProp.GetString() : ""
+                        };
+
+                        // Only show entries matching the URL’s status tag
+                        if (string.Equals(entry.Status, StatusFilter, StringComparison.OrdinalIgnoreCase))
+                        {
+                            entries.Add(entry);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading Firebase data: {ex.Message}");
+            entries = new();
+        }
+    }
+
+    public class FirebaseEntry
+    {
+        public string Name { get; set; }
+        public string User { get; set; }
+        public string Status { get; set; }
+    }
+}
