@@ -1,0 +1,79 @@
+@page "/testlisting"
+@inject NavigationManager Nav
+@* @inject UserState User *@
+@using GameVault.Client.Models
+@using GameVault.Client.Services
+@using System.Runtime.CompilerServices
+@using GameVault.Shared.Models
+@using System.Reflection
+@inject Services.ListingService ListingService
+
+<h3>Create Listing</h3>
+
+@* <EditForm Model="@model" OnValidSubmit="@HandleLogin"> *@
+<EditForm Model="@model" OnValidSubmit="@HandleCreate">
+  @* <DataAnnotationsValidator /> *@
+  <div style="margin-bottom:8px;">
+    <label>Name</label><br />
+    <InputText @bind-Value="model.Name" />
+  </div>
+  <div style="margin-bottom:8px;">
+    <label>Description</label><br />
+    <InputText @bind-Value="model.Description" />
+  </div>
+  <div style="margin-bottom:8px;">
+    <label>Price</label><br />
+    <InputNumber @bind-Value="model.Price" />
+  </div>
+  <div style="margin-bottom:8px;">
+    <label>Stock</label><br />
+    <InputNumber @bind-Value="model.Stock" />
+  </div>
+  <button type="submit">Create Listing</button>
+</EditForm>
+
+@code {
+  private EditableListing model = new()
+  {
+    Name = "",
+    Description = "",
+    Price = 0.0M,
+    Stock = 0,
+  };
+
+  private async Task HandleCreate()
+  {
+    @* User.IsLoggedIn = true;
+        User.Username = string.IsNullOrWhiteSpace(model.Username) ? "Guest" : model.Username;
+        User.Role = string.IsNullOrWhiteSpace(model.Role) ? "Customer" : model.Role; *@
+
+    // Later: verify if user is a logged in vendor
+    @* GameVault.Shared.Models.Listing newListing = new()
+    {
+      Id = "", // Fix later
+      Name = model.Name,
+      Price = (int)(model.Price * 100),
+      Description = model.Description,
+      Stock = model.Stock,
+      Status = 0, // Add later
+      OwnerID = "", // Add after login stuff
+      Image = "" // Add later
+    }; *@
+
+    var result = await ListingService.CreateAsync(model.Name, model.Price, model.Description, model.Stock);
+
+    if (result is { Success: true })
+    {
+      Console.WriteLine("Creation Success!");
+    }
+    else
+    {
+      Console.WriteLine(result?.Message ?? "Login failed. Please check your credentials and try again.");
+    }
+
+    // home
+    @* Nav.NavigateTo("/"); *@
+  }
+
+
+}
