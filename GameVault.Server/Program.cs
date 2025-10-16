@@ -11,7 +11,7 @@ builder.Services.AddSingleton<IFirestoreService, FirestoreService>();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? new[] { "https://localhost:5001", "http://localhost:5001" };
+    .Get<string[]>() ?? new[] { "https://localhost:5166", "http://localhost:5166" };
 
 builder.Services.AddCors(options =>
 {
