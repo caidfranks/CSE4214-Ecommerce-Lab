@@ -1,0 +1,84 @@
+﻿@page "/actionLogs"
+@inject Services.AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<h3>Action Logs</h3>
+
+@if (entries == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (entries.Count == 0)
+{
+    <p><em>No data found.</em></p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>User</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in entries)
+            {
+                <tr>
+                    <td>@entry.Action</td>
+                    <td>@entry.User</td>
+                    <td>@entry.Date</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<FirebaseEntry> entries;
+    private string errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var data = await JS.InvokeAsync<object[]>("firebaseInterop.getAllDocs", "Action Logs");
+            entries = new List<FirebaseEntry>();
+
+            if (data != null)
+            {
+                foreach (var item in data)
+                {
+                    if (item is System.Text.Json.JsonElement json)
+                    {
+                        var entry = new FirebaseEntry
+                        {
+                            Action = json.TryGetProperty("action", out var actionProp) ? actionProp.GetString() :
+                                     json.TryGetProperty("Action", out actionProp) ? actionProp.GetString() : "",
+                            User = json.TryGetProperty("user", out var userProp) ? userProp.GetString() :
+                                   json.TryGetProperty("User", out userProp) ? userProp.GetString() : "",
+                            Date = json.TryGetProperty("date", out var dateProp) ? dateProp.GetString() :
+                                   json.TryGetProperty("Date", out dateProp) ? dateProp.GetString() : ""
+                        };
+                        entries.Add(entry);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex}");
+            errorMessage = $"Error loading action logs: {ex.Message}";
+            entries = new List<FirebaseEntry>();
+        }
+    }
+
+    public class FirebaseEntry
+    {
+        public string Action { get; set; }
+        public string User { get; set; }
+        public string Date { get; set; }
+    }
+}
