@@ -1,6 +1,4 @@
-﻿@inject GameVault.
-
-<button @onclick="Decrement" disabled="@Quantity <= 1">-</button>
+﻿<button @onclick="Decrement" disabled="@Quantity <= 1">-</button>
 <input type="number" value ="@Quantity" min="1" max="99" @onchange="OnInputChange"/>
 <button @onclick="Increment" disabled="@Quantity >= 99">+</button>
 

@@ -1,0 +1,35 @@
+﻿@using GameVault.Shared.Models
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject ILogger<CartButton> Logger
+
+<button @onclick="GoToCart">Cart (@_itemCount)</button>
+
+@code 
+{
+    private int _itemCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchCartItemCount();
+    }
+
+    private async Task FetchCartItemCount()
+    {
+        try
+        {
+            var cart = await Http.GetFromJsonAsync<ShoppingCart>("api/Cart");
+            _itemCount = cart?.TotalItemCount ?? 0;
+        }
+        catch(Exception ex)
+        {
+            Logger.LogError(ex, "Cart item count failed to load.");
+            _itemCount = 0;
+        }
+    }
+    
+    private void GoToCart()
+    {
+        Navigation.NavigateTo("api/Cart");
+    }
+}
