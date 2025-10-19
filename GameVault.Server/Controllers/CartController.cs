@@ -131,9 +131,3 @@ public class CartController : ControllerBase
         }
     }
 }
-
-public class UpdateCartItemQuantityDto
-{
-    [Required]
-    public int newQuantity { get; set; }
-}

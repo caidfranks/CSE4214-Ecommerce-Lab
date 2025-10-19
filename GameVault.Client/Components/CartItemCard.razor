@@ -1,0 +1,101 @@
+﻿@using GameVault.Shared.Models
+@using GameVault.Shared.DTOs
+@inject HttpClient Http
+@inject ILogger<CartItemCard> Logger
+
+<div>
+    <img src="@Item.ThumbnailUrl" alt="@Item.ListingName" />
+    
+    <div>
+        <h3>@Item.ListingName</h3>
+        <p>Sold by: @Item.VendorName</p>
+        <p>Price: $@ConvertPriceToDollars(@Item.PriceAtAddTimeInCents)</p>
+        <p>Quantity: @Item.Quantity</p>
+        <p>Total Price: $@ConvertPriceToDollars(@Item.PriceAtAddTimeInCents * Item.Quantity)</p>
+    
+        <QuantitySelector
+            Quantity="@Item.Quantity"
+            QuantityChanged="OnQuantityChanged" />
+    
+        <button @onclick="RemoveFromCartAsync">Remove</button>
+    </div>
+</div>
+
+@code 
+{
+    [Parameter] public CartItem Item { get; set; } = null!;
+    private bool _isUpdating = false;
+
+    private string ConvertPriceToDollars(int priceInCents)
+    {
+        return (priceInCents / 100).ToString("F2");
+    }
+
+    private async Task OnQuantityChanged(int newQuantity)
+    {
+        if (newQuantity == 0)
+        {
+            await RemoveFromCartAsync();
+            return;
+        }
+
+        await UpdateQuantityAsync(newQuantity);
+    }
+
+    private async Task RemoveFromCartAsync()
+    {
+        _isUpdating = true;
+
+        try
+        {
+            var response = await Http.DeleteAsync($"/api/Cart/item/{Item.CartItemId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                Logger.LogInformation("removed item from cart");
+            }
+            else
+            {
+                Logger.LogError("failed to remove item");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "error");
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+    }
+
+    private async Task UpdateQuantityAsync(int newQuantity)
+    {
+        _isUpdating = true;
+
+        try
+        {
+            var request = new UpdateCartItemQuantityDto { newQuantity = newQuantity};
+
+            var response = await Http.PutAsJsonAsync($"/api/cart/item/{Item.CartItemId}/quantity", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Logger.LogInformation("updated quantity");
+                Item.Quantity = newQuantity;
+            }
+            else
+            {
+                Logger.LogError("quantity not updated");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "error updating quantity");
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+    }
+}
