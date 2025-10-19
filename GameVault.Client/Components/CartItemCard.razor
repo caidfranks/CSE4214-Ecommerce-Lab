@@ -9,26 +9,31 @@
     <div>
         <h3>@Item.ListingName</h3>
         <p>Sold by: @Item.VendorName</p>
-        <p>Price: $@ConvertPriceToDollars(@Item.PriceAtAddTimeInCents)</p>
+        <p>Price: $@FormatPrice(Item.PriceAtAddTimeInCents)</p>
         <p>Quantity: @Item.Quantity</p>
-        <p>Total Price: $@ConvertPriceToDollars(@Item.PriceAtAddTimeInCents * Item.Quantity)</p>
+        <p>Total Price: $@FormatPrice(Item.PriceAtAddTimeInCents * Item.Quantity)</p>
     
         <QuantitySelector
             Quantity="@Item.Quantity"
             QuantityChanged="OnQuantityChanged" />
     
-        <button @onclick="RemoveFromCartAsync">Remove</button>
+        <button @onclick="RemoveFromCartAsync" disabled="@_isUpdating">Remove</button>
     </div>
 </div>
 
 @code 
 {
-    [Parameter] public CartItem Item { get; set; } = null!;
+    [Parameter] 
+    public CartItem Item { get; set; } = null!;
+    
+    [Parameter]
+    public EventCallback OnCartChanged { get; set; }
+    
     private bool _isUpdating = false;
 
-    private string ConvertPriceToDollars(int priceInCents)
+    private string FormatPrice(int priceInCents)
     {
-        return (priceInCents / 100).ToString("F2");
+        return (priceInCents / 100.0).ToString("F2");
     }
 
     private async Task OnQuantityChanged(int newQuantity)
@@ -52,16 +57,17 @@
 
             if (response.IsSuccessStatusCode)
             {
-                Logger.LogInformation("removed item from cart");
+                Logger.LogInformation("removed cart item");
+                await OnCartChanged.InvokeAsync();
             }
             else
             {
-                Logger.LogError("failed to remove item");
+                Logger.LogError("removal failed", Item.CartItemId);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "error");
+            Logger.LogError(ex, "removal error");
         }
         finally
         {
@@ -75,23 +81,24 @@
 
         try
         {
-            var request = new UpdateCartItemQuantityDto { newQuantity = newQuantity};
+            var request = new UpdateCartItemQuantityDto { newQuantity = newQuantity };
 
-            var response = await Http.PutAsJsonAsync($"/api/cart/item/{Item.CartItemId}/quantity", request);
+            var response = await Http.PutAsJsonAsync($"/api/Cart/item/{Item.CartItemId}/quantity", request);
 
             if (response.IsSuccessStatusCode)
             {
-                Logger.LogInformation("updated quantity");
+                Logger.LogInformation("qty updated", Item.CartItemId);
                 Item.Quantity = newQuantity;
+                await OnCartChanged.InvokeAsync();
             }
             else
             {
-                Logger.LogError("quantity not updated");
+                Logger.LogError("qty update failed", Item.CartItemId);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "error updating quantity");
+            Logger.LogError(ex, "update error");
         }
         finally
         {

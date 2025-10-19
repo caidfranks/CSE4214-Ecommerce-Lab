@@ -1,42 +1,44 @@
-﻿@using GameVault.Shared.Models
-@using GameVault.Shared.DTOs
-@inject HttpClient Http
-@inject ILogger<AddToCartButton> Logger
-@inject NavigationManager Navigation
+﻿@inject NavigationManager Navigation;
+@using GameVault.Shared.Models;
+@inject HttpClient Http;
+@inject Logger<AddToCartButton> Logger;
 
-<button @onclick="AddToCartAsync" @disabled="@_isAdding">Add to Cart</button>
+<div class="cart-summary">
+    <h3>Order Summary</h3>
+    
+    <div class="summary-row">
+        <span>Subtotal:</span>
+        <span>@FormatPrice(Cart?.SubtotalPriceInCents ?? 0)</span>
+    </div>
+    
+    <div class="summary-row">
+        <span>Tax (8.5%):</span>
+        <span>@FormatPrice(Cart?.SalesTaxInCents ?? 0)</span>
+    </div>
+    
+    <div class="summary-row total">
+        <span>Total:</span>
+        <span>@FormatPrice(Cart?.TotalPriceInCents ?? 0)</span>
+    </div>
+    
+    <button @onclick="GoToCheckout" disabled="@IsCartEmpty">
+        Proceed to Checkout
+    </button>
+</div>
 
-@code
-{
-    [Parameter] public string ListingId { get; set; } = string.Empty;
-    [Parameter] public string ListingName { get; set; } = string.Empty;
-    [Parameter] public string ThumbnailUrl { get; set; } = string.Empty;
-    [Parameter] public int PriceInCents { get; set; }
-    [Parameter] public int Quantity { get; set; }
-    [Parameter] public string VendorId { get; set; } = String.Empty;
-    [Parameter] public string VendorName { get; set; } = String.Empty;
-
-    private bool _isAdding = false;
-
-    private async Task AddToCartAsync()
+@code {
+    [Parameter]
+    public ShoppingCart? Cart { get; set; }
+    
+    private bool IsCartEmpty => Cart?.Items?.Count == 0 || Cart == null;
+    
+    private string FormatPrice(int priceInCents)
     {
-        _isAdding = true;
-        try
-        {
-            var cartDto = new AddToCartDto
-            {
-                ListingId = ListingId,
-                ListingName = ListingName,
-                ThumbnailUrl = ThumbnailUrl,
-                PriceInCents = PriceInCents,
-                Quantity = 1,
-                VendorId = VendorId,
-                VendorName = VendorName
-            };
-        }
-        catch
-        {
-            
-        }
+        return $"${priceInCents / 100.0:F2}";
+    }
+    
+    private void GoToCheckout()
+    {
+        Navigation.NavigateTo("/checkout");
     }
 }
