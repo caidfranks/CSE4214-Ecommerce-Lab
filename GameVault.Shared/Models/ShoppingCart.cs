@@ -13,7 +13,11 @@ public class ShoppingCart
     public List<CartItem> Items { get; set; } = new List<CartItem>();
     [FirestoreProperty]
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
-    public int TotalPriceInCents => Items?.Sum(i => i.PriceAtAddTimeInCents * i.Quantity) ?? 0;
+    public int SubtotalPriceInCents => Items?.Sum(i => i.PriceAtAddTimeInCents * i.Quantity) ?? 0;
+
+    public int SalesTaxInCents => (int)(SubtotalPriceInCents * 0.085m);
+
+    public int TotalPriceInCents => (SubtotalPriceInCents + SalesTaxInCents);
     public int TotalItemCount => Items?.Sum(i => i.Quantity) ?? 0;
 
     public ShoppingCart()
