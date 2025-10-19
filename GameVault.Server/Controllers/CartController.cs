@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using GameVault.Server.Services;
 using GameVault.Shared.Models;
+using GameVault.Shared.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GameVault.Server.Controllers;
@@ -129,17 +130,6 @@ public class CartController : ControllerBase
             return StatusCode(500);
         }
     }
-}
-
-public class AddToCartDto
-{
-    public string ListingId { get; set; }
-    public string ListingName  { get; set; }
-    public string ThumbnailUrl { get; set; }
-    public int PriceInCents { get; set; }
-    public int Quantity { get; set; }
-    public string VendorId { get; set; }
-    public string VendorName { get; set; }
 }
 
 public class UpdateCartItemQuantityDto

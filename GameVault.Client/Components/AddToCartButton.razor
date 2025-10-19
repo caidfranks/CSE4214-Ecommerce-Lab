@@ -1,0 +1,42 @@
+﻿@using GameVault.Shared.Models
+@using GameVault.Shared.DTOs
+@inject HttpClient Http
+@inject ILogger<AddToCartButton> Logger
+@inject NavigationManager Navigation
+
+<button @onclick="AddToCartAsync" @disabled="@_isAdding">Add to Cart</button>
+
+@code
+{
+    [Parameter] public string ListingId { get; set; } = string.Empty;
+    [Parameter] public string ListingName { get; set; } = string.Empty;
+    [Parameter] public string ThumbnailUrl { get; set; } = string.Empty;
+    [Parameter] public int PriceInCents { get; set; }
+    [Parameter] public int Quantity { get; set; }
+    [Parameter] public string VendorId { get; set; } = String.Empty;
+    [Parameter] public string VendorName { get; set; } = String.Empty;
+
+    private bool _isAdding = false;
+
+    private async Task AddToCartAsync()
+    {
+        _isAdding = true;
+        try
+        {
+            var cartDto = new AddToCartDto
+            {
+                ListingId = ListingId,
+                ListingName = ListingName,
+                ThumbnailUrl = ThumbnailUrl,
+                PriceInCents = PriceInCents,
+                Quantity = 1,
+                VendorId = VendorId,
+                VendorName = VendorName
+            };
+        }
+        catch
+        {
+            
+        }
+    }
+}
