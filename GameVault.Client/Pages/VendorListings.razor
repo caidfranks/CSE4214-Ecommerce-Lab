@@ -1,7 +1,12 @@
 @page "/vendor/listings"
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
+@using Grpc.Net.Client.Balancer
 @inject NavigationManager Nav
+@inject Services.AuthService AuthService
+@inject Services.ListingService ListingService
+
+<PageTitle>@filter Listings</PageTitle>
 
 <h3>View Listings</h3>
 
@@ -10,6 +15,7 @@
 {
   <button @onclick="() => {
     filter = listingStatus;
+    LoadData();
   }" class="btn mb-2 @(listingStatus == filter ? "btn-primary" : "btn-secondary")">@listingStatus</button>
 }
 <button @onclick='() => Nav.NavigateTo("/vendor/listings/create")' class="btn btn-secondary">Create New</button>
@@ -21,7 +27,11 @@
 
 @if (listings == null)
 {
-  <p><em>Loading...</em></p>
+  @if (error == string.Empty) {
+    <p><em>Loading...</em></p>
+  } else {
+    <p class="alert alert-danger mt-2"><em>@error</em></p>
+  }
 }
 else if (listings.Count == 0)
 {
@@ -35,6 +45,8 @@ else if (listings.Count == 0)
       @if (filter == ListingStatus.Published) {
         <th>Stock</th>
       }
+      @* TODO: Maybe put removal reason here?
+      (But would require storing somewhere and distinguishing between vendor removed and admin removed) *@
       <th>Actions</th>
     </tr>
   </thead>
@@ -69,9 +81,10 @@ else if (listings.Count == 0)
 
 @code {
   public ListingStatus filter = 0;
+  public string error = string.Empty;
 
-  private List<ListingDTO>? listings = new List<ListingDTO> {
-    new ListingDTO {
+  private List<ListingDTO>? listings;// = new List<ListingDTO> {
+    @* new ListingDTO {
       Id = "a",
       Description="Lots of apples",
       Name="Listing A",
@@ -89,5 +102,31 @@ else if (listings.Count == 0)
       Status=ListingStatus.Inactive,
       Stock=20
     }
-  };
+  }; *@
+
+  private async Task LoadData()
+  {
+    listings = null;
+    @* loading = true; *@
+    @* Console.WriteLine("Set loading to true"); *@
+
+    // Call Firestore
+    if (AuthService.CurrentUserId is not null) {
+      ListingListResponse result = (await ListingService.GetVendorListingsByStatus(AuthService.CurrentUserId, filter));
+      listings = result.Listings;
+      Console.WriteLine($"Client got {listings?.Count} listings");
+      error = result.Message ?? "";
+      await InvokeAsync(StateHasChanged);
+    } else {
+      Console.WriteLine("Not logged in");
+      error = "Not logged in";
+    }
+    @* loading = false; *@
+    @* Console.WriteLine("Set loading to false"); *@
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadData();
+  }
 }

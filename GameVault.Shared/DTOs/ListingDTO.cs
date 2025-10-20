@@ -3,10 +3,8 @@ using Google.Cloud.Firestore;
 
 namespace GameVault.Shared.DTOs;
 
-
-public class ListingDTO
+public class NewListingDTO
 {
-  public required string Id { get; set; }
   public required string Name { get; set; }
   public required int Price { get; set; }
   public string Description { get; set; } = string.Empty;
@@ -14,5 +12,8 @@ public class ListingDTO
   public required ListingStatus Status { get; set; }
   public required string OwnerID { get; set; }
   public string Image { get; set; } = string.Empty;
-
+}
+public class ListingDTO : NewListingDTO
+{
+  public required string Id { get; set; }
 }

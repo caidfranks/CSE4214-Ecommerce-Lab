@@ -2,6 +2,9 @@ using System;
 using System.Net.Http.Json;
 using System.Text.Json;
 using GameVault.Shared.Models;
+using GameVault.Shared.DTOs;
+using Grpc.Net.Client.Balancer;
+using System.Net;
 
 namespace GameVault.Client.Services;
 
@@ -16,26 +19,26 @@ public class ListingService
 
   public async Task<BaseResponse> CreateAsync(string name, decimal price, string description, int stock)
   {
-    Listing newListing = new()
+    NewListingDTO newListing = new()
     {
-      Id = "", // Fix later
       Name = name,
       Price = (int)(price * 100),
       Description = description,
       Stock = stock,
-      Status = 0, // Add later
-      OwnerID = "", // Add after login stuff
-      Image = "" // Add later
+      Status = ListingStatus.Inactive,
+      OwnerID = "A6vUMHOrUIWOiFXw2pPPm7yMLHD2", // Add after login stuff
+      // Image = "" // Add later
     };
     var response = await _httpClient.PostAsJsonAsync("api/listing/create", newListing);
     var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
 
     return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
   }
-}
 
-public class BaseResponse
-{
-  public bool Success { get; set; }
-  public string? Message { get; set; }
+  public async Task<ListingListResponse> GetVendorListingsByStatus(string userId, ListingStatus status)
+  {
+    var response = await _httpClient.GetAsync($"api/listing/vendor?v={Uri.EscapeDataString(userId)}&s={status}");
+    var result = await response.Content.ReadFromJsonAsync<ListingListResponse>();
+    return result ?? new ListingListResponse { Success = false, Message = "Unknown error" };
+  }
 }
