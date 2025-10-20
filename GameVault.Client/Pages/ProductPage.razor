@@ -1,4 +1,4 @@
-﻿@page "/product/{id:int}"
+﻿@page "/product/{id}"
 @using GameVaultWeb.Services
 @using GameVaultWeb.Models
 @inject UserState User
@@ -180,7 +180,7 @@ else
 
 @code {
     [Parameter]
-    public int Id { get; set; }
+    public string Id { get; set; } = string.Empty;
 
     private Product? product;
     private List<Product> suggestedProducts = new();
@@ -237,8 +237,8 @@ else
         Nav.NavigateTo("/cart");
     }
 
-    private void ViewProduct(int productId)
+    private void ViewProduct(string productId)
     {
-        Nav.NavigateTo($"/product/{productId}");
+        Nav.NavigateTo($"/product/{product.Id}");
     }
 }

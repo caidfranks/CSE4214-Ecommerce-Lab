@@ -74,13 +74,24 @@ public class FirestoreService : IFirestoreService
         var snapshot = await collectionRef.GetSnapshotAsync();
 
         var results = new List<T>();
+
         foreach (var document in snapshot.Documents)
         {
-            results.Add(document.ConvertTo<T>());
+            var obj = document.ConvertTo<T>();
+
+            // 🔧 Attach the document ID if the model has an Id property
+            var idProp = typeof(T).GetProperty("Id");
+            if (idProp != null && idProp.CanWrite)
+            {
+                idProp.SetValue(obj, document.Id);
+            }
+
+            results.Add(obj);
         }
 
         return results;
     }
+
 
     public async Task SetDocumentAsync<T>(string collection, string documentId, T data) where T : class
     {
@@ -100,18 +111,28 @@ public class FirestoreService : IFirestoreService
         await docRef.DeleteAsync();
     }
 
-    public async Task<List<T>> QueryDocumentsAsync<T>(string collection, string fieldName, object value) where T : class
+    public async Task<List<T>> QueryDocumentsAsync<T>(string collectionName, string field, object value)
+    where T : class
     {
-        var collectionRef = _firestoreDb.Collection(collection);
-        var query = collectionRef.WhereEqualTo(fieldName, value);
-        var snapshot = await query.GetSnapshotAsync();
-
-        var results = new List<T>();
-        foreach (var document in snapshot.Documents)
+        try
         {
-            results.Add(document.ConvertTo<T>());
-        }
+            var query = _firestoreDb.Collection(collectionName).WhereEqualTo(field, value);
+            var snapshot = await query.GetSnapshotAsync();
 
-        return results;
+            if (snapshot == null || snapshot.Count == 0)
+            {
+                return new List<T>();
+            }
+
+            return snapshot.Documents.Select(d => d.ConvertTo<T>()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error querying documents in {collectionName}: {ex.Message}");
+            return new List<T>();
+        }
     }
+
+
+
 }

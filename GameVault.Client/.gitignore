@@ -10,3 +10,8 @@ appsettings.Developer.json
 .vscode/
 
 .idea
+
+firebase-key.json
+gamevault-*.json
+*.json
+!package.json

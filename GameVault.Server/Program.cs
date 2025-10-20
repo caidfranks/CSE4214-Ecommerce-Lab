@@ -9,9 +9,12 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddSingleton<IFirestoreService, FirestoreService>();
 
+builder.Services.AddScoped<IFirebaseAuthService, FirebaseAuthService>();
+builder.Services.AddScoped<IFirestoreService, FirestoreService>();
+
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? new[] { "https://localhost:5001", "http://localhost:5001" };
+    .Get<string[]>() ?? new[] { "https://localhost:7020", "http://localhost:5166" };
 
 builder.Services.AddCors(options =>
 {

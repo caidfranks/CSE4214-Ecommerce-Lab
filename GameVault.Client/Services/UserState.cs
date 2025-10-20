@@ -1,41 +1,49 @@
-﻿namespace GameVaultWeb.Services
+﻿public class UserState
 {
-    public class UserState
+    private bool _isLoggedIn;
+    private string? _username;
+    private string? _userId;
+    private string _role = "Guest";
+
+    public bool IsLoggedIn
     {
-        private bool _isLoggedIn;
-        private string? _username;
-        private string _role = "Guest";
-
-        public bool IsLoggedIn
+        get => _isLoggedIn;
+        set
         {
-            get => _isLoggedIn;
-            set
-            {
-                _isLoggedIn = value;
-                StateChanged?.Invoke();
-            }
+            _isLoggedIn = value;
+            StateChanged?.Invoke();
         }
-
-        public string? Username
-        {
-            get => _username;
-            set
-            {
-                _username = value;
-                StateChanged?.Invoke();
-            }
-        }
-
-        public string Role
-        {
-            get => _role;
-            set
-            {
-                _role = value;
-                StateChanged?.Invoke();
-            }
-        }
-
-        public event Action? StateChanged;
     }
+
+    public string? Username
+    {
+        get => _username;
+        set
+        {
+            _username = value;
+            StateChanged?.Invoke();
+        }
+    }
+
+    public string? UserId
+    {
+        get => _userId;
+        set
+        {
+            _userId = value;
+            StateChanged?.Invoke();
+        }
+    }
+
+    public string Role
+    {
+        get => _role;
+        set
+        {
+            _role = value;
+            StateChanged?.Invoke();
+        }
+    }
+
+    public event Action? StateChanged;
 }

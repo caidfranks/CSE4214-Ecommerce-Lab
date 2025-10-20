@@ -5,6 +5,8 @@ obj/
 .suo
 
 appsettings.json
+appsettings.*.json
+firebase-key.json
 appsettings.Developer.json
 
 .vscode/
@@ -504,3 +506,33 @@ gamevault-*-*.json
 
 # Firebase local developoment cache
 .firebase_data
+
+# Firebase credentials - NEVER COMMIT
+firebase-key.json
+gamevault-*.json
+```
+
+### 3. Save the file (Ctrl+S)
+
+That's it. Now Git will ignore any `.json` files that match that pattern.
+
+## Complete Example
+
+Your GameVault.Server/.gitignore should look like:
+```
+bin/
+obj/
+
+.user
+.suo
+
+appsettings.json
+appsettings.Developer.json
+
+.vscode/
+
+.idea
+
+# Firebase credentials - NEVER COMMIT
+firebase-key.json
+gamevault-*.json

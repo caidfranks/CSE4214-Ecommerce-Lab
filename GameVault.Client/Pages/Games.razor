@@ -1,0 +1,300 @@
+﻿@page "/games"
+@using GameVaultWeb.Services
+@using GameVaultWeb.Models
+@inject UserState User
+@inject ProductService ProductService
+@inject NavigationManager Nav
+
+<PageTitle>Browse Products - GameVault</PageTitle>
+
+@if (!User.IsLoggedIn)
+{
+    <div class="container mt-5">
+        <div class="alert alert-info">
+            <h4>Please Log In</h4>
+            <p>You need to log in to browse products. <a href="/login" class="alert-link">Go to Login</a></p>
+        </div>
+    </div>
+}
+else if (User.Role == "Customer")
+{
+    <div class="browse-container">
+        <div class="row">
+            <!-- Filter Sidebar (REQ-40, REQ-41) -->
+            <div class="col-lg-2 col-md-3">
+                <div class="filter-section">
+                    <h5>Filter by Genre</h5>
+                    <div class="filter-options">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="actionFilter"
+                                   checked="@selectedFilters.Contains("Action")"
+                                   @onchange="@(e => ToggleFilter("Action"))">
+                            <label class="form-check-label" for="actionFilter">Action</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rpgFilter"
+                                   checked="@selectedFilters.Contains("RPG")"
+                                   @onchange="@(e => ToggleFilter("RPG"))">
+                            <label class="form-check-label" for="rpgFilter">RPG</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="adventureFilter"
+                                   checked="@selectedFilters.Contains("Adventure")"
+                                   @onchange="@(e => ToggleFilter("Adventure"))">
+                            <label class="form-check-label" for="adventureFilter">Adventure</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="strategyFilter"
+                                   checked="@selectedFilters.Contains("Strategy")"
+                                   @onchange="@(e => ToggleFilter("Strategy"))">
+                            <label class="form-check-label" for="strategyFilter">Strategy</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="sportsFilter"
+                                   checked="@selectedFilters.Contains("Sports")"
+                                   @onchange="@(e => ToggleFilter("Sports"))">
+                            <label class="form-check-label" for="sportsFilter">Sports</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="puzzleFilter"
+                                   checked="@selectedFilters.Contains("Puzzle")"
+                                   @onchange="@(e => ToggleFilter("Puzzle"))">
+                            <label class="form-check-label" for="puzzleFilter">Puzzle</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="horrorFilter"
+                                   checked="@selectedFilters.Contains("Horror")"
+                                   @onchange="@(e => ToggleFilter("Horror"))">
+                            <label class="form-check-label" for="horrorFilter">Horror</label>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary w-100 mt-3" @onclick="ApplyFilter">Apply Filter</button>
+
+                    @if (selectedFilters.Count > 0)
+                    {
+                        <button class="btn btn-outline-secondary w-100 mt-2" @onclick="ClearFilters">Clear Filters</button>
+                    }
+                </div>
+            </div>
+
+            <!-- Product Grid (REQ-36, REQ-37) -->
+            <div class="col-lg-10 col-md-9">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>Browse Games</h3>
+                    <div class="results-info text-muted">
+                        Showing @filteredProducts.Count of @totalProducts products
+                    </div>
+                </div>
+
+                @if (selectedFilters.Count > 0)
+                {
+                    <div class="active-filters mb-3">
+                        <span class="me-2">Active filters:</span>
+                        @foreach (var filter in selectedFilters)
+                        {
+                            <span class="badge bg-primary me-2">
+                                @filter
+                                <button type="button" class="btn-close btn-close-white ms-1"
+                                        style="font-size: 0.6rem;"
+                                        @onclick="() => RemoveFilter(filter)"></button>
+                            </span>
+                        }
+                    </div>
+                }
+
+                @if (isLoading)
+                {
+                    <div class="text-center p-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Loading products...</p>
+                    </div>
+                }
+                else if (filteredProducts.Count == 0)
+                {
+                    <div class="alert alert-warning">
+                        <h5>No products found</h5>
+                        <p>No products match your current filter criteria. Try adjusting your filters.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="product-grid">
+                        @foreach (var product in filteredProducts)
+                        {
+                            <div class="product-card" @onclick="() => ViewProduct(product.Id)">
+                                <!-- Thumbnail Image (REQ-37) -->
+                                <div class="product-thumbnail">
+                                    <img src="@product.ThumbnailUrl" alt="@product.Name" />
+                                    @if (product.Stock == 0)
+                                    {
+                                        <div class="sold-out-overlay">
+                                            <span class="badge bg-danger">Sold Out</span>
+                                        </div>
+                                    }
+                                </div>
+
+                                <!-- Product Info -->
+                                <div class="product-info">
+                                    <!-- Product Name (REQ-37) -->
+                                    <h5 class="product-name" title="@product.Name">@product.Name</h5>
+
+                                    <!-- Genre Badge -->
+                                    <span class="badge bg-secondary mb-2">@product.Category</span>
+
+                                    <!-- Price (REQ-37) -->
+                                    <p class="product-price">$@product.Price.ToString("F2")</p>
+
+                                    <!-- Vendor Display Name (REQ-37) -->
+                                    <p class="product-vendor">
+                                        <i class="bi bi-shop"></i> @product.VendorName
+                                    </p>
+
+                                    <!-- Stock Info -->
+                                    @if (product.Stock > 0 && product.Stock <= 5)
+                                    {
+                                        <p class="text-warning small mb-0">
+                                            <i class="bi bi-exclamation-triangle"></i> Only @product.Stock left!
+                                        </p>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Pagination (REQ-50) -->
+                    @if (totalPages > 1)
+                    {
+                        <div class="pagination-controls mt-4">
+                            <button class="btn btn-outline-primary" @onclick="PreviousPage" disabled="@(currentPage == 1)">
+                                <i class="bi bi-chevron-left"></i> Previous
+                            </button>
+                            <span class="mx-3 align-self-center">
+                                Page <strong>@currentPage</strong> of <strong>@totalPages</strong>
+                            </span>
+                            <button class="btn btn-outline-primary" @onclick="NextPage" disabled="@(currentPage == totalPages)">
+                                Next <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <!-- For Vendors and Admins -->
+    <div class="container mt-5">
+        <div class="alert alert-info">
+            <h4>Welcome, @(User.Username ?? "Guest")!</h4>
+            <p>Your role is: <strong>@User.Role</strong></p>
+            <p>This page is for customers only. Please use the navigation menu to access your dashboard.</p>
+            <a href="/account" class="btn btn-primary">Go to Account</a>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Product> allProducts = new();
+    private List<Product> filteredProducts = new();
+    private HashSet<string> selectedFilters = new();
+    private bool isLoading = true;
+    private int currentPage = 1;
+    private int pageSize = 12; // REQ-49: TBD listings per page
+    private int totalPages = 1;
+    private int totalProducts = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+        ApplyFilter();
+        isLoading = false;
+    }
+
+    private async Task LoadProducts()
+    {
+        // Load products from ProductService
+        allProducts = await ProductService.GetAllProductsAsync();
+        totalProducts = allProducts.Count;
+    }
+
+    private void ToggleFilter(string category)
+    {
+        if (selectedFilters.Contains(category))
+        {
+            selectedFilters.Remove(category);
+        }
+        else
+        {
+            selectedFilters.Add(category);
+        }
+    }
+
+    private void RemoveFilter(string category)
+    {
+        selectedFilters.Remove(category);
+        ApplyFilter();
+    }
+
+    private void ClearFilters()
+    {
+        selectedFilters.Clear();
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        // REQ-42, REQ-43, REQ-44: Apply filter and retrieve matching listings
+        var filtered = selectedFilters.Count == 0
+            ? allProducts.ToList()
+            : allProducts.Where(p => selectedFilters.Contains(p.Category)).ToList();
+
+        // Calculate pagination
+        totalPages = (int)Math.Ceiling(filtered.Count / (double)pageSize);
+        currentPage = 1;
+
+        // Get current page items
+        filteredProducts = filtered
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagedProducts();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagedProducts();
+        }
+    }
+
+    private void UpdatePagedProducts()
+    {
+        var filtered = selectedFilters.Count == 0
+            ? allProducts.ToList()
+            : allProducts.Where(p => selectedFilters.Contains(p.Category)).ToList();
+
+        filteredProducts = filtered
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void ViewProduct(string productId)
+    {
+        // REQ-46: Navigate to listing page
+        Nav.NavigateTo($"/product/{productId}");
+    }
+}

@@ -1,18 +1,20 @@
 ﻿using System.Net.Http.Json;
-using System.Text.Json;
+using GameVaultWeb.Services;
 
 namespace GameVault.Client.Services;
 
 public class AuthService
 {
     private readonly HttpClient _httpClient;
+    private readonly UserState _userState;
     private string? _currentUserId;
     private string? _currentToken;
     private UserProfile? _currentUser;
 
-    public AuthService(HttpClient httpClient)
+    public AuthService(HttpClient httpClient, UserState userState)
     {
         _httpClient = httpClient;
+        _userState = userState;
     }
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_currentToken);
@@ -26,17 +28,21 @@ public class AuthService
             Email = email,
             Password = password
         };
-
         var response = await _httpClient.PostAsJsonAsync("api/auth/login", request);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
+
         if (result?.Success == true && result.IdToken != null)
         {
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
             _currentUser = result.User;
-        }
 
+            // Update UserState
+            _userState.IsLoggedIn = true;
+            _userState.Username = result.User?.DisplayName ?? result.User?.Email ?? "User";
+            _userState.Role = result.User?.Role ?? "Customer";
+            _userState.UserId = result.UserId;
+        }
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
@@ -48,23 +54,27 @@ public class AuthService
             Password = password,
             DisplayName = displayName
         };
-
         var response = await _httpClient.PostAsJsonAsync("api/auth/register/customer", request);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
+
         if (result?.Success == true && result.IdToken != null)
         {
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
             _currentUser = result.User;
-        }
 
+            // Update UserState
+            _userState.IsLoggedIn = true;
+            _userState.Username = result.User?.DisplayName ?? result.User?.Email ?? "User";
+            _userState.Role = result.User?.Role ?? "Customer";
+            _userState.UserId = result.UserId;
+        }
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
     public async Task<AuthResponse> RegisterVendorAsync(
-        string email, 
-        string password, 
+        string email,
+        string password,
         string displayName,
         string businessName,
         string businessDescription)
@@ -77,17 +87,21 @@ public class AuthService
             BusinessName = businessName,
             BusinessDescription = businessDescription
         };
-
         var response = await _httpClient.PostAsJsonAsync("api/auth/register/vendor", request);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
+
         if (result?.Success == true && result.IdToken != null)
         {
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
             _currentUser = result.User;
-        }
 
+            // Update UserState
+            _userState.IsLoggedIn = true;
+            _userState.Username = result.User?.DisplayName ?? result.User?.Email ?? "User";
+            _userState.Role = result.User?.Role ?? "Vendor";
+            _userState.UserId = result.UserId;
+        }
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
@@ -96,9 +110,14 @@ public class AuthService
         _currentToken = null;
         _currentUserId = null;
         _currentUser = null;
+
+        // Update UserState
+        _userState.IsLoggedIn = false;
+        _userState.Username = null;
+        _userState.Role = "Guest";
+        _userState.UserId = null;
     }
 }
-
 
 public class AuthResponse
 {

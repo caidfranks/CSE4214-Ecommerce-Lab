@@ -25,7 +25,7 @@ public class ListingService
       Stock = stock,
       Status = 0, // Add later
       OwnerID = "", // Add after login stuff
-      Image = "" // Add later
+      Image = "", // Add later
     };
     var response = await _httpClient.PostAsJsonAsync("api/listing/create", newListing);
     var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
