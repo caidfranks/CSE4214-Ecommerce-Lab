@@ -491,3 +491,4 @@ gamevault-*-*.json
 
 # Firebase local developoment cache
 .firebase_data
+/firebase-tools-instant-win.exe
