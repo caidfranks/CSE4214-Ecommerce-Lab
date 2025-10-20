@@ -15,7 +15,7 @@
 {
   <button @onclick="() => {
     filter = listingStatus;
-    LoadData();
+    return LoadData();
   }" class="btn mb-2 @(listingStatus == filter ? "btn-primary" : "btn-secondary")">@listingStatus</button>
 }
 <button @onclick='() => Nav.NavigateTo("/vendor/listings/create")' class="btn btn-secondary">Create New</button>
