@@ -64,10 +64,10 @@ else if (listings.Count == 0)
             <button @onclick='() => Nav.NavigateTo($"/listings/edit/{listing.Id}")'>Edit</button>
           }
           @if (filter == ListingStatus.Inactive) {
-            <button>Submit</button>
+            <button @onclick='async () => {await ListingService.ChangeListingStatusToPending(listing.Id); await LoadData();}'>Submit</button>
           }
           @if (filter == ListingStatus.Pending) {
-            <button>Cancel Request</button>
+            <button @onclick='async () => {await ListingService.ChangeListingStatusToInactive(listing.Id); await LoadData();}'>Cancel Request</button>
           }
           @if (filter == ListingStatus.Published) {
             <button>Unpublish</button>

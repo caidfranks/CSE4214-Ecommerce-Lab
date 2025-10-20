@@ -35,6 +35,22 @@ public class ListingService
     return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
   }
 
+  public async Task<BaseResponse> ChangeListingStatusToPending(string id)
+  {
+    var response = await _httpClient.PostAsJsonAsync("api/listing/submit", id);
+    var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+    return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+  }
+
+  public async Task<BaseResponse> ChangeListingStatusToInactive(string id)
+  {
+    var response = await _httpClient.PostAsJsonAsync("api/listing/cancel", id);
+    var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+    return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+  }
+
   public async Task<ListingListResponse> GetVendorListingsByStatus(string userId, ListingStatus status)
   {
     var response = await _httpClient.GetAsync($"api/listing/vendor?v={Uri.EscapeDataString(userId)}&s={status}");

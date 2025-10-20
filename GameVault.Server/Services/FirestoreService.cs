@@ -89,6 +89,12 @@ public class FirestoreService : IFirestoreService
         await docRef.SetAsync(data, SetOptions.MergeAll);
     }
 
+    public async Task SetDocumentFieldAsync(string collection, string documentId, string fieldName, object value)
+    {
+        var docRef = _firestoreDb.Collection(collection).Document(documentId);
+        await docRef.UpdateAsync(fieldName, value);
+    }
+
     public async Task<DocumentReference> AddDocumentAsync<T>(string collection, T data) where T : class
     {
         DocumentReference docId = await _firestoreDb.Collection(collection).AddAsync(data);
