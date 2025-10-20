@@ -4,11 +4,11 @@ using GameVault.Shared.Models;
 namespace GameVault.Server.Models.Firestore;
 
 [FirestoreData]
-public class Invoice
+public class FirestoreInvoice
 {
-
-  [FirestoreProperty]
-  public required string Id { get; set; }
+  // File ID
+  // [FirestoreProperty]
+  // public required string Id { get; set; }
 
   [FirestoreProperty]
   public required int Total { get; set; }
@@ -51,4 +51,10 @@ public class Invoice
 
   [FirestoreProperty]
   public required string VendorId { get; set; }
+}
+
+[FirestoreData]
+public class Invoice : FirestoreInvoice, IHasId
+{
+  public required string Id { get; set; }
 }

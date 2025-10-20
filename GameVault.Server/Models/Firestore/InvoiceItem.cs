@@ -5,6 +5,7 @@ namespace GameVault.Server.Models.Firestore;
 [FirestoreData]
 public class InvoiceItem
 {
+  // Unique Unrelated ID
 
   [FirestoreProperty]
   public required string InvoiceId { get; set; }

@@ -5,6 +5,7 @@ namespace GameVault.Server.Models.Firestore;
 [FirestoreData]
 public class Tag
 {
+  // Unrelated Unique ID
 
   [FirestoreProperty]
   public required string CategoryId { get; set; }

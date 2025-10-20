@@ -4,10 +4,11 @@ using GameVault.Shared.Models;
 namespace GameVault.Server.Models.Firestore;
 
 [FirestoreData]
-public class Log
+public class FirestoreLog
 {
-  [FirestoreProperty]
-  public required string Id { get; set; }
+  // File ID
+  // [FirestoreProperty]
+  // public required string Id { get; set; }
 
   [FirestoreProperty]
   public string Summary { get; set; } = string.Empty;
@@ -26,4 +27,10 @@ public class Log
 
   [FirestoreProperty]
   public string Details { get; set; } = string.Empty;
+}
+
+[FirestoreData]
+public class Log : FirestoreLog, IHasId
+{
+  public required string Id { get; set; }
 }

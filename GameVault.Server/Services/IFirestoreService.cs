@@ -1,4 +1,6 @@
 ﻿using Google.Cloud.Firestore;
+using GameVault.Server.Models;
+using GameVault.Server.Models.Firestore;
 
 namespace GameVault.Server.Services;
 
@@ -10,4 +12,7 @@ public interface IFirestoreService
     Task<DocumentReference> AddDocumentAsync<T>(string collection, T data) where T : class;
     Task DeleteDocumentAsync(string collection, string documentId);
     Task<List<T>> QueryDocumentsAsync<T>(string collection, string fieldName, object value) where T : class;
+    Task<List<T>> QueryDocumentsAsyncWithId<T>(string collection, string fieldName, object value) where T : IHasId;
+    Task<List<T>> QueryComplexDocumentsAsync<T>(string collection, List<QueryParam> queries) where T : class;
+    Task<List<T>> QueryComplexDocumentsAsyncWithId<T>(string collection, List<QueryParam> queries) where T : IHasId;
 }

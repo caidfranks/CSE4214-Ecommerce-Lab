@@ -3,10 +3,11 @@ using Google.Cloud.Firestore;
 namespace GameVault.Server.Models.Firestore;
 
 [FirestoreData]
-public class Request
+public class FirestoreRequest
 {
-    [FirestoreProperty]
-    public required string Id { get; set; }
+    // File ID
+    // [FirestoreProperty]
+    // public required string Id { get; set; }
 
     [FirestoreProperty]
     public required string Email { get; set; }
@@ -19,4 +20,10 @@ public class Request
 
     [FirestoreProperty]
     public required string Reason { get; set; }
+}
+
+[FirestoreData]
+public class Request : FirestoreRequest, IHasId
+{
+    public required string Id { get; set; }
 }
