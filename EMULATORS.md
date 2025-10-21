@@ -12,3 +12,17 @@ Every time:
   * On Mac/Linux ```FIRESTORE_EMULATOR_HOST="localhost:8080" FIREBASE_AUTH_EMULATOR_HOST="localhost:9099" dotnet run```
   * On Windows/Powershell ```$env:FIRESTORE_EMULATOR_HOST="localhost:8080"; $env:FIREBASE_AUTH_EMULATOR_HOST="localhost:9099"; dotnet run```
 3. In a third terminal, navigate to the client and run ```dotnet run```
+
+## Default Credentials for Emulators
+
+Customer:
+Email: ```customer@gmail.com```
+Password: ```password```
+
+Vendor:
+Email: ```vendor@gmail.com```
+Password: ```password```
+
+Admin:
+Email: ```admin@gmail.com```
+Password: ```password```

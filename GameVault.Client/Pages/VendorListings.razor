@@ -1,0 +1,132 @@
+@page "/vendor/listings"
+@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
+@using Grpc.Net.Client.Balancer
+@inject NavigationManager Nav
+@inject Services.AuthService AuthService
+@inject Services.ListingService ListingService
+
+<PageTitle>@filter Listings</PageTitle>
+
+<h3>View Listings</h3>
+
+@* TODO: Tab bar styling *@
+@foreach (var listingStatus in Enum.GetValues<ListingStatus>())
+{
+  <button @onclick="() => {
+    filter = listingStatus;
+    return LoadData();
+  }" class="btn mb-2 @(listingStatus == filter ? "btn-primary" : "btn-secondary")">@listingStatus</button>
+}
+<button @onclick='() => Nav.NavigateTo("/vendor/listings/create")' class="btn btn-secondary">Create New</button>
+@* Hardcoded: *@
+@* <button @onclick="TabPublished">Published</button>
+<button @onclick="TabDraft">Draft</button>
+<button @onclick="TabPending">Pending</button>
+<button @onclick="TabRemoved">Removed</button> *@
+
+@if (listings == null)
+{
+  @if (error == string.Empty) {
+    <p><em>Loading...</em></p>
+  } else {
+    <p class="alert alert-danger mt-2"><em>@error</em></p>
+  }
+}
+else if (listings.Count == 0)
+{
+  <p><em>No listings found with status "@filter"</em></p>
+} else {
+  <table class="table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Price</th>
+      @if (filter == ListingStatus.Published) {
+        <th>Stock</th>
+      }
+      @* TODO: Maybe put removal reason here?
+      (But would require storing somewhere and distinguishing between vendor removed and admin removed) *@
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    @foreach (var listing in listings)
+    {
+      <tr>
+        <td>@listing.Name</td>
+        <td>@((listing.Price / 100M).ToString("C2"))</td>
+        @if (filter == ListingStatus.Published) {
+          <td>@listing.Stock</td>
+        }
+        <td>
+          @if (filter == ListingStatus.Inactive || filter == ListingStatus.Removed) {
+            <button @onclick='() => Nav.NavigateTo($"/listings/edit/{listing.Id}")'>Edit</button>
+          }
+          @if (filter == ListingStatus.Inactive) {
+            <button @onclick='async () => {await ListingService.ChangeListingStatusToPending(listing.Id); await LoadData();}'>Submit</button>
+          }
+          @if (filter == ListingStatus.Pending) {
+            <button @onclick='async () => {await ListingService.ChangeListingStatusToInactive(listing.Id); await LoadData();}'>Cancel Request</button>
+          }
+          @if (filter == ListingStatus.Published) {
+            <button>Unpublish</button>
+          }
+        </td>
+      </tr>
+    }
+  </tbody>
+  </table>
+}
+
+@code {
+  public ListingStatus filter = 0;
+  public string error = string.Empty;
+
+  private List<ListingDTO>? listings;// = new List<ListingDTO> {
+    @* new ListingDTO {
+      Id = "a",
+      Description="Lots of apples",
+      Name="Listing A",
+      OwnerID="me",
+      Price=599,
+      Status=ListingStatus.Published,
+      Stock=5
+    },
+    new ListingDTO {
+      Id = "b",
+      Description="A few bees",
+      Name="Listing B",
+      OwnerID="me",
+      Price=1099,
+      Status=ListingStatus.Inactive,
+      Stock=20
+    }
+  }; *@
+
+  private async Task LoadData()
+  {
+    listings = null;
+    @* loading = true; *@
+    @* Console.WriteLine("Set loading to true"); *@
+
+    // Call Firestore
+    if (AuthService.CurrentUserId is not null) {
+      ListingListResponse result = (await ListingService.GetVendorListingsByStatus(AuthService.CurrentUserId, filter));
+      listings = result.Listings;
+      Console.WriteLine($"Client got {listings?.Count} listings");
+      error = result.Message ?? "";
+      await InvokeAsync(StateHasChanged);
+    } else {
+      Console.WriteLine("Not logged in");
+      error = "Not logged in";
+    }
+    @* loading = false; *@
+    @* Console.WriteLine("Set loading to false"); *@
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadData();
+  }
+}

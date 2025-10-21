@@ -3,7 +3,8 @@ using Google.Cloud.Firestore.V1;
 using Google.Apis.Auth.OAuth2;
 using Grpc.Auth;
 using Grpc.Core;
-using Microsoft.AspNetCore.Http.HttpResults;
+using GameVault.Server.Models;
+using GameVault.Server.Models.Firestore;
 
 namespace GameVault.Server.Services;
 
@@ -88,6 +89,12 @@ public class FirestoreService : IFirestoreService
         await docRef.SetAsync(data, SetOptions.MergeAll);
     }
 
+    public async Task SetDocumentFieldAsync(string collection, string documentId, string fieldName, object value)
+    {
+        var docRef = _firestoreDb.Collection(collection).Document(documentId);
+        await docRef.UpdateAsync(fieldName, value);
+    }
+
     public async Task<DocumentReference> AddDocumentAsync<T>(string collection, T data) where T : class
     {
         DocumentReference docId = await _firestoreDb.Collection(collection).AddAsync(data);
@@ -111,6 +118,84 @@ public class FirestoreService : IFirestoreService
         {
             results.Add(document.ConvertTo<T>());
         }
+
+        return results;
+    }
+
+    public async Task<List<T>> QueryDocumentsAsyncWithId<T>(string collection, string fieldName, object value) where T : IHasId
+    {
+        var collectionRef = _firestoreDb.Collection(collection);
+        var query = collectionRef.WhereEqualTo(fieldName, value);
+        var snapshot = await query.GetSnapshotAsync();
+
+        var results = new List<T>();
+        foreach (var document in snapshot.Documents)
+        {
+            T newResult = document.ConvertTo<T>();
+            newResult.Id = document.Id;
+            results.Add(newResult);
+        }
+
+        return results;
+    }
+
+    public async Task<List<T>> QueryComplexDocumentsAsync<T>(string collection, List<QueryParam> queries) where T : class
+    {
+        if (queries.Count == 0) throw new ArgumentException("No queries provided");
+        var collectionRef = _firestoreDb.Collection(collection);
+        Query query = collectionRef.WhereEqualTo(queries[0].fieldName, queries[0].value);
+        // Console.WriteLine($"Querying where {queries[0].fieldName} = {queries[0].value}");
+        bool first = true;
+        foreach (QueryParam q in queries)
+        {
+            if (!first)
+            {
+                query = query.WhereEqualTo(q.fieldName, q.value);
+                // Console.WriteLine($"Querying where {q.fieldName} = {q.value}");
+            }
+            first = false;
+        }
+        var snapshot = await query.GetSnapshotAsync();
+
+        var results = new List<T>();
+        foreach (var document in snapshot.Documents)
+        {
+            // T newResult = document.ConvertTo<T>();
+            results.Add(document.ConvertTo<T>());
+        }
+
+        // Console.WriteLine($"Query returned {results.Count} results from {snapshot.Documents.Count} documents");
+
+        return results;
+    }
+
+    public async Task<List<T>> QueryComplexDocumentsAsyncWithId<T>(string collection, List<QueryParam> queries) where T : IHasId
+    {
+        if (queries.Count == 0) throw new ArgumentException("No queries provided");
+        var collectionRef = _firestoreDb.Collection(collection);
+        Query query = collectionRef.WhereEqualTo(queries[0].fieldName, queries[0].value);
+        // Console.WriteLine($"Querying where {queries[0].fieldName} = {queries[0].value}");
+        bool first = true;
+        foreach (QueryParam q in queries)
+        {
+            if (!first)
+            {
+                query = query.WhereEqualTo(q.fieldName, q.value);
+                // Console.WriteLine($"Querying where {q.fieldName} = {q.value}");
+            }
+            first = false;
+        }
+        var snapshot = await query.GetSnapshotAsync();
+
+        var results = new List<T>();
+        foreach (var document in snapshot.Documents)
+        {
+            T newResult = document.ConvertTo<T>();
+            newResult.Id = document.Id;
+            results.Add(newResult);
+        }
+
+        // Console.WriteLine($"Query returned {results.Count} results from {snapshot.Documents.Count} documents");
 
         return results;
     }

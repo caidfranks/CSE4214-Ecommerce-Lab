@@ -31,7 +31,7 @@
                     <i class="bi bi-controller me-2"></i>
                     Browse Games
                 </button>
-                
+
                 @if (AuthService.CurrentUser?.Role == "Vendor")
                 {
                     <button class="home-button home-button-secondary" @onclick="GoToVendorDashboard">
@@ -39,12 +39,12 @@
                         Vendor Dashboard
                     </button>
                 }
-                
+
                 <button class="home-button home-button-outline" @onclick="GoToProfile">
                     <i class="bi bi-person me-2"></i>
                     My Profile
                 </button>
-                
+
                 <button class="home-button home-button-outline" @onclick="Logout">
                     <i class="bi bi-box-arrow-right me-2"></i>
                     Logout
@@ -58,12 +58,12 @@
                     <i class="bi bi-person-plus me-2"></i>
                     Join as Customer
                 </button>
-                
+
                 <button class="home-button home-button-secondary" @onclick="GoToVendorRegister">
                     <i class="bi bi-shop me-2"></i>
                     Become a Vendor
                 </button>
-                
+
                 <a href="/login" class="home-button home-button-outline">
                     <i class="bi bi-box-arrow-in-right me-2"></i>
                     Sign In
@@ -84,7 +84,7 @@
     private void GoToCustomerRegister() => Navigation.NavigateTo("/register/customer");
     private void GoToVendorRegister() => Navigation.NavigateTo("/register/vendor");
     private void GoToGames() => Navigation.NavigateTo("/games");
-    private void GoToVendorDashboard() => Navigation.NavigateTo("/vendor-dashboard");
+    private void GoToVendorDashboard() => Navigation.NavigateTo("/vendor");
     private void GoToProfile() => Navigation.NavigateTo("/profile");
 
     private void Logout()
