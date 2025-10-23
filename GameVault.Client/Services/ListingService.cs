@@ -26,7 +26,6 @@ public class ListingService
       Description = description,
       Stock = stock,
       Status = ListingStatus.Inactive,
-      OwnerID = "A6vUMHOrUIWOiFXw2pPPm7yMLHD2", // Add after login stuff
       // Image = "" // Add later
     };
     var response = await _httpClient.PostAsJsonAsync("api/listing/create", newListing);

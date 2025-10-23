@@ -40,6 +40,20 @@ else if (listings.Count == 0)
   <table class="table">
   <thead>
     <tr>
+      @switch (filter) {
+          case ListingStatus.Inactive:
+            <th>Modified</th>;
+            break;
+          case ListingStatus.Pending:
+            <th>Submitted</th>;
+            break;
+          case ListingStatus.Removed:
+            <th>Removed</th>;
+            break;
+          case ListingStatus.Published:
+            <th>Published</th>;
+            break;
+        }
       <th>Name</th>
       <th>Price</th>
       @if (filter == ListingStatus.Published) {
@@ -54,6 +68,7 @@ else if (listings.Count == 0)
     @foreach (var listing in listings)
     {
       <tr>
+        <td>@listing.LastModified.ToString()</td>
         <td>@listing.Name</td>
         <td>@((listing.Price / 100M).ToString("C2"))</td>
         @if (filter == ListingStatus.Published) {

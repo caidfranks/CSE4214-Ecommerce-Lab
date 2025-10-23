@@ -42,7 +42,9 @@ namespace GameVault.Server.Controllers
                 Price = newListing.Price,
                 Stock = newListing.Stock,
                 Status = newListing.Status,
-                OwnerID = newListing.OwnerID
+                // TODO: User ID not accessible on server - huge security risk
+                OwnerID = "Fo3LIgVvpBrteVibSry2smUk2nTn",
+                LastModified = DateTime.UtcNow
             };
 
             await _firestore.AddDocumentAsync("listings", newListingObj);
@@ -95,7 +97,8 @@ namespace GameVault.Server.Controllers
                     Stock = listing.Stock,
                     Status = listing.Status,
                     OwnerID = listing.OwnerID,
-                    Image = listing.Image
+                    Image = listing.Image,
+                    LastModified = listing.LastModified
                 };
                 listingDTOs.Add(listingDTO);
             }
