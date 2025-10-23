@@ -9,9 +9,9 @@
     <div>
         <h3>@Item.ListingName</h3>
         <p>Sold by: @Item.VendorName</p>
-        <p>Price: $@FormatPrice(Item.PriceAtAddTimeInCents)</p>
+        <p>Price: $@FormatPrice(Item.PriceInCents)</p>
         <p>Quantity: @Item.Quantity</p>
-        <p>Total Price: $@FormatPrice(Item.PriceAtAddTimeInCents * Item.Quantity)</p>
+        <p>Total Price: $@FormatPrice(Item.LineTotalInCents)</p>
     
         <QuantitySelector
             Quantity="@Item.Quantity"
@@ -23,7 +23,7 @@
 
 @code 
 {
-    [Parameter] public CartItem Item { get; set; } = null!;
+    [Parameter] public CartItemDto Item { get; set; } = null!;
     [Parameter] public EventCallback OnCartChanged { get; set; }
     
     private bool _isUpdating = false;
@@ -50,7 +50,7 @@
 
         try
         {
-            var response = await Http.DeleteAsync($"/api/Cart/item/{Item.CartItemId}");
+            var response = await Http.DeleteAsync($"/api/cart/item/{Item.ListingId}");
 
             if (response.IsSuccessStatusCode)
             {
@@ -59,7 +59,7 @@
             }
             else
             {
-                Logger.LogError("removal failed", Item.CartItemId);
+                Logger.LogError("removal failed", Item.ListingId);
             }
         }
         catch (Exception ex)
@@ -78,19 +78,17 @@
 
         try
         {
-            var request = new UpdateCartItemQuantityDto { newQuantity = newQuantity };
-
-            var response = await Http.PutAsJsonAsync($"/api/Cart/item/{Item.CartItemId}/quantity", request);
+            var response = await Http.PutAsJsonAsync($"cart/item/{Item.ListingId}/quantity", newQuantity);
 
             if (response.IsSuccessStatusCode)
             {
-                Logger.LogInformation("qty updated", Item.CartItemId);
+                Logger.LogInformation("qty updated", Item.ListingId);
                 Item.Quantity = newQuantity;
                 await OnCartChanged.InvokeAsync();
             }
             else
             {
-                Logger.LogError("qty update failed", Item.CartItemId);
+                Logger.LogError("qty update failed", Item.ListingId);
             }
         }
         catch (Exception ex)

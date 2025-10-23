@@ -30,12 +30,7 @@ public class CartService
     public async Task<CartItem> AddToCartAsync(
         string userId,
         string listingId,
-        string listingName,
-        string thumbnailUrl,
-        int priceInCents,
-        int quantity,
-        string vendorId,
-        string vendorName)
+        int quantity)
     {
         var cart = await GetCartAsync(userId);
 
@@ -52,12 +47,7 @@ public class CartService
         {
             cartItem = new CartItem(
                 listingId,
-                thumbnailUrl,
-                listingName,
-                priceInCents,
-                quantity,
-                vendorId,
-                vendorName
+                quantity
             );
 
             cart.Items.Add(cartItem);
@@ -70,11 +60,11 @@ public class CartService
 
     public async Task<CartItem?> UpdateQuantityAsync(
         string userId,
-        string cartItemId,
+        string ListingId,
         int newQuantity)
     {
         var cart = await GetCartAsync(userId);
-        var cartItem = cart.Items.FirstOrDefault(item => item.CartItemId == cartItemId);
+        var cartItem = cart.Items.FirstOrDefault(item => item.ListingId == ListingId);
 
         if (newQuantity <= 0)
         {
@@ -88,10 +78,10 @@ public class CartService
         return cartItem;
     }
 
-    public async Task RemoveFromCartAsync(string userId, string cartItemId)
+    public async Task RemoveFromCartAsync(string userId, string listingId)
     {
         var cart = await GetCartAsync(userId);
-        var cartItem = cart.Items.FirstOrDefault(item => item.CartItemId == cartItemId);
+        var cartItem = cart.Items.FirstOrDefault(item => item.ListingId == listingId);
         
         cart.Items.Remove(cartItem);
         await _firestore.SetDocumentAsync(CartsCollection, userId, cart);

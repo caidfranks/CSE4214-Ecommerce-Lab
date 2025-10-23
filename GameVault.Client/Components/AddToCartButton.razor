@@ -1,4 +1,5 @@
 ﻿@inject NavigationManager Navigation;
+@using GameVault.Shared.DTOs
 @using GameVault.Shared.Models;
 @inject HttpClient Http;
 @inject Logger<AddToCartButton> Logger;
@@ -27,7 +28,7 @@
 </div>
 
 @code {
-    [Parameter] public ShoppingCart? Cart { get; set; }
+    [Parameter] public ShoppingCartDto? Cart { get; set; }
     
     private bool IsCartEmpty => Cart?.Items?.Count == 0 || Cart == null;
     

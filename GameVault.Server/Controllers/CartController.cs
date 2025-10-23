@@ -52,12 +52,7 @@ public class CartController : ControllerBase
             var cartItemDetails = await _cartService.AddToCartAsync(
                 userId,
                 addToCartDto.ListingId,
-                addToCartDto.ListingName,
-                addToCartDto.ThumbnailUrl,
-                addToCartDto.PriceInCents,
-                addToCartDto.Quantity,
-                addToCartDto.VendorId,
-                addToCartDto.VendorName
+                addToCartDto.Quantity
             );
 
             return Ok(cartItemDetails);
@@ -69,21 +64,18 @@ public class CartController : ControllerBase
         }
     }
 
-    [HttpPut("item/{cartItemId}/quantity")]
-    public async Task<ActionResult> UpdateCartItemQuantityAsync([FromBody] UpdateCartItemQuantityDto updateDetails,
-    string cartItemId)
+    [HttpPut("item/{ListingId}/quantity")]
+    public async Task<ActionResult> UpdateCartItemQuantityAsync(
+        string listingId,
+        [FromBody] int newQuantity)
     {
         try
         {
             var userId = "testUser456";
             _logger.LogInformation("testUser456 updating item");
+            var updatedItem = await _cartService.UpdateQuantityAsync(userId, listingId,newQuantity);
 
-            var updatedItem = await _cartService.UpdateQuantityAsync(
-                userId,
-                cartItemId,
-                updateDetails.newQuantity);
-
-            return Ok(updatedItem);
+            return Ok();
         }
         catch
         {
@@ -93,15 +85,15 @@ public class CartController : ControllerBase
         }
     }
 
-    [HttpDelete("item/{cartItemId}")]
-    public async Task<ActionResult> RemoveFromCartAsync([FromRoute] string cartItemId)
+    [HttpDelete("item/{ListingId}")]
+    public async Task<ActionResult> RemoveFromCartAsync([FromRoute] string listingId)
     {
         try
         {
             var userId = "testUser456";
             _logger.LogInformation("testUser456 removing item");
 
-            await _cartService.RemoveFromCartAsync(userId, cartItemId);
+            await _cartService.RemoveFromCartAsync(userId, listingId);
 
             return Ok();
         }

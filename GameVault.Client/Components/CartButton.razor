@@ -1,4 +1,5 @@
-﻿@using GameVault.Shared.Models
+﻿@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
 @inject NavigationManager Navigation
 @inject HttpClient Http
 @inject ILogger<CartButton> Logger
@@ -18,7 +19,7 @@
     {
         try
         {
-            var cart = await Http.GetFromJsonAsync<ShoppingCart>("api/Cart");
+            var cart = await Http.GetFromJsonAsync<ShoppingCartDto>("api/cart");
             _itemCount = cart?.TotalItemCount ?? 0;
         }
         catch(Exception ex)
@@ -30,6 +31,6 @@
     
     private void GoToCart()
     {
-        Navigation.NavigateTo("api/Cart");
+        Navigation.NavigateTo("cart");
     }
 }

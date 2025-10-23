@@ -1,5 +1,6 @@
 @page "/cart"
 @using GameVault.Client.Components
+@using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @inject HttpClient Http
 @inject ILogger<Cart> Logger
@@ -35,7 +36,7 @@ else
 }
 
 @code {
-    private ShoppingCart? _cart;
+    private ShoppingCartDto? _cart;
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -49,7 +50,7 @@ else
 
         try
         {
-            _cart = await Http.GetFromJsonAsync<ShoppingCart>("/api/Cart");
+            _cart = await Http.GetFromJsonAsync<ShoppingCartDto>("/cart");
             Logger.LogInformation("Cart loaded successfully");
         }
         catch (Exception ex)
