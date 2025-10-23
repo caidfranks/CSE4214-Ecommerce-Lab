@@ -1,0 +1,232 @@
+﻿@page "/search"
+@using GameVaultWeb.Models
+@using GameVaultWeb.Services
+@inject ProductService ProductService
+@inject NavigationManager Nav
+
+<PageTitle>Search Results - GameVault</PageTitle>
+
+<div class="container mt-4">
+    <!-- Search header -->
+    <div class="search-results-header mb-4">
+        @if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            <h2>Search Results for "@searchQuery"</h2>
+            @if (searchResults.Count > 0)
+            {
+                <p class="text-muted">Found @searchResults.Count product(s)</p>
+            }
+        }
+        else
+        {
+            <h2>Search Products</h2>
+            <p class="text-muted">Enter a search term to find products</p>
+        }
+    </div>
+
+    <!-- Search Results -->
+    @if (isLoading)
+    {
+        <div class="text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Searching products...</p>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(searchQuery))
+    {
+        @if (searchResults.Count == 0)
+        {
+            <!-- No Results (REQ-55) -->
+            <div class="no-results-container">
+                <div class="no-results-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h3>No products matching '@searchQuery' found</h3>
+                <p class="text-muted">Try adjusting your search or browse our categories:</p>
+                <div class="suggested-categories mt-4">
+                    <a href="/?category=Action" class="btn btn-outline-primary m-1">Action</a>
+                    <a href="/?category=RPG" class="btn btn-outline-primary m-1">RPG</a>
+                    <a href="/?category=Adventure" class="btn btn-outline-primary m-1">Adventure</a>
+                    <a href="/?category=Strategy" class="btn btn-outline-primary m-1">Strategy</a>
+                    <a href="/?category=Sports" class="btn btn-outline-primary m-1">Sports</a>
+                    <a href="/?category=Puzzle" class="btn btn-outline-primary m-1">Puzzle</a>
+                    <a href="/?category=Horror" class="btn btn-outline-primary m-1">Horror</a>
+                </div>
+                <div class="mt-4">
+                    <a href="/" class="btn btn-primary">Browse All Products</a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Search Results Grid -->
+            <div class="row">
+                @foreach (var product in pagedResults)
+                {
+                    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+                        <div class="product-card" @onclick="() => ViewProduct(product.Id)">
+                            <div class="product-thumbnail">
+                                <img src="@product.ThumbnailUrl" alt="@product.Name" />
+                                @if (product.Stock == 0)
+                                {
+                                    <div class="sold-out-overlay">
+                                        <span class="badge bg-danger">Sold Out</span>
+                                    </div>
+                                }
+                            </div>
+                            <div class="product-info">
+                                <h5 class="product-name" title="@product.Name">@product.Name</h5>
+                                <span class="badge bg-secondary mb-2">@product.Category</span>
+                                <p class="product-price">$@product.Price.ToString("F2")</p>
+                                <p class="product-vendor">
+                                    <i class="bi bi-shop"></i> @product.VendorName
+                                </p>
+                                @if (product.Stock > 0 && product.Stock <= 5)
+                                {
+                                    <p class="text-warning small mb-0">
+                                        <i class="bi bi-exclamation-triangle"></i> Only @product.Stock left!
+                                    </p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Pagination -->
+            @if (totalPages > 1)
+            {
+                <div class="pagination-controls mt-4">
+                    <button class="btn btn-outline-primary" @onclick="PreviousPage" disabled="@(currentPage == 1)">
+                        <i class="bi bi-chevron-left"></i> Previous
+                    </button>
+                    <span class="mx-3 align-self-center">
+                        Page <strong>@currentPage</strong> of <strong>@totalPages</strong>
+                    </span>
+                    <button class="btn btn-outline-primary" @onclick="NextPage" disabled="@(currentPage == totalPages)">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            }
+        }
+    }
+    else
+    {
+        <!-- Empty state when no search performed yet -->
+        <div class="empty-search-state">
+            <i class="bi bi-search"></i>
+            <h4>Start searching for games</h4>
+            <p class="text-muted">Use the search bar above to find your favorite games</p>
+        </div>
+    }
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? searchQuery { get; set; }
+
+    private List<Product> searchResults = new();
+    private List<Product> pagedResults = new();
+    private bool isLoading = false;
+    private int currentPage = 1;
+    private int pageSize = 12;
+    private int totalPages = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await PerformSearch();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await PerformSearch();
+    }
+
+    private async Task PerformSearch()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            searchResults.Clear();
+            pagedResults.Clear();
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+
+        // REQ-54: Search by name, vendor, description, category
+        var allProducts = await ProductService.GetAllProductsAsync();
+        var lowerQuery = searchQuery.ToLower();
+
+        searchResults = allProducts
+            .Select(p => new
+            {
+                Product = p,
+                Score = CalculateRelevanceScore(p, lowerQuery)
+            })
+            .Where(x => x.Score > 0)
+            .OrderByDescending(x => x.Score)
+            .Select(x => x.Product)
+            .ToList();
+
+        // Reset to first page
+        currentPage = 1;
+        UpdatePagedResults();
+
+        isLoading = false;
+    }
+
+    private int CalculateRelevanceScore(Product product, string query)
+    {
+        int score = 0;
+        var productName = product.Name.ToLower();
+        var vendorName = product.VendorName.ToLower();
+        var category = product.Category.ToLower();
+        var description = product.Description.ToLower();
+
+        if (productName == query) score += 1000;
+        else if (productName.StartsWith(query)) score += 500;
+        else if (productName.Contains(query)) score += 200;
+
+        if (vendorName.Contains(query)) score += 150;
+        if (category == query) score += 100;
+        else if (category.Contains(query)) score += 50;
+        if (description.Contains(query)) score += 30;
+
+        return score;
+    }
+
+    private void UpdatePagedResults()
+    {
+        totalPages = (int)Math.Ceiling(searchResults.Count / (double)pageSize);
+        pagedResults = searchResults
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < totalPages)
+        {
+            currentPage++;
+            UpdatePagedResults();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+            UpdatePagedResults();
+        }
+    }
+
+    private void ViewProduct(string productId)
+    {
+        Nav.NavigateTo($"/product/{productId}");
+    }
+}
