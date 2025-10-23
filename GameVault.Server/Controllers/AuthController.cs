@@ -94,8 +94,7 @@ public class AuthController : ControllerBase
                 DisplayName = user.DisplayName,
                 Role = user.Role ?? string.Empty,
                 ApprovalStatus = user.ApprovalStatus,
-                BusinessName = user.BusinessName,
-                CreatedAt = user.CreatedAt
+                BusinessName = user.BusinessName
             }
         });
     }
@@ -113,8 +112,6 @@ public class AuthController : ControllerBase
                 Email = request.Email,
                 DisplayName = request.DisplayName ?? string.Empty,
                 Role = nameof(UserRole.Customer),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
             };
 
             await _firestore.SetDocumentAsync("users", userId!, user);
@@ -130,7 +127,6 @@ public class AuthController : ControllerBase
                     Email = user.Email,
                     DisplayName = user.DisplayName,
                     Role = user.Role,
-                    CreatedAt = user.CreatedAt
                 }
             });
         }
@@ -167,9 +163,7 @@ public class AuthController : ControllerBase
                 Role = nameof(UserRole.Vendor),
                 ApprovalStatus = nameof(ApprovalStatus.Pending),
                 BusinessName = request.BusinessName,
-                BusinessDescription = request.BusinessDescription,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                BusinessDescription = request.BusinessDescription
             };
 
             await _firestore.SetDocumentAsync("users", userId!, user);
@@ -187,8 +181,7 @@ public class AuthController : ControllerBase
                     Role = user.Role,
                     ApprovalStatus = user.ApprovalStatus,
                     BusinessName = user.BusinessName,
-                    BusinessDescription = user.BusinessDescription,
-                    CreatedAt = user.CreatedAt
+                    BusinessDescription = user.BusinessDescription
                 }
             });
         }
@@ -247,8 +240,7 @@ public class AuthController : ControllerBase
                 DisplayName = user.DisplayName ?? string.Empty,
                 Role = user.Role ?? string.Empty,
                 ApprovalStatus = user.ApprovalStatus,
-                BusinessName = user.BusinessName,
-                CreatedAt = user.CreatedAt
+                BusinessName = user.BusinessName
             }
         });
     }
