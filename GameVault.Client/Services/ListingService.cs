@@ -57,4 +57,11 @@ public class ListingService
     var result = await response.Content.ReadFromJsonAsync<ListingListResponse>();
     return result ?? new ListingListResponse { Success = false, Message = "Unknown error" };
   }
+
+    public async Task<ListingListResponse> GetListingsByStatus(ListingStatus status)
+    {
+        var response = await _httpClient.GetAsync($"api/listing/status?s={status}");
+        var result = await response.Content.ReadFromJsonAsync<ListingListResponse>();
+        return result ?? new ListingListResponse { Success = false, Message = "Unknown error" };
+    }
 }

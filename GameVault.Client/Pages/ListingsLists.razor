@@ -1,5 +1,14 @@
 ﻿@page "/viewListings/{StatusFilter}"
-@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inject Services.ListingService ListingService
+@inject Services.AuthService AuthService
+@using GameVault.Client.Services
+@using System.Runtime.CompilerServices
+@using GameVault.Shared.Models
+@using System.Reflection
+@using GameVault.Shared.DTOs
+@using Grpc.Net.Client.Balancer
+
 
 <h3>@PageTitle</h3>
 <header>
@@ -35,8 +44,17 @@ else
             @foreach (var entry in entries)
             {
                 <tr>
-                    <td>@entry.Name</td>
-                    <td>@entry.User</td>
+                    <td>
+                        @if (StatusFilter == "pendingListings")
+                        {
+                            <a href="#" @onclick="() => OpenModal(entry)">@entry.Name</a>
+                        }
+                        else
+                        {
+                            @entry.Name
+                        }
+                    </td>
+                    <td>@entry.OwnerID</td>
                     <td>@entry.Status</td>
                 </tr>
             }
@@ -44,10 +62,35 @@ else
     </table>
 }
 
+@if (showModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@selectedEntry?.Name Details</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Load another page inside the modal -->
+                    <iframe src="@selectedPageUrl" width="100%" height="600px" frameborder="0"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
 @code {
     [Parameter] public string StatusFilter { get; set; } = string.Empty;
-    private List<FirebaseEntry> entries;
+    public ListingStatus filter = 0;
+    private List<ListingDTO> entries;
+    private ListingDTO? selectedEntry;
+    private string selectedPageUrl;
 
+    private bool showModal;
+
+    
     private string PageTitle =>
         StatusFilter switch
         {
@@ -57,7 +100,7 @@ else
             "unpublishedListings" => "Unpublished Product Listings",
             _ => "Listings"
         };
-
+    
     protected override async Task OnParametersSetAsync()
     {
         await LoadData();
@@ -65,35 +108,15 @@ else
 
     private async Task LoadData()
     {
+        entries = null;
+
         try
         {
-            var data = await JS.InvokeAsync<object[]>("firebaseInterop.getAllDocs", "Listings");
-            entries = new List<FirebaseEntry>();
+            filter = MapStatus(StatusFilter);
+            ListingListResponse result = await ListingService.GetListingsByStatus(filter);
+            entries = result.Listings;
+            await InvokeAsync(StateHasChanged);
 
-            if (data != null)
-            {
-                foreach (var item in data)
-                {
-                    if (item is System.Text.Json.JsonElement json)
-                    {
-                        var entry = new FirebaseEntry
-                        {
-                            Name = json.TryGetProperty("name", out var nameProp) ? nameProp.GetString() :
-                                   json.TryGetProperty("Name", out nameProp) ? nameProp.GetString() : "",
-                            User = json.TryGetProperty("user", out var userProp) ? userProp.GetString() :
-                                     json.TryGetProperty("User", out userProp) ? userProp.GetString() : "",
-                            Status = json.TryGetProperty("status", out var statusProp) ? statusProp.GetString() :
-                                     json.TryGetProperty("Status", out statusProp) ? statusProp.GetString() : ""
-                        };
-
-                        // Only show entries matching the URL’s status tag
-                        if (string.Equals(entry.Status, StatusFilter, StringComparison.OrdinalIgnoreCase))
-                        {
-                            entries.Add(entry);
-                        }
-                    }
-                }
-            }
         }
         catch (Exception ex)
         {
@@ -101,11 +124,29 @@ else
             entries = new();
         }
     }
-
-    public class FirebaseEntry
+  
+    private ListingStatus MapStatus(string StatusFilter)
     {
-        public string Name { get; set; }
-        public string User { get; set; }
-        public string Status { get; set; }
+        return StatusFilter switch
+        {
+            "pendingListings" => ListingStatus.Pending,
+            "publishedListings" => ListingStatus.Published,
+            "removedListings" => ListingStatus.Removed,
+            "unpublishedListings" => ListingStatus.Inactive,
+            _ => ListingStatus.Inactive
+        };
+    }
+
+    private void OpenModal(ListingDTO entry)
+    {
+        selectedEntry = entry;
+        selectedPageUrl = $"/viewListings/{entry.Id}";
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        selectedEntry = null;
     }
 }
