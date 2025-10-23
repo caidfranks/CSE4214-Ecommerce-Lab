@@ -5,24 +5,15 @@ namespace GameVault.Shared.Models;
 [FirestoreData]
 public class CartItem
 {
-    [FirestoreProperty]
-    public string CartItemId { get; set; }
-    [FirestoreProperty]
-    public string ListingId { get; set; }
-    [FirestoreProperty]
-    public string ThumbnailUrl { get; set; }
-    [FirestoreProperty]
-    public string ListingName { get; set; }
-    [FirestoreProperty]
-    public int PriceAtAddTimeInCents { get; set; }
-    [FirestoreProperty]
-    public int Quantity { get; set; }
-    [FirestoreProperty]
-    public string VendorId { get; set; }
-    [FirestoreProperty]
-    public string VendorName { get; set; }
-    [FirestoreProperty]
-    public DateTime AddedAt { get; set; }
+    [FirestoreProperty] public string CartItemId { get; set; }
+    [FirestoreProperty] public string ListingId { get; set; }
+    [FirestoreProperty] public string ThumbnailUrl { get; set; }
+    [FirestoreProperty] public string ListingName { get; set; }
+    [FirestoreProperty] public int PriceAtAddTimeInCents { get; set; }
+    [FirestoreProperty] public int Quantity { get; set; }
+    [FirestoreProperty] public string VendorId { get; set; }
+    [FirestoreProperty] public string VendorName { get; set; }
+    
 
     public CartItem()
     {
@@ -37,7 +28,6 @@ public class CartItem
         Quantity = quantity;
         VendorId = vendorId;
         VendorName = vendorName;
-        AddedAt = DateTime.UtcNow;
         
     }
 }

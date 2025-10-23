@@ -63,8 +63,6 @@ public class CartService
             cart.Items.Add(cartItem);
         }
 
-        cart.LastModified = DateTime.UtcNow;
-
         await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
 
         return cartItem;
@@ -81,12 +79,10 @@ public class CartService
         if (newQuantity <= 0)
         {
             cart.Items.Remove(cartItem);
-            cart.LastModified = DateTime.UtcNow;
             await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
         }
 
         cartItem.Quantity = newQuantity;
-        cart.LastModified = DateTime.UtcNow;
         await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
         
         return cartItem;
@@ -98,7 +94,6 @@ public class CartService
         var cartItem = cart.Items.FirstOrDefault(item => item.CartItemId == cartItemId);
         
         cart.Items.Remove(cartItem);
-        cart.LastModified = DateTime.UtcNow;
         await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
     }
 
@@ -106,7 +101,6 @@ public class CartService
     {
         var cart = await GetCartAsync(userId);
         cart.Items.Clear();
-        cart.LastModified = DateTime.UtcNow;
         await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
     }
 }

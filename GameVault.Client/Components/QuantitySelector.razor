@@ -4,10 +4,8 @@
 
 @code
 {
-    [Parameter] 
-    public int Quantity { get; set; } = 1;
-    [Parameter]
-    public EventCallback<int> QuantityChanged { get; set; }
+    [Parameter] public int Quantity { get; set; } = 1;
+    [Parameter] public EventCallback<int> QuantityChanged { get; set; }
     
     private async Task Decrement()
     {

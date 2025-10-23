@@ -27,8 +27,7 @@
 </div>
 
 @code {
-    [Parameter]
-    public ShoppingCart? Cart { get; set; }
+    [Parameter] public ShoppingCart? Cart { get; set; }
     
     private bool IsCartEmpty => Cart?.Items?.Count == 0 || Cart == null;
     

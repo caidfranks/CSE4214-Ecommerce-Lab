@@ -5,18 +5,11 @@ namespace GameVault.Shared.Models;
 [FirestoreData]
 public class ShoppingCart
 {
-    [FirestoreProperty]
-    public string CartId { get; set; }
-    [FirestoreProperty]
-    public string UserId { get; set; }
-    [FirestoreProperty]
-    public List<CartItem> Items { get; set; } = new List<CartItem>();
-    [FirestoreProperty]
-    public DateTime LastModified { get; set; } = DateTime.UtcNow;
-    public int SubtotalPriceInCents => Items?.Sum(i => i.PriceAtAddTimeInCents * i.Quantity) ?? 0;
-
+    [FirestoreProperty] public string CartId { get; set; }
+    [FirestoreProperty] public string UserId { get; set; }
+    [FirestoreProperty] public List<CartItem> Items { get; set; } = new List<CartItem>();
+    [FirestoreProperty]public int SubtotalPriceInCents => Items?.Sum(i => i.PriceAtAddTimeInCents * i.Quantity) ?? 0;
     public int SalesTaxInCents => (int)(SubtotalPriceInCents * 0.085m);
-
     public int TotalPriceInCents => (SubtotalPriceInCents + SalesTaxInCents);
     public int TotalItemCount => Items?.Sum(i => i.Quantity) ?? 0;
 

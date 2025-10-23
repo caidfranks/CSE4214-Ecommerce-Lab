@@ -23,11 +23,8 @@
 
 @code 
 {
-    [Parameter] 
-    public CartItem Item { get; set; } = null!;
-    
-    [Parameter]
-    public EventCallback OnCartChanged { get; set; }
+    [Parameter] public CartItem Item { get; set; } = null!;
+    [Parameter] public EventCallback OnCartChanged { get; set; }
     
     private bool _isUpdating = false;
 
