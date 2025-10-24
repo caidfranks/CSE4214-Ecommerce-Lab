@@ -17,27 +17,30 @@ public class FirebaseAuthService : IFirebaseAuthService
             // throw new InvalidOperationException("FIREBASE_AUTH_EMULATOR_HOST environment variable not set.");
             Console.WriteLine("Connecting to local auth emulator.");
         }
-        var projectId = configuration["Firebase:ProjectId"] ?? throw new InvalidOperationException("Firebase ProjectId is required");
-        var clientEmail = configuration["Firebase:ClientEmail"] ?? throw new InvalidOperationException("Firebase ClientEmail is required");
-        var privateKey = configuration["Firebase:PrivateKey"] ?? throw new InvalidOperationException("Firebase PrivateKey is required");
-
-        var credential = GoogleCredential.FromJson($@"{{
-                ""type"": ""service_account"",
-                ""project_id"": ""{projectId}"",
-                ""client_email"": ""{clientEmail}"",
-                ""private_key"": ""{privateKey.Replace("\\n", "\n")}""
-            }}");
-
-        if (FirebaseApp.DefaultInstance == null)
+        else
         {
-            FirebaseApp.Create(new AppOptions
-            {
-                Credential = credential,
-                ProjectId = projectId
-            });
-        }
+            var projectId = configuration["Firebase:ProjectId"] ?? throw new InvalidOperationException("Firebase ProjectId is required");
+            var clientEmail = configuration["Firebase:ClientEmail"] ?? throw new InvalidOperationException("Firebase ClientEmail is required");
+            var privateKey = configuration["Firebase:PrivateKey"] ?? throw new InvalidOperationException("Firebase PrivateKey is required");
 
-        _firebaseAuth = FirebaseAuth.DefaultInstance;
+            var credential = GoogleCredential.FromJson($@"{{
+                    ""type"": ""service_account"",
+                    ""project_id"": ""{projectId}"",
+                    ""client_email"": ""{clientEmail}"",
+                    ""private_key"": ""{privateKey.Replace("\\n", "\n")}""
+                }}");
+
+            if (FirebaseApp.DefaultInstance == null)
+            {
+                FirebaseApp.Create(new AppOptions
+                {
+                    Credential = credential,
+                    ProjectId = projectId
+                });
+            }
+
+            _firebaseAuth = FirebaseAuth.DefaultInstance;
+        }
     }
 
     public async Task<string?> VerifyTokenAsync(string idToken)
