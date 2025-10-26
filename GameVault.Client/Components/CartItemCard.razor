@@ -1,7 +1,9 @@
-﻿@using GameVault.Shared.Models
+﻿@using GameVault.Client.Services
+@using GameVault.Shared.Models
 @using GameVault.Shared.DTOs
 @inject HttpClient Http
 @inject ILogger<CartItemCard> Logger
+@inject CartService CartService
 
 <div>
     <img src="@Item.ThumbnailUrl" alt="@Item.ListingName" />
@@ -48,56 +50,18 @@
     {
         _isUpdating = true;
 
-        try
-        {
-            var response = await Http.DeleteAsync($"/api/cart/item/{Item.ListingId}");
-
-            if (response.IsSuccessStatusCode)
-            {
-                Logger.LogInformation("removed cart item");
-                await OnCartChanged.InvokeAsync();
-            }
-            else
-            {
-                Logger.LogError("removal failed", Item.ListingId);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "removal error");
-        }
-        finally
-        {
-            _isUpdating = false;
-        }
+        await CartService.RemoveFromCartAsync(Item, EventCallback.Empty);
+        
+        _isUpdating = false;
     }
 
     private async Task UpdateQuantityAsync(int newQuantity)
     {
         _isUpdating = true;
 
-        try
-        {
-            var response = await Http.PutAsJsonAsync($"cart/item/{Item.ListingId}/quantity", newQuantity);
+        await CartService.UpdateQuantityAsync(newQuantity, Item, EventCallback.Empty);
 
-            if (response.IsSuccessStatusCode)
-            {
-                Logger.LogInformation("qty updated", Item.ListingId);
-                Item.Quantity = newQuantity;
-                await OnCartChanged.InvokeAsync();
-            }
-            else
-            {
-                Logger.LogError("qty update failed", Item.ListingId);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "update error");
-        }
-        finally
-        {
-            _isUpdating = false;
-        }
+        _isUpdating = false;
+        
     }
 }

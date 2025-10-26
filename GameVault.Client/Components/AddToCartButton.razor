@@ -1,44 +1,41 @@
-﻿@inject NavigationManager Navigation;
-@using GameVault.Shared.DTOs
-@using GameVault.Shared.Models;
-@inject HttpClient Http;
-@inject Logger<AddToCartButton> Logger;
+﻿@using GameVault.Shared.DTOs
+@using GameVault.Client.Services
+@inject CartService CartService
+@inject ILogger<AddToCartButton> Logger
 
-<div class="cart-summary">
-    <h3>Order Summary</h3>
-    
-    <div class="summary-row">
-        <span>Subtotal:</span>
-        <span>@FormatPrice(Cart?.SubtotalPriceInCents ?? 0)</span>
-    </div>
-    
-    <div class="summary-row">
-        <span>Tax (8.5%):</span>
-        <span>@FormatPrice(Cart?.SalesTaxInCents ?? 0)</span>
-    </div>
-    
-    <div class="summary-row total">
-        <span>Total:</span>
-        <span>@FormatPrice(Cart?.TotalPriceInCents ?? 0)</span>
-    </div>
-    
-    <button @onclick="GoToCheckout" disabled="@IsCartEmpty">
-        Proceed to Checkout
-    </button>
-</div>
+<button @onclick="AddToCartAsync" disabled="@(_isAdding || IsInCart)">
+    @if (_isAdding)
+    {
+        <span>Adding...</span>
+    }
+    else if (IsInCart)
+    {
+        <span>In Cart</span>
+    }
+    else
+    {
+        <span>Add to Cart</span>
+    }
+</button>
 
 @code {
-    [Parameter] public ShoppingCartDto? Cart { get; set; }
+    [Parameter] public int ListingId { get; set; }
+    [Parameter] public EventCallback OnCartChanged { get; set; }
     
-    private bool IsCartEmpty => Cart?.Items?.Count == 0 || Cart == null;
-    
-    private string FormatPrice(int priceInCents)
+    private bool _isAdding = false;
+    private bool IsInCart = false;
+
+    private async Task AddToCartAsync()
     {
-        return $"${priceInCents / 100.0:F2}";
-    }
-    
-    private void GoToCheckout()
-    {
-        Navigation.NavigateTo("/checkout");
+        _isAdding = true;
+
+        var success = await CartService.AddToCartAsync(ListingId, OnCartChanged);
+        
+        if (success)
+        {
+            IsInCart = true;
+        }
+
+        _isAdding = false;
     }
 }

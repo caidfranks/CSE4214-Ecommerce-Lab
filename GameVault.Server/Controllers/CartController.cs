@@ -38,7 +38,7 @@ public class CartController : ControllerBase
             return StatusCode(500);
         }
     }
-    
+
 
     [HttpPost("add")]
     public async Task<ActionResult<CartItem>> AddToCart([FromBody] AddToCartDto addToCartDto)
@@ -57,25 +57,25 @@ public class CartController : ControllerBase
 
             return Ok(cartItemDetails);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError("Failed to add to cart");
-            return StatusCode(500, new { message = ex.Message, details = ex.StackTrace});
+            return StatusCode(500, new { message = ex.Message, details = ex.StackTrace });
         }
     }
 
-    [HttpPut("item/{ListingId}/quantity")]
+    [HttpPut("item/{listingId}/quantity")]
     public async Task<ActionResult> UpdateCartItemQuantityAsync(
         string listingId,
-        [FromBody] int newQuantity)
+        [FromBody] UpdateCartItemQuantityRequest request)
     {
         try
         {
             var userId = "testUser456";
             _logger.LogInformation("testUser456 updating item");
-            var updatedItem = await _cartService.UpdateQuantityAsync(userId, listingId,newQuantity);
+            var updatedItem = await _cartService.UpdateQuantityAsync(userId, listingId, request.Quantity);
 
-            return Ok();
+            return Ok(updatedItem);
         }
         catch
         {
@@ -122,4 +122,9 @@ public class CartController : ControllerBase
             return StatusCode(500);
         }
     }
+}
+
+public class UpdateCartItemQuantityRequest
+{
+    public int Quantity { get; set; }
 }
