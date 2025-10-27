@@ -207,6 +207,32 @@ namespace GameVault.Server.Controllers
                 Message = "Listing status successfully updated to pending",
             });
         }
+
+        [HttpPost("approve")]
+        public async Task<ActionResult<BaseResponse>> ChangeListingStatusToPublished([FromBody] string id)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // TODO: Make sure owner
+
+            await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Published);
+
+            // TODO: Handle firestore errors
+
+            return Ok(new BaseResponse
+            {
+                Success = true,
+                Message = "Listing status successfully updated to pending",
+            });
+        }
     }
 }
 
