@@ -58,13 +58,13 @@ namespace GameVault.Server.Controllers
         }
 
         [HttpGet("vendor")]
-        public async Task<ActionResult<ListingListResponse>> GetVendorListingsByStatus([FromQuery] string v, [FromQuery] ListingStatus s)
+        public async Task<ActionResult<VendorListingListResponse>> GetVendorListingsByStatus([FromQuery] string v, [FromQuery] ListingStatus s)
         {
             // Console.WriteLine($"Got query for User {v} with status {s}");
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                return StatusCode(500, new ListingListResponse
+                return StatusCode(500, new VendorListingListResponse
                 {
                     Success = false,
                     Message = "Firebase configuration error"
@@ -83,14 +83,15 @@ namespace GameVault.Server.Controllers
                 }
             ]);
 
-            List<ListingDTO> listingDTOs = [];
+            List<VendorListingDTO> listingDTOs = [];
 
             Console.WriteLine($"Controller got {listings.Count} listings");
 
             foreach (Models.Firestore.Listing listing in listings)
             {
-                ListingDTO listingDTO = new()
+                VendorListingDTO listingDTO = new()
                 {
+                    RemoveMsg = listing.RemoveMsg,
                     Id = listing.Id,
                     Name = listing.Name,
                     Price = listing.Price,
@@ -106,7 +107,7 @@ namespace GameVault.Server.Controllers
 
             Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
 
-            return new ListingListResponse { Success = true, Listings = listingDTOs };
+            return new VendorListingListResponse { Success = true, Listings = listingDTOs };
 
             // return new ListingListResponse { Success = false, Message = "Not configured" };
         }
@@ -136,7 +137,6 @@ namespace GameVault.Server.Controllers
                 Message = "Listing status successfully updated to pending",
             });
         }
-
 
         [HttpPost("cancel")]
         public async Task<ActionResult<BaseResponse>> ChangeListingStatusToInactive([FromBody] string id)
@@ -220,6 +220,7 @@ namespace GameVault.Server.Controllers
                 });
             }
         }
+
         [HttpPost("update")]
         public async Task<ActionResult<BaseResponse>> Update([FromBody] ListingDTO modListing)
         {

@@ -24,3 +24,8 @@ public class FullListingDTO : ListingDTO
 {
   public required string VendorName { get; set; }
 }
+
+public class VendorListingDTO : ListingDTO
+{
+  public required string RemoveMsg { get; set; }
+}

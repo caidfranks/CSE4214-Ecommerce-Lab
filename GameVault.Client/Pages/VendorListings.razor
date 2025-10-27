@@ -59,6 +59,9 @@ else if (listings.Count == 0)
       @if (filter == ListingStatus.Published) {
         <th>Stock</th>
       }
+      @if (filter == ListingStatus.Removed) {
+        <th>Removal Message</th>
+      }
       @* TODO: Maybe put removal reason here?
       (But would require storing somewhere and distinguishing between vendor removed and admin removed) *@
       <th>Actions</th>
@@ -74,9 +77,12 @@ else if (listings.Count == 0)
         @if (filter == ListingStatus.Published) {
           <td>@listing.Stock</td>
         }
+        @if (filter == ListingStatus.Removed) {
+          <td>@listing.RemoveMsg</td>
+        }
         <td>
           @if (filter == ListingStatus.Inactive || filter == ListingStatus.Removed) {
-            <button @onclick='() => Nav.NavigateTo($"/listings/edit/{listing.Id}")'>Edit</button>
+            <button @onclick='async () => Nav.NavigateTo($"/listings/edit/{listing.Id}")'>Edit</button>
           }
           @if (filter == ListingStatus.Inactive) {
             <button @onclick='async () => {await ListingService.ChangeListingStatusToPending(listing.Id); await LoadData();}'>Submit</button>
@@ -85,7 +91,7 @@ else if (listings.Count == 0)
             <button @onclick='async () => {await ListingService.ChangeListingStatusToInactive(listing.Id); await LoadData();}'>Cancel Request</button>
           }
           @if (filter == ListingStatus.Published) {
-            <button>Unpublish</button>
+            <button @onclick='async () => {await ListingService.ChangeListingStatusToInactive(listing.Id); await LoadData();}'>Unpublish</button>
           }
         </td>
       </tr>
@@ -98,7 +104,7 @@ else if (listings.Count == 0)
   public ListingStatus filter = 0;
   public string error = string.Empty;
 
-  private List<ListingDTO>? listings;// = new List<ListingDTO> {
+  private List<VendorListingDTO>? listings;// = new List<ListingDTO> {
     @* new ListingDTO {
       Id = "a",
       Description="Lots of apples",
@@ -127,7 +133,7 @@ else if (listings.Count == 0)
 
     // Call Firestore
     if (AuthService.CurrentUserId is not null) {
-      ListingListResponse result = (await ListingService.GetVendorListingsByStatus(AuthService.CurrentUserId, filter));
+      VendorListingListResponse result = (await ListingService.GetVendorListingsByStatus(AuthService.CurrentUserId, filter));
       listings = result.Listings;
       Console.WriteLine($"Client got {listings?.Count} listings");
       error = result.Message ?? "";
