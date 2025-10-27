@@ -1,0 +1,138 @@
+@page "/listings/edit/{id}"
+@inject NavigationManager Nav
+@inject Services.AuthService AuthService
+@using GameVault.Client.Models
+@using GameVault.Client.Services
+@using System.Runtime.CompilerServices
+@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
+@using System.Reflection
+@using Google.Rpc
+@inject Services.ListingService ListingService
+
+<h3>Edit Listing</h3>
+
+@if (Id == null)
+{
+  <h2>No Listing ID Provided</h2>
+}
+else if (model == null)
+{
+  @if (error == string.Empty)
+  {
+    <h2>Loading...</h2>
+  }
+  else
+  {
+    <h2 class="alert alert-danger mt-2">@error</h2>
+  }
+}
+else
+{
+  <EditForm Model="@model" OnValidSubmit="@HandleUpdate">
+    <div style="margin-bottom:8px;">
+      <label>Name</label><br />
+      <InputText @bind-Value="model.Name" />
+    </div>
+    <div style="margin-bottom:8px;">
+      <label>Description</label><br />
+      <InputText @bind-Value="model.Description" />
+    </div>
+    <div style="margin-bottom:8px;">
+      <label>Price</label><br />
+      <InputNumber @bind-Value="model.Price" />
+    </div>
+    <div style="margin-bottom:8px;">
+      <label>Stock</label><br />
+      <InputNumber @bind-Value="model.Stock" />
+    </div>
+    <button type="submit">Update Listing</button>
+    @if (status.Message != string.Empty)
+    {
+      <p class='alert @(status.Success ? "alert-success" : "alert-danger")'>@status.Message</p>
+    }
+  </EditForm>
+}
+
+@code {
+  [Parameter]
+  public string? Id { get; set; }
+  public string error = string.Empty;
+  public BaseResponse status = new()
+  {
+    Success = false,
+    Message = string.Empty
+  };
+  private bool wasRemoved = false;
+  private EditableListing? model = null;
+  @* new()
+  {
+    Name = "",
+    Description = "",
+    Price = 0.0M,
+    Stock = 0,
+  }; *@
+
+  private async Task HandleUpdate()
+  {
+    if (model is not null && Id is not null)
+    {
+      // TODO: Confirm intent to change status back to inactive if editing a removed listing
+      @* if (wasRemoved && confirm()) *@
+      BaseResponse result = await ListingService.UpdateAsync(Id, model.Name, model.Description, model.Price, model.Stock);
+      if (result.Success)
+      {
+        Console.WriteLine("Update Success!");
+        status.Success = true;
+        status.Message = "Update Success!";
+        wasRemoved = false;
+      }
+      else
+      {
+        status.Success = false;
+        status.Message = result?.Message ?? "Update failed. Please try again.";
+      }
+    }
+  }
+  private async Task LoadData()
+  {
+    model = null;
+    wasRemoved = false;
+
+    // Call Firestore
+    if (Id is not null)
+    {
+      if (AuthService.CurrentUserId is not null && AuthService.CurrentUser!.Role == "Vendor")
+      {
+        ListingResponse result = (await ListingService.GetListingById(Id));
+        error = result.Message ?? "";
+        if (result.Success)
+        {
+          if (result.Listing!.OwnerID == AuthService.CurrentUserId)
+          {
+            model = EditableListing.FromListingDTO(result.Listing!);
+            wasRemoved = result.Listing.Status == ListingStatus.Removed;
+          }
+          else
+          {
+            error = "You don't have permission to edit this listing.";
+          }
+        }
+        else
+        {
+          error = result.Message ?? "Listing not found";
+        }
+        await InvokeAsync(StateHasChanged);
+      }
+      else
+      {
+        error = "You must be a logged in vendor to edit listings.";
+      }
+    }
+  }
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadData();
+  }
+
+}

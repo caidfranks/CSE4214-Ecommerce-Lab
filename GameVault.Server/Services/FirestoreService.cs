@@ -83,9 +83,13 @@ public class FirestoreService : IFirestoreService
         return results;
     }
 
-    public async Task SetDocumentAsync<T>(string collection, string documentId, T data) where T : class
+    public async Task SetDocumentAsync(string collection, string documentId, object data)
     {
         var docRef = _firestoreDb.Collection(collection).Document(documentId);
+        if (docRef == null)
+        {
+            return;
+        }
         await docRef.SetAsync(data, SetOptions.MergeAll);
     }
 

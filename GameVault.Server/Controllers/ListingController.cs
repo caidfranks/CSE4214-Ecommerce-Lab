@@ -5,6 +5,7 @@ using GameVault.Shared.DTOs;
 using GameVault.Server.Models;
 using Google.Cloud.Firestore.V1;
 using GameVault.Server.Models.Firestore;
+using System.Runtime.InteropServices;
 
 namespace GameVault.Server.Controllers
 {
@@ -161,6 +162,117 @@ namespace GameVault.Server.Controllers
                 Success = true,
                 Message = "Listing status successfully updated to pending",
             });
+        }
+
+        [HttpGet("id")]
+        public async Task<ActionResult<ListingResponse>> GetListingById([FromQuery] string id)
+        {
+            // TODO: Refactor this so not needed in every single API call
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            FirestoreListing? listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", id);
+
+            // TODO: After Server Auth Permanence, Do Security
+            if (listing is not null) // && (Listing.Status == ListingStatus.Published || Listing.OwnerId == UserId)
+            {
+                if (listing.Status == ListingStatus.Inactive || listing.Status == ListingStatus.Removed)
+                {
+                    return Ok(new ListingResponse
+                    {
+                        Success = true,
+                        Listing = new()
+                        {
+                            Id = id,
+                            OwnerID = listing.OwnerID,
+                            LastModified = listing.LastModified,
+                            Name = listing.Name,
+                            Price = listing.Price,
+                            Description = listing.Description,
+                            Stock = listing.Stock,
+                            Status = listing.Status,
+                            Image = listing.Image,
+                        }
+                    });
+                }
+                else
+                {
+                    return StatusCode(403, new ListingResponse
+                    {
+                        Success = false,
+                        Message = "You must unpublish this listing before editing"
+                    });
+                }
+            }
+            else
+            {
+                return StatusCode(404, new ListingResponse
+                {
+                    Success = false,
+                    Message = "Listing not found"
+                });
+            }
+        }
+        [HttpPost("update")]
+        public async Task<ActionResult<BaseResponse>> Update([FromBody] ListingDTO modListing)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // Get listing
+            FirestoreListing? listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", modListing.Id);
+
+            if (listing is null)
+            {
+                return StatusCode(404, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Listing not found"
+                });
+            }
+
+            // TODO: Make sure owner
+
+            // Make sure status is editable
+            if (listing.Status == ListingStatus.Inactive || listing.Status == ListingStatus.Removed)
+            {
+                // Change fields based on DTO
+                listing.Name = modListing.Name;
+                listing.Description = modListing.Description;
+                listing.Price = modListing.Price;
+                listing.Stock = modListing.Stock;
+                listing.Status = ListingStatus.Inactive;
+                // Update in Firestore
+                await _firestore.SetDocumentAsync("listings", modListing.Id, listing);
+
+                return Ok(new BaseResponse
+                {
+                    Success = true,
+                    Message = "New Listing created successfully"
+                });
+            }
+            else
+            {
+                return StatusCode(403, new BaseResponse
+                {
+                    Success = false,
+                    Message = "You must unpublish this listing before editing"
+                });
+            }
         }
     }
 }

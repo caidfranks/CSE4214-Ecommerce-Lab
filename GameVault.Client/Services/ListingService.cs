@@ -56,4 +56,40 @@ public class ListingService
     var result = await response.Content.ReadFromJsonAsync<ListingListResponse>();
     return result ?? new ListingListResponse { Success = false, Message = "Unknown error" };
   }
+
+  public async Task<ListingResponse> GetListingById(string listingId)
+  {
+    var response = await _httpClient.GetAsync($"api/listing/id?id={Uri.EscapeDataString(listingId)}");
+    var result = await response.Content.ReadFromJsonAsync<ListingResponse>();
+    return result ?? new ListingResponse { Success = false, Message = "Unknown error" };
+  }
+
+  public async Task<BaseResponse> UpdateAsync(string id, string name, string desc, decimal price, int stock)
+  {
+    ListingDTO newListing = new()
+    {
+      Id = id,
+      OwnerID = "",
+      LastModified = DateTime.UtcNow,
+      Name = name,
+      Price = (int)(price * 100),
+      Description = desc,
+      Stock = stock,
+      Status = ListingStatus.Inactive,
+      // Image = "" // Add later
+    };
+    var response = await _httpClient.PostAsJsonAsync("api/listing/update", newListing);
+    // TODO: Implement this logic everywhere to protect against errors in ReadFromJsonAsync
+    if (response.StatusCode != HttpStatusCode.OK)
+    {
+      return new BaseResponse
+      {
+        Success = false,
+        Message = "Http error"
+      };
+    }
+    var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+    return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+  }
 }

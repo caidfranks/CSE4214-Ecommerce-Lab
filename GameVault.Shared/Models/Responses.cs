@@ -12,3 +12,8 @@ public class ListingListResponse : BaseResponse
 {
   public List<ListingDTO>? Listings { get; set; }
 }
+
+public class ListingResponse : BaseResponse
+{
+  public ListingDTO? Listing { get; set; }
+}
