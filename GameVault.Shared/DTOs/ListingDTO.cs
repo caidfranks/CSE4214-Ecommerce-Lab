@@ -29,3 +29,9 @@ public class VendorListingDTO : ListingDTO
 {
   public required string RemoveMsg { get; set; }
 }
+
+public class ListingStockDTO
+{
+  public required string Id { get; set; }
+  public required int Stock { get; set; }
+}

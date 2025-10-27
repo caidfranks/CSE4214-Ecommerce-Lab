@@ -85,7 +85,7 @@ namespace GameVault.Server.Controllers
 
             List<VendorListingDTO> listingDTOs = [];
 
-            Console.WriteLine($"Controller got {listings.Count} listings");
+            // Console.WriteLine($"Controller got {listings.Count} listings");
 
             foreach (Models.Firestore.Listing listing in listings)
             {
@@ -105,7 +105,7 @@ namespace GameVault.Server.Controllers
                 listingDTOs.Add(listingDTO);
             }
 
-            Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
+            // Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
 
             return new VendorListingListResponse { Success = true, Listings = listingDTOs };
 
@@ -274,6 +274,33 @@ namespace GameVault.Server.Controllers
                     Message = "You must unpublish this listing before editing"
                 });
             }
+        }
+
+        [HttpPost("stock")]
+        public async Task<ActionResult<BaseResponse>> UpdateStock([FromBody] ListingStockDTO stockDTO)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // TODO: Make sure owner
+            // Make sure within valid range of stock
+
+            await _firestore.SetDocumentFieldAsync("listings", stockDTO.Id, "Stock", stockDTO.Stock);
+
+            // TODO: Handle firestore errors
+
+            return Ok(new BaseResponse
+            {
+                Success = true,
+                Message = "Listing status successfully updated to pending",
+            });
         }
     }
 }

@@ -92,4 +92,25 @@ public class ListingService
 
     return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
   }
+
+  public async Task<BaseResponse> UpdateStockAsync(string id, int newStock)
+  {
+    ListingStockDTO stockDTO = new()
+    {
+      Id = id,
+      Stock = newStock
+    };
+    var response = await _httpClient.PostAsJsonAsync("api/listing/stock", stockDTO);
+    if (response.StatusCode != HttpStatusCode.OK)
+    {
+      return new BaseResponse
+      {
+        Success = false,
+        Message = "Http error"
+      };
+    }
+    var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+    return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+  }
 }
