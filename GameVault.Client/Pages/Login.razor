@@ -153,12 +153,6 @@
 
       if (result is { Success: true })
       {
-        // Store remember me preference if needed
-        if (_rememberMe)
-        {
-          // You could implement local storage here
-        }
-
         Navigation.NavigateTo("/");
       }
       else
@@ -169,7 +163,6 @@
     catch (Exception)
     {
       _error = "An unexpected error occurred. Please try again later.";
-      // Log the exception in a real application
     }
     finally
     {

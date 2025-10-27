@@ -8,10 +8,11 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddSingleton<IFirestoreService, FirestoreService>();
+builder.Services.AddSingleton<CartService>();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? new[] { "https://localhost:5001", "http://localhost:5001" };
+    .Get<string[]>() ?? new[] { "https://localhost:5166", "http://localhost:5166" };
 
 builder.Services.AddCors(options =>
 {

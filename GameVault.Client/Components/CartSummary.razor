@@ -1,0 +1,42 @@
+@inject NavigationManager Navigation
+@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models;
+
+<div class="cart-summary">
+    <h3>Order Summary</h3>
+    
+    <div class="summary-row">
+        <span>Subtotal:</span>
+        <span>@FormatPrice(Cart?.SubtotalPriceInCents ?? 0)</span>
+    </div>
+    
+    <div class="summary-row">
+        <span>Tax (8.5%):</span>
+        <span>@FormatPrice(Cart?.SalesTaxInCents ?? 0)</span>
+    </div>
+    
+    <div class="summary-row total">
+        <span>Total:</span>
+        <span>@FormatPrice(Cart?.TotalPriceInCents ?? 0)</span>
+    </div>
+    
+    <button @onclick="GoToCheckout" disabled="@IsCartEmpty">
+        Proceed to Checkout
+    </button>
+</div>
+
+@code {
+    [Parameter] public ShoppingCartDto? Cart { get; set; }
+    
+    private bool IsCartEmpty => Cart?.Items?.Count == 0 || Cart == null;
+    
+    private string FormatPrice(int priceInCents)
+    {
+        return $"${priceInCents / 100.0:F2}";
+    }
+    
+    private void GoToCheckout()
+    {
+        Navigation.NavigateTo("/checkout");
+    }
+}

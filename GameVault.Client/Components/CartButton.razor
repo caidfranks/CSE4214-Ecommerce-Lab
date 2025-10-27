@@ -1,0 +1,24 @@
+﻿@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
+@using GameVault.Client.Services
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject ILogger<CartButton> Logger
+@inject CartService CartService;
+
+<button @onclick="GoToCart">Cart (@_itemCount)</button>
+
+@code 
+{
+    private int _itemCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _itemCount = await CartService.FetchCartItemCount();
+    }
+    
+    private void GoToCart()
+    {
+        Navigation.NavigateTo("cart");
+    }
+}
