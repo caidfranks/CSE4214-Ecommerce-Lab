@@ -1,0 +1,28 @@
+﻿@page "/vendorDetails/{UserID}"
+@inject NavigationManager Nav
+@inject Services.AccountService AccountService
+@inject Services.AuthService AuthService
+@using GameVault.Client.Services
+@using System.Runtime.CompilerServices
+@using GameVault.Shared.Models
+@using System.Reflection
+@using GameVault.Shared.DTOs
+@using Grpc.Net.Client.Balancer
+
+<h3>VendorDetails</h3>
+
+<p>Name: @account.DisplayName</p>
+<p>Email: @account.Email</p>
+<p>Business Name: @account.BusinessName</p>
+
+
+
+@code {
+    [Parameter] public string? UserID { get; set; }
+    private AccountDTO? account;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        account = await AccountService.GetAccountByIdAsync(UserID);
+    }
+}
