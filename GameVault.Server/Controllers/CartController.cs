@@ -3,8 +3,10 @@ using GameVault.Server.Services;
 using GameVault.Shared.Models;
 using GameVault.Shared.DTOs;
 using Microsoft.AspNetCore.Mvc;
+//using Microsoft.AspNetCore.Authorization;
 
 namespace GameVault.Server.Controllers;
+
 
 [ApiController]
 [Route("api/[controller]")]
@@ -40,7 +42,7 @@ public class CartController : ControllerBase
     }
 
 
-    [HttpPost("add")]
+    [HttpPost("item")]
     public async Task<ActionResult<CartItem>> AddToCart([FromBody] AddToCartDto addToCartDto)
     {
         try
