@@ -5,34 +5,42 @@
 @using GameVault.Shared.Models
 @inject NavigationManager Navigation
 @inject CartService CartService
+@inject AuthService AuthService
 
 <h1>Shopping Cart</h1>
 
-@if (_isLoading)
+@if (AuthService.IsAuthenticated)
 {
-    <p>Loading cart...</p>
-}
-else if (_cart == null || _cart.Items.Count == 0)
-{
-    <div class="empty-cart">
-        <p>Your cart is empty</p>
-        <button @onclick="GoToBrowse">Continue Shopping</button>
-    </div>
-}
-else
-{
-    <div class="cart-container">
-        <div class="cart-items">
-            @foreach (var item in _cart.Items)
-            {
-                <@CartItemCard 
-                    Item="@item" 
-                    OnCartChanged="RefreshCartAsync" />
-            }
+    if (_isLoading)
+    {
+        <p>Loading cart...</p>
+    }
+    else if (_cart == null || _cart.Items.Count == 0)
+    {
+        <div class="empty-cart">
+            <p>Your cart is empty</p>
+            <button @onclick="GoToBrowse">Continue Shopping</button>
         </div>
-        
-        <@CartSummary Cart="@_cart" />
-    </div>
+    }
+    else
+    {
+        <div class="cart-container">
+            <div class="cart-items">
+                @foreach (var item in _cart.Items)
+                {
+                    <@CartItemCard 
+                        Item="@item" 
+                        OnCartChanged="RefreshCartAsync" />
+                }
+            </div>
+            
+            <@CartSummary Cart="@_cart" />
+        </div>
+    }
+}
+else if (!AuthService.IsAuthenticated)
+{
+    <p>Please <a href="/login">log in </a>to view your cart.</p>
 }
 
 @code {
