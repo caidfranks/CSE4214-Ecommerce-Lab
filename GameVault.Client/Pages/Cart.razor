@@ -1,0 +1,66 @@
+@page "/cart"
+@using GameVault.Client.Components
+@using GameVault.Client.Services
+@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
+@inject NavigationManager Navigation
+@inject CartService CartService
+
+<h1>Shopping Cart</h1>
+
+@if (_isLoading)
+{
+    <p>Loading cart...</p>
+}
+else if (_cart == null || _cart.Items.Count == 0)
+{
+    <div class="empty-cart">
+        <p>Your cart is empty</p>
+        <button @onclick="GoToBrowse">Continue Shopping</button>
+    </div>
+}
+else
+{
+    <div class="cart-container">
+        <div class="cart-items">
+            @foreach (var item in _cart.Items)
+            {
+                <CartItemCard 
+                    Item="@item" 
+                    OnCartChanged="RefreshCartAsync" />
+            }
+        </div>
+        
+        <CartSummary Cart="@_cart" />
+    </div>
+}
+
+@code {
+    private ShoppingCartDto? _cart;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCartAsync();
+    }
+
+    private async Task LoadCartAsync()
+    {
+        _isLoading = true;
+
+        _cart = await CartService.LoadCartAsync();
+
+        _isLoading = false;
+    }
+
+    private async Task RefreshCartAsync()
+    {
+        await LoadCartAsync();
+        StateHasChanged();
+    }
+
+    private void GoToBrowse()
+    {
+        
+    }
+}

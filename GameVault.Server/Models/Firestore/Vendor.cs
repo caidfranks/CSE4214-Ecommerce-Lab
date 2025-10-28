@@ -11,4 +11,10 @@ public class Vendor : FirestoreUser
 
   [FirestoreProperty]
   public required string Name { get; set; }
+
+  [FirestoreProperty]
+  public required string ReviewedBy { get; set; }
+
+  [FirestoreProperty]
+  public string BanMsg { get; set; } = string.Empty;
 }

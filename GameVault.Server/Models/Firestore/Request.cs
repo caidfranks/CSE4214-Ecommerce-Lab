@@ -20,6 +20,12 @@ public class FirestoreRequest
 
     [FirestoreProperty]
     public required string Reason { get; set; }
+
+    [FirestoreProperty]
+    public required string ReviewedBy { get; set; }
+
+    [FirestoreProperty]
+    public required DateTime Timestamp { get; set; }
 }
 
 [FirestoreData]

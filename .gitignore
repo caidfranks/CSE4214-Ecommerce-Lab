@@ -491,3 +491,6 @@ gamevault-*-*.json
 
 # Firebase local developoment cache
 .firebase_data
+
+# VS Code Settings
+.vscode

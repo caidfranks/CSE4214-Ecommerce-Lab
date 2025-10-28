@@ -1,0 +1,41 @@
+﻿@using GameVault.Shared.DTOs
+@using GameVault.Client.Services
+@inject CartService CartService
+@inject ILogger<AddToCartButton> Logger
+
+<button @onclick="AddToCartAsync" disabled="@(_isAdding || IsInCart)">
+    @if (_isAdding)
+    {
+        <span>Adding...</span>
+    }
+    else if (IsInCart)
+    {
+        <span>In Cart</span>
+    }
+    else
+    {
+        <span>Add to Cart</span>
+    }
+</button>
+
+@code {
+    [Parameter] public int ListingId { get; set; }
+    [Parameter] public EventCallback OnCartChanged { get; set; }
+    
+    private bool _isAdding = false;
+    private bool IsInCart = false;
+
+    private async Task AddToCartAsync()
+    {
+        _isAdding = true;
+
+        var success = await CartService.AddToCartAsync(ListingId, OnCartChanged);
+        
+        if (success)
+        {
+            IsInCart = true;
+        }
+
+        _isAdding = false;
+    }
+}

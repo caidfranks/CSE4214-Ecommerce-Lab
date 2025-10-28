@@ -21,7 +21,7 @@ public class FirestoreService : IFirestoreService
         {
             // Handle the case where the emulator variable is not set
             // throw new InvalidOperationException("FIRESTORE_EMULATOR_HOST environment variable not set.");
-            var projectId = configuration["Firebase:ProjectId"];
+            var projectId = configuration["Firebase:ProjectId"] ?? "demo-project";
             var clientEmail = configuration["Firebase:ClientEmail"];
             var privateKey = configuration["Firebase:PrivateKey"];
 
@@ -43,7 +43,7 @@ public class FirestoreService : IFirestoreService
         {
             Console.WriteLine("Connecting to local firestore emulator.");
 
-            var projectId = configuration["Firebase:ProjectId"];
+            var projectId = configuration["Firebase:ProjectId"] ?? "demo-project";
 
             // Manually configure the FirestoreClientBuilder
             var firestoreClientBuilder = new FirestoreClientBuilder
@@ -83,9 +83,13 @@ public class FirestoreService : IFirestoreService
         return results;
     }
 
-    public async Task SetDocumentAsync<T>(string collection, string documentId, T data) where T : class
+    public async Task SetDocumentAsync(string collection, string documentId, object data)
     {
         var docRef = _firestoreDb.Collection(collection).Document(documentId);
+        if (docRef == null)
+        {
+            return;
+        }
         await docRef.SetAsync(data, SetOptions.MergeAll);
     }
 

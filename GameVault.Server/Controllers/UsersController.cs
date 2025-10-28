@@ -43,9 +43,6 @@ public class UsersController : ControllerBase
         if (!string.IsNullOrEmpty(request.DisplayName))
             user.DisplayName = request.DisplayName;
 
-
-        user.UpdatedAt = DateTime.UtcNow;
-
         await _firestore.SetDocumentAsync("users", userId, user);
 
         return Ok(new { message = "Profile updated successfully", user });
@@ -81,7 +78,6 @@ public class UsersController : ControllerBase
         if (request.Approved)
         {
             user.ApprovalStatus = nameof(ApprovalStatus.Approved);
-            user.ApprovedAt = DateTime.UtcNow;
             user.RejectionReason = null;
         }
         else
@@ -89,8 +85,6 @@ public class UsersController : ControllerBase
             user.ApprovalStatus = nameof(ApprovalStatus.Rejected);
             user.RejectionReason = request.RejectionReason;
         }
-
-        user.UpdatedAt = DateTime.UtcNow;
 
         await _firestore.SetDocumentAsync("users", request.VendorUserId, user);
 
@@ -126,7 +120,6 @@ public class UsersController : ControllerBase
                 nameof(ApprovalStatus.Rejected) => $"Your application was rejected. Reason: {user.RejectionReason}",
                 _ => "Status unknown"
             },
-            ApprovedAt = user.ApprovedAt,
             RejectionReason = user.RejectionReason
         };
 
@@ -137,5 +130,4 @@ public class UsersController : ControllerBase
 public class UpdateUserRequest
 {
     public string? DisplayName { get; set; }
-    public string? AvatarUrl { get; set; }
 }

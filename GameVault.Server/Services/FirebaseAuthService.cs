@@ -13,8 +13,7 @@ public class FirebaseAuthService : IFirebaseAuthService
         string emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST");
         if (!string.IsNullOrEmpty(emulatorHost))
         {
-            // Handle the case where the emulator variable is not set
-            // throw new InvalidOperationException("FIREBASE_AUTH_EMULATOR_HOST environment variable not set.");
+
             Console.WriteLine("Connecting to local auth emulator.");
         }
         else
@@ -65,7 +64,6 @@ public class FirebaseAuthService : IFirebaseAuthService
         }
         catch (FirebaseAuthException ex)
         {
-            // Handle specific Firebase Auth errors based on the error message
             if (ex.Message.Contains("EMAIL_EXISTS") || ex.Message.Contains("email already exists"))
             {
                 throw new InvalidOperationException("An account with this email already exists. Please use a different email or try logging in instead.");

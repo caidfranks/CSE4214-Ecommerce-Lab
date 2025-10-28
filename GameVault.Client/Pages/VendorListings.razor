@@ -40,10 +40,25 @@ else if (listings.Count == 0)
   <table class="table">
   <thead>
     <tr>
+      @switch (filter) {
+          case ListingStatus.Inactive:
+            <th>Modified</th>;
+            break;
+          case ListingStatus.Pending:
+            <th>Submitted</th>;
+            break;
+          case ListingStatus.Removed:
+            <th>Removed</th>;
+            break;
+          case ListingStatus.Published:
+            <th>Published</th>;
+            break;
+        }
       <th>Name</th>
       <th>Price</th>
-      @if (filter == ListingStatus.Published) {
-        <th>Stock</th>
+      <th>Stock</th>
+      @if (filter == ListingStatus.Removed) {
+        <th>Removal Message</th>
       }
       @* TODO: Maybe put removal reason here?
       (But would require storing somewhere and distinguishing between vendor removed and admin removed) *@
@@ -54,14 +69,29 @@ else if (listings.Count == 0)
     @foreach (var listing in listings)
     {
       <tr>
+        <td>@listing.LastModified.ToString()</td>
         <td>@listing.Name</td>
         <td>@((listing.Price / 100M).ToString("C2"))</td>
-        @if (filter == ListingStatus.Published) {
+        @if (listing.Id == editingStock) {
+          <td><InputNumber @bind-Value="@stock" /></td>
+        } else {
           <td>@listing.Stock</td>
+        }
+        @if (filter == ListingStatus.Removed) {
+          <td>@listing.RemoveMsg</td>
         }
         <td>
           @if (filter == ListingStatus.Inactive || filter == ListingStatus.Removed) {
-            <button @onclick='() => Nav.NavigateTo($"/listings/edit/{listing.Id}")'>Edit</button>
+            <button @onclick='async () => Nav.NavigateTo($"/listings/edit/{listing.Id}")'>Edit</button>
+          } else {
+            @if (listing.Id == editingStock) {
+              <div>
+                <button @onclick='CancelStock'>Cancel</button>
+                <button @onclick='UpdateStock'>Save</button>
+              </div>
+            } else {
+              <button @onclick='async () => await EditStock(listing.Id, listing.Stock)'>Change Stock</button>
+            }
           }
           @if (filter == ListingStatus.Inactive) {
             <button @onclick='async () => {await ListingService.ChangeListingStatusToPending(listing.Id); await LoadData();}'>Submit</button>
@@ -70,7 +100,7 @@ else if (listings.Count == 0)
             <button @onclick='async () => {await ListingService.ChangeListingStatusToInactive(listing.Id); await LoadData();}'>Cancel Request</button>
           }
           @if (filter == ListingStatus.Published) {
-            <button>Unpublish</button>
+            <button @onclick='async () => {await ListingService.ChangeListingStatusToInactive(listing.Id); await LoadData();}'>Unpublish</button>
           }
         </td>
       </tr>
@@ -82,28 +112,27 @@ else if (listings.Count == 0)
 @code {
   public ListingStatus filter = 0;
   public string error = string.Empty;
+  public int stock = -1;
+  public string editingStock = string.Empty;
 
-  private List<ListingDTO>? listings;// = new List<ListingDTO> {
-    @* new ListingDTO {
-      Id = "a",
-      Description="Lots of apples",
-      Name="Listing A",
-      OwnerID="me",
-      Price=599,
-      Status=ListingStatus.Published,
-      Stock=5
-    },
-    new ListingDTO {
-      Id = "b",
-      Description="A few bees",
-      Name="Listing B",
-      OwnerID="me",
-      Price=1099,
-      Status=ListingStatus.Inactive,
-      Stock=20
-    }
-  }; *@
+  private List<VendorListingDTO>? listings;
 
+  private async Task EditStock(string listingId, int initialStock) {
+    stock = initialStock;
+    editingStock = listingId;
+  }
+  private async Task CancelStock() {
+    editingStock = string.Empty;
+    stock = -1;
+  }
+  private async Task UpdateStock() {
+    // Assume logged in and all associated stuff
+    // Verify within allowable range of stock
+    await ListingService.UpdateStockAsync(editingStock, stock);
+    editingStock = string.Empty;
+    stock = -1;
+    await LoadData();
+  }
   private async Task LoadData()
   {
     listings = null;
@@ -112,9 +141,9 @@ else if (listings.Count == 0)
 
     // Call Firestore
     if (AuthService.CurrentUserId is not null) {
-      ListingListResponse result = (await ListingService.GetVendorListingsByStatus(AuthService.CurrentUserId, filter));
+      VendorListingListResponse result = (await ListingService.GetVendorListingsByStatus(AuthService.CurrentUserId, filter));
       listings = result.Listings;
-      Console.WriteLine($"Client got {listings?.Count} listings");
+      @* Console.WriteLine($"Client got {listings?.Count} listings"); *@
       error = result.Message ?? "";
       await InvokeAsync(StateHasChanged);
     } else {

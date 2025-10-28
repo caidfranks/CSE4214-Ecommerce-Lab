@@ -30,6 +30,12 @@ public class FirestoreListing
 
   [FirestoreProperty]
   public string Image { get; set; } = string.Empty;
+
+  [FirestoreProperty]
+  public required DateTime LastModified { get; set; }
+
+  [FirestoreProperty]
+  public string RemoveMsg { get; set; } = string.Empty;
 }
 
 [FirestoreData]

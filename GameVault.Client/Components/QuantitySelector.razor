@@ -1,0 +1,39 @@
+﻿<button @onclick="Decrement" disabled="@Quantity <= 1">-</button>
+<input type="number" value ="@Quantity" min="1" max="99" @onchange="OnInputChange"/>
+<button @onclick="Increment" disabled="@Quantity >= 99">+</button>
+
+@code
+{
+    [Parameter] public int Quantity { get; set; } = 1;
+    [Parameter] public EventCallback<int> QuantityChanged { get; set; }
+    
+    private async Task Decrement()
+    {
+
+        if (Quantity > 1)
+        {
+            Quantity--;
+            await QuantityChanged.InvokeAsync(Quantity);
+        }
+    }
+
+    private async Task Increment()
+    {
+        if (Quantity < 99)
+        {
+            Quantity++;
+            await QuantityChanged.InvokeAsync(Quantity);
+        }
+    }
+
+    private async Task OnInputChange(ChangeEventArgs eventArgs)
+    {
+        bool isValid = int.TryParse(eventArgs.Value?.ToString(), out int newQuantity);
+
+        if (isValid)
+        {
+            Quantity = int.Clamp(newQuantity, 1, 99);
+            await QuantityChanged.InvokeAsync(Quantity);
+        }
+    }
+}

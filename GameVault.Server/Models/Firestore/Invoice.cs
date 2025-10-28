@@ -51,6 +51,9 @@ public class FirestoreInvoice
 
   [FirestoreProperty]
   public required string VendorId { get; set; }
+
+  [FirestoreProperty]
+  public string ReturnMsg { get; set; } = string.Empty;
 }
 
 [FirestoreData]

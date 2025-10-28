@@ -5,6 +5,7 @@ using GameVault.Shared.DTOs;
 using GameVault.Server.Models;
 using Google.Cloud.Firestore.V1;
 using GameVault.Server.Models.Firestore;
+using System.Runtime.InteropServices;
 
 namespace GameVault.Server.Controllers
 {
@@ -42,7 +43,9 @@ namespace GameVault.Server.Controllers
                 Price = newListing.Price,
                 Stock = newListing.Stock,
                 Status = newListing.Status,
-                OwnerID = newListing.OwnerID
+                // TODO: User ID not accessible on server - huge security risk
+                OwnerID = "Fo3LIgVvpBrteVibSry2smUk2nTn",
+                LastModified = DateTime.UtcNow
             };
 
             await _firestore.AddDocumentAsync("listings", newListingObj);
@@ -55,13 +58,13 @@ namespace GameVault.Server.Controllers
         }
 
         [HttpGet("vendor")]
-        public async Task<ActionResult<ListingListResponse>> GetVendorListingsByStatus([FromQuery] string v, [FromQuery] ListingStatus s)
+        public async Task<ActionResult<VendorListingListResponse>> GetVendorListingsByStatus([FromQuery] string v, [FromQuery] ListingStatus s)
         {
             // Console.WriteLine($"Got query for User {v} with status {s}");
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                return StatusCode(500, new ListingListResponse
+                return StatusCode(500, new VendorListingListResponse
                 {
                     Success = false,
                     Message = "Firebase configuration error"
@@ -80,14 +83,15 @@ namespace GameVault.Server.Controllers
                 }
             ]);
 
-            List<ListingDTO> listingDTOs = [];
+            List<VendorListingDTO> listingDTOs = [];
 
-            Console.WriteLine($"Controller got {listings.Count} listings");
+            // Console.WriteLine($"Controller got {listings.Count} listings");
 
             foreach (Models.Firestore.Listing listing in listings)
             {
-                ListingDTO listingDTO = new()
+                VendorListingDTO listingDTO = new()
                 {
+                    RemoveMsg = listing.RemoveMsg,
                     Id = listing.Id,
                     Name = listing.Name,
                     Price = listing.Price,
@@ -95,14 +99,65 @@ namespace GameVault.Server.Controllers
                     Stock = listing.Stock,
                     Status = listing.Status,
                     OwnerID = listing.OwnerID,
-                    Image = listing.Image
+                    Image = listing.Image,
+                    LastModified = listing.LastModified
                 };
                 listingDTOs.Add(listingDTO);
             }
 
-            Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
+            // Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
 
-            return new ListingListResponse { Success = true, Listings = listingDTOs };
+            return new VendorListingListResponse { Success = true, Listings = listingDTOs };
+
+            // return new ListingListResponse { Success = false, Message = "Not configured" };
+        }
+
+        [HttpGet("status")]
+        public async Task<ActionResult<ListingListResponse>> GetListingsByStatus([FromQuery] ListingStatus s)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new ListingListResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>(
+                "listings",
+                [
+                    new() {
+                fieldName = "Status",
+                value = (int)s
+            }
+                ]
+            );
+
+            List<ListingDTO> listingDTOs = [];
+
+            foreach (var listing in listings)
+            {
+                VendorListingDTO listingDTO = new()
+                {
+                    RemoveMsg = listing.RemoveMsg,
+                    Id = listing.Id,
+                    Name = listing.Name,
+                    Price = listing.Price,
+                    Description = listing.Description,
+                    Stock = listing.Stock,
+                    Status = listing.Status,
+                    OwnerID = listing.OwnerID,
+                    Image = listing.Image,
+                    LastModified = listing.LastModified
+                };
+                listingDTOs.Add(listingDTO);
+            }
+
+            //Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
+
+            return new VendorListingListResponse { Success = true, Listings = listingDTOs };
 
             // return new ListingListResponse { Success = false, Message = "Not configured" };
         }
@@ -181,7 +236,6 @@ namespace GameVault.Server.Controllers
             });
         }
 
-
         [HttpPost("cancel")]
         public async Task<ActionResult<BaseResponse>> ChangeListingStatusToInactive([FromBody] string id)
         {
@@ -224,6 +278,145 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Published);
+
+            // TODO: Handle firestore errors
+
+            return Ok(new BaseResponse
+            {
+                Success = true,
+                Message = "Listing status successfully updated to pending",
+            });
+        }
+
+        [HttpGet("id")]
+        public async Task<ActionResult<ListingResponse>> GetListingById([FromQuery] string id)
+        {
+            // TODO: Refactor this so not needed in every single API call
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            FirestoreListing? listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", id);
+
+            // TODO: After Server Auth Permanence, Do Security
+            if (listing is not null) // && (Listing.Status == ListingStatus.Published || Listing.OwnerId == UserId)
+            {
+                if (listing.Status == ListingStatus.Inactive || listing.Status == ListingStatus.Removed)
+                {
+                    return Ok(new ListingResponse
+                    {
+                        Success = true,
+                        Listing = new()
+                        {
+                            Id = id,
+                            OwnerID = listing.OwnerID,
+                            LastModified = listing.LastModified,
+                            Name = listing.Name,
+                            Price = listing.Price,
+                            Description = listing.Description,
+                            Stock = listing.Stock,
+                            Status = listing.Status,
+                            Image = listing.Image,
+                        }
+                    });
+                }
+                else
+                {
+                    return StatusCode(403, new ListingResponse
+                    {
+                        Success = false,
+                        Message = "You must unpublish this listing before editing"
+                    });
+                }
+            }
+            else
+            {
+                return StatusCode(404, new ListingResponse
+                {
+                    Success = false,
+                    Message = "Listing not found"
+                });
+            }
+        }
+
+        [HttpPost("update")]
+        public async Task<ActionResult<BaseResponse>> Update([FromBody] ListingDTO modListing)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // Get listing
+            FirestoreListing? listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", modListing.Id);
+
+            if (listing is null)
+            {
+                return StatusCode(404, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Listing not found"
+                });
+            }
+
+            // TODO: Make sure owner
+
+            // Make sure status is editable
+            if (listing.Status == ListingStatus.Inactive || listing.Status == ListingStatus.Removed)
+            {
+                // Change fields based on DTO
+                listing.Name = modListing.Name;
+                listing.Description = modListing.Description;
+                listing.Price = modListing.Price;
+                listing.Stock = modListing.Stock;
+                listing.Status = ListingStatus.Inactive;
+                // Update in Firestore
+                await _firestore.SetDocumentAsync("listings", modListing.Id, listing);
+
+                return Ok(new BaseResponse
+                {
+                    Success = true,
+                    Message = "New Listing created successfully"
+                });
+            }
+            else
+            {
+                return StatusCode(403, new BaseResponse
+                {
+                    Success = false,
+                    Message = "You must unpublish this listing before editing"
+                });
+            }
+        }
+
+        [HttpPost("stock")]
+        public async Task<ActionResult<BaseResponse>> UpdateStock([FromBody] ListingStockDTO stockDTO)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // TODO: Make sure owner
+            // Make sure within valid range of stock
+
+            await _firestore.SetDocumentFieldAsync("listings", stockDTO.Id, "Stock", stockDTO.Stock);
 
             // TODO: Handle firestore errors
 
