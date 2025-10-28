@@ -8,4 +8,7 @@ public class Customer : FirestoreUser
 {
   [FirestoreProperty]
   public required bool Banned { get; set; }
+
+  [FirestoreProperty]
+  public string BanMsg { get; set; } = string.Empty;
 }
