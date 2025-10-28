@@ -112,6 +112,104 @@ namespace GameVault.Server.Controllers
             // return new ListingListResponse { Success = false, Message = "Not configured" };
         }
 
+        [HttpGet("status")]
+        public async Task<ActionResult<ListingListResponse>> GetListingsByStatus([FromQuery] ListingStatus s)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new ListingListResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>(
+                "listings",
+                [
+                    new() {
+                fieldName = "Status",
+                value = (int)s
+            }
+                ]
+            );
+
+            List<ListingDTO> listingDTOs = [];
+
+            foreach (var listing in listings)
+            {
+                VendorListingDTO listingDTO = new()
+                {
+                    RemoveMsg = listing.RemoveMsg,
+                    Id = listing.Id,
+                    Name = listing.Name,
+                    Price = listing.Price,
+                    Description = listing.Description,
+                    Stock = listing.Stock,
+                    Status = listing.Status,
+                    OwnerID = listing.OwnerID,
+                    Image = listing.Image,
+                    LastModified = listing.LastModified
+                };
+                listingDTOs.Add(listingDTO);
+            }
+
+            //Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
+
+            return new VendorListingListResponse { Success = true, Listings = listingDTOs };
+
+            // return new ListingListResponse { Success = false, Message = "Not configured" };
+        }
+
+        [HttpGet("status")]
+        public async Task<ActionResult<ListingListResponse>> GetListingsByStatus([FromQuery] ListingStatus s)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new ListingListResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>(
+                "listings",
+                [
+                    new() {
+                fieldName = "Status",
+                value = (int)s
+            }
+                ]
+            );
+
+            List<ListingDTO> listingDTOs = [];
+
+            foreach (var listing in listings)
+            {
+                ListingDTO listingDTO = new()
+                {
+                    Id = listing.Id,
+                    Name = listing.Name,
+                    Price = listing.Price,
+                    Description = listing.Description,
+                    Stock = listing.Stock,
+                    Status = listing.Status,
+                    OwnerID = listing.OwnerID,
+                    Image = listing.Image
+                };
+                listingDTOs.Add(listingDTO);
+            }
+
+            return new ListingListResponse
+            {
+                Success = true,
+                Listings = listingDTOs
+            };
+        }
+
         [HttpPost("submit")]
         public async Task<ActionResult<BaseResponse>> ChangeListingStatusToPending([FromBody] string id)
         {
@@ -154,6 +252,32 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Inactive);
+
+            // TODO: Handle firestore errors
+
+            return Ok(new BaseResponse
+            {
+                Success = true,
+                Message = "Listing status successfully updated to pending",
+            });
+        }
+
+        [HttpPost("approve")]
+        public async Task<ActionResult<BaseResponse>> ChangeListingStatusToPublished([FromBody] string id)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // TODO: Make sure owner
+
+            await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Published);
 
             // TODO: Handle firestore errors
 

@@ -1,0 +1,156 @@
+﻿@page "/viewListings/{StatusFilter}"
+@inject NavigationManager Nav
+@inject Services.ListingService ListingService
+@inject Services.AuthService AuthService
+@using GameVault.Client.Services
+@using System.Runtime.CompilerServices
+@using GameVault.Shared.Models
+@using System.Reflection
+@using GameVault.Shared.DTOs
+@using Grpc.Net.Client.Balancer
+
+
+<h3>@PageTitle</h3>
+<header>
+    <nav>
+        <ul>
+            <li><p><a href="/viewListings/pendingListings">Pending Listings</a></p></li>
+            <li><p><a href="/viewListings/publishedListings">Published Listings</a></p></li>
+            <li><p><a href="/viewListings/removedListings">Removed Listings</a></p></li>
+            <li><p><a href="/viewListings/unpublishedListings">Unpublished Listings</a></p></li>
+        </ul>
+    </nav>
+</header>
+
+@if (entries == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (entries.Count == 0)
+{
+    <p><em>No accounts found with status "@StatusFilter".</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>User</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var entry in entries)
+            {
+                <tr>
+                    <td>
+                        @if (StatusFilter == "pendingListings")
+                        {
+                            <a @onclick="() => OpenModal(entry)">@entry.Name</a>
+                        }
+                        else
+                        {
+                            @entry.Name
+                        }
+                    </td>
+                    <td>@entry.OwnerID</td>
+                    <td>@entry.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@selectedEntry?.Name Details</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <!-- Load another page inside the modal -->
+                    <iframe src="@selectedPageUrl" width="100%" height="600px" frameborder="0"></iframe>
+                </div>
+                <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn-approve" @onclick='async () => {await ListingService.ChangeListingStatusToPublished(selectedEntry.Id); await LoadData(); CloseModal();}'>Approve</button>
+                    <button type="button" class="btn-deny" @onclick='async () => { await ListingService.ChangeListingStatusToInactive(selectedEntry.Id); await LoadData(); CloseModal();}'>Deny</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@code {
+    [Parameter] public string StatusFilter { get; set; } = string.Empty;
+    public ListingStatus filter = 0;
+    private List<ListingDTO> entries;
+    private ListingDTO? selectedEntry;
+    private string selectedPageUrl;
+
+    private bool showModal;
+
+
+    private string PageTitle =>
+        StatusFilter switch
+        {
+            "pendingListings" => "Pending Product Listings",
+            "publishedListings" => "Published Product Listings",
+            "removedListings" => "Removed Product Listings",
+            "unpublishedListings" => "Unpublished Product Listings",
+            _ => "Listings"
+        };
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        entries = null;
+
+        try
+        {
+            filter = MapStatus(StatusFilter);
+            ListingListResponse result = await ListingService.GetListingsByStatus(filter);
+            entries = result.Listings;
+            await InvokeAsync(StateHasChanged);
+
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading Firebase data: {ex.Message}");
+            entries = new();
+        }
+    }
+
+    private ListingStatus MapStatus(string StatusFilter)
+    {
+        return StatusFilter switch
+        {
+            "pendingListings" => ListingStatus.Pending,
+            "publishedListings" => ListingStatus.Published,
+            "removedListings" => ListingStatus.Removed,
+            "unpublishedListings" => ListingStatus.Inactive,
+            _ => ListingStatus.Inactive
+        };
+    }
+
+    private void OpenModal(ListingDTO entry)
+    {
+        selectedEntry = entry;
+        selectedPageUrl = $"/product/{entry.Id}";
+        showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        selectedEntry = null;
+    }
+}

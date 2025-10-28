@@ -1,0 +1,244 @@
+﻿@page "/product/{id}"
+@using GameVaultWeb.Services
+@using GameVaultWeb.Models
+@inject UserState User
+@inject ProductService ProductService
+@inject NavigationManager Nav
+
+<PageTitle>@(product?.Name ?? "Product") - GameVault</PageTitle>
+
+@if (!User.IsLoggedIn)
+{
+    <div class="container mt-5">
+        <div class="alert alert-warning">
+            <h4>Please Log In</h4>
+            <p>You need to log in to view products. <a href="/login" class="alert-link">Go to Login</a></p>
+        </div>
+    </div>
+}
+else if (product == null)
+{
+    <div class="container mt-5">
+        <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading product details...</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container mt-4">
+        <!-- Breadcrumb Navigation -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item"><a href="/">Browse</a></li>
+                <li class="breadcrumb-item active">@product.Name</li>
+            </ol>
+        </nav>
+
+        <div class="row mt-4">
+            <!-- Product Image (REQ-47) -->
+            <div class="col-md-5">
+                <div class="product-image-container">
+                    <img src="@product.ThumbnailUrl" alt="@product.Name" class="product-detail-image" />
+                    @if (product.Stock == 0)
+                    {
+                        <div class="sold-out-badge">
+                            <span class="badge bg-danger fs-5">SOLD OUT</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Product Information (REQ-47) -->
+            <div class="col-md-7">
+                <div class="product-details">
+                    <!-- Product Name -->
+                    <h1 class="product-title">@product.Name</h1>
+
+                    <!-- Vendor Name -->
+                    <p class="vendor-info mb-3">
+                        <i class="bi bi-shop"></i>
+                        Sold by: <strong>@product.VendorName</strong>
+                    </p>
+
+                    <!-- Category -->
+                    <div class="mb-3">
+                        <span class="badge bg-secondary fs-6">@product.Category</span>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="price-section mb-4">
+                        <h2 class="product-price mb-0">$@product.Price.ToString("F2")</h2>
+                    </div>
+
+                    <!-- Stock Status -->
+                    <div class="stock-info mb-4">
+                        @if (product.Stock > 0)
+                        {
+                            if (product.Stock <= 5)
+                            {
+                                <p class="text-warning mb-0">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                    <strong>Only @product.Stock left in stock - order soon!</strong>
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="text-success mb-0">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <strong>In Stock</strong>
+                                </p>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-danger mb-0">
+                                <i class="bi bi-x-circle-fill"></i>
+                                <strong>Out of Stock</strong>
+                            </p>
+                        }
+                    </div>
+
+                    <!-- Add to Cart Section (REQ-48, REQ-62-63) -->
+                    @if (User.Role == "Customer" && product.Stock > 0)
+                    {
+                        <div class="add-to-cart-section p-4 border rounded bg-light">
+                            <div class="row align-items-center">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Quantity:</label>
+                                    <select class="form-select" @bind="selectedQuantity">
+                                        @for (int i = 1; i <= Math.Min(product.Stock, 10); i++)
+                                        {
+                                            <option value="@i">@i</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-8 mt-3 mt-md-0">
+                                    <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
+                                        <i class="bi bi-cart-plus"></i> Add to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (showAddedMessage)
+                        {
+                            <div class="alert alert-success mt-3">
+                                <strong>Added to cart!</strong>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-success me-2" @onclick="ContinueShopping">
+                                        Continue Shopping
+                                    </button>
+                                    <button class="btn btn-sm btn-success" @onclick="GoToCart">
+                                        Go to Cart
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else if (User.Role != "Customer")
+                    {
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Only customers can purchase products.
+                        </div>
+                    }
+
+                    <!-- Description (REQ-47) -->
+                    <div class="product-description mt-4">
+                        <h4>Product Description</h4>
+                        <p>@product.Description</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggested Products Section -->
+        <div class="suggested-products mt-5">
+            <h3 class="mb-4">You Might Also Like</h3>
+            <div class="row">
+                @foreach (var suggested in suggestedProducts)
+                {
+                    <div class="col-md-3 mb-4">
+                        <div class="card h-100 suggested-card" @onclick="() => ViewProduct(suggested.Id)">
+                            <img src="@suggested.ThumbnailUrl" class="card-img-top" alt="@suggested.Name">
+                            <div class="card-body">
+                                <h6 class="card-title">@suggested.Name</h6>
+                                <p class="card-text text-primary fw-bold">$@suggested.Price.ToString("F2")</p>
+                                <small class="text-muted">@suggested.VendorName</small>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private Product? product;
+    private List<Product> suggestedProducts = new();
+    private int selectedQuantity = 1;
+    private bool showAddedMessage = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProduct();
+        await LoadSuggestedProducts();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Reload product when ID changes
+        await LoadProduct();
+        await LoadSuggestedProducts();
+        showAddedMessage = false;
+        selectedQuantity = 1;
+    }
+
+    private async Task LoadProduct()
+    {
+        // Load product from ProductService
+        product = await ProductService.GetProductByIdAsync(Id);
+    }
+
+    private async Task LoadSuggestedProducts()
+    {
+        if (product != null)
+        {
+            var categoryProducts = await ProductService.GetProductsByCategoryAsync(product.Category);
+            suggestedProducts = categoryProducts
+                .Where(p => p.Id != product.Id)
+                .Take(4)
+                .ToList();
+        }
+    }
+
+    private void AddToCart()
+    {
+        // REQ-64, REQ-65, REQ-66
+        // TODO: Add to cart in database/service
+        showAddedMessage = true;
+    }
+
+    private void ContinueShopping()
+    {
+        Nav.NavigateTo("/");
+    }
+
+    private void GoToCart()
+    {
+        Nav.NavigateTo("/cart");
+    }
+
+    private void ViewProduct(string productId)
+    {
+        Nav.NavigateTo($"/product/{product.Id}");
+    }
+}

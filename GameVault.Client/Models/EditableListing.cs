@@ -10,6 +10,8 @@ public class EditableListing
   public required string Description { get; set; }
   public required decimal Price { get; set; }
   public required int Stock { get; set; }
+
+  public string? Category { get; set; }
   public static EditableListing FromListingDTO(ListingDTO dto)
   {
     return new()

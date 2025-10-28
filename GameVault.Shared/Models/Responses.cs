@@ -13,6 +13,11 @@ public class ListingListResponse : BaseResponse
   public List<ListingDTO>? Listings { get; set; }
 }
 
+public class AccountListResponse : BaseResponse
+{
+  public List<AccountDTO>? Accounts { get; set; }
+}
+
 public class ListingResponse : BaseResponse
 {
   public ListingDTO? Listing { get; set; }

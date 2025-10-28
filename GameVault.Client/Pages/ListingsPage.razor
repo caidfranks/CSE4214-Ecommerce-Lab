@@ -1,0 +1,16 @@
+﻿@page "/viewListings"
+@inject Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+<h3>Listings Management</h3>
+
+<header>
+    <nav>
+        <ul>
+            <li><p><a href="/viewListings/pendingListings">Pending Listings</a></p></li>
+            <li><p><a href="/viewListings/publishedListings">Published Listings</a></p></li>
+            <li><p><a href="/viewListings/removedListings">Removed Listings</a></p></li>
+            <li><p><a href="/viewListings/unpublishedListings">Unpublished Listings</a></p></li>
+        </ul>
+    </nav>
+</header>

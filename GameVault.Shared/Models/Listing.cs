@@ -22,5 +22,7 @@ public class Listing
   public required string OwnerID { get; set; }
   [FirestoreProperty]
   public required string Image { get; set; }
+    [FirestoreProperty]
+    public string Category { get; set; } = string.Empty;
 
 }

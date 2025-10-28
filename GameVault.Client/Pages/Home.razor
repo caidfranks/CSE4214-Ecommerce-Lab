@@ -27,17 +27,27 @@
             </div>
 
             <div class="home-buttons">
-                <button class="home-button home-button-primary" @onclick="GoToGames">
-                    <i class="bi bi-controller me-2"></i>
-                    Browse Games
-                </button>
-
-                @if (AuthService.CurrentUser?.Role == "Vendor")
+                @if (AuthService.CurrentUser?.Role == "Admin")
                 {
-                    <button class="home-button home-button-secondary" @onclick="GoToVendorDashboard">
+                    <button class="home-button home-button-secondary" @onclick="GoToAdminDashboard">
                         <i class="bi bi-shop me-2"></i>
-                        Vendor Dashboard
+                        Admin Dashboard
                     </button>
+                }
+                else
+                {
+                    <button class="home-button home-button-primary" @onclick="GoToGames">
+                        <i class="bi bi-controller me-2"></i>
+                        Browse Games
+                    </button>
+
+                    @if (AuthService.CurrentUser?.Role == "Vendor")
+                    {
+                        <button class="home-button home-button-secondary" @onclick="GoToVendorDashboard">
+                            <i class="bi bi-shop me-2"></i>
+                            Vendor Dashboard
+                        </button>
+                    }
                 }
 
                 <button class="home-button home-button-outline" @onclick="GoToProfile">
@@ -85,6 +95,7 @@
     private void GoToVendorRegister() => Navigation.NavigateTo("/register/vendor");
     private void GoToGames() => Navigation.NavigateTo("/games");
     private void GoToVendorDashboard() => Navigation.NavigateTo("/vendor");
+    private void GoToAdminDashboard() => Navigation.NavigateTo("/adminLanding");
     private void GoToProfile() => Navigation.NavigateTo("/profile");
 
     private void Logout()
