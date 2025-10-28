@@ -25,13 +25,13 @@ else
         <div class="cart-items">
             @foreach (var item in _cart.Items)
             {
-                <CartItemCard 
+                <@CartItemCard 
                     Item="@item" 
                     OnCartChanged="RefreshCartAsync" />
             }
         </div>
         
-        <CartSummary Cart="@_cart" />
+        <@CartSummary Cart="@_cart" />
     </div>
 }
 

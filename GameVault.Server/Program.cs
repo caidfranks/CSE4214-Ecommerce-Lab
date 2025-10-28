@@ -1,14 +1,17 @@
 using GameVault.Server.Services;
+using GameVault.Server.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddSingleton<IFirestoreService, FirestoreService>();
-builder.Services.AddSingleton<CartService>();
+builder.Services.AddScoped<CurrentUserService>();
+builder.Services.AddScoped<CartService>();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")

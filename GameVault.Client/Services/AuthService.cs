@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Json;
+using System.Security.Principal;
 using System.Text.Json;
 
 namespace GameVault.Client.Services;
@@ -18,6 +19,7 @@ public class AuthService
     public bool IsAuthenticated => !string.IsNullOrEmpty(_currentToken);
     public string? CurrentUserId => _currentUserId;
     public UserProfile? CurrentUser => _currentUser;
+    public string? Token => _currentToken;
 
     public async Task<AuthResponse> LoginAsync(string email, string password)
     {
@@ -35,6 +37,9 @@ public class AuthService
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
             _currentUser = result.User;
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer ", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
@@ -57,6 +62,9 @@ public class AuthService
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
             _currentUser = result.User;
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer ", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
@@ -86,6 +94,9 @@ public class AuthService
             _currentToken = result.IdToken;
             _currentUserId = result.UserId;
             _currentUser = result.User;
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer ", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
@@ -96,6 +107,7 @@ public class AuthService
         _currentToken = null;
         _currentUserId = null;
         _currentUser = null;
+        _httpClient.DefaultRequestHeaders.Authorization = null;
     }
 }
 
