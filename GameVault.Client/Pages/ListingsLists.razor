@@ -14,10 +14,18 @@
 <header>
     <nav>
         <ul>
-            <li><p><a href="/viewListings/pendingListings">Pending Listings</a></p></li>
-            <li><p><a href="/viewListings/publishedListings">Published Listings</a></p></li>
-            <li><p><a href="/viewListings/removedListings">Removed Listings</a></p></li>
-            <li><p><a href="/viewListings/unpublishedListings">Unpublished Listings</a></p></li>
+            <li>
+                <p><a href="/viewListings/pendingListings">Pending Listings</a></p>
+            </li>
+            <li>
+                <p><a href="/viewListings/publishedListings">Published Listings</a></p>
+            </li>
+            <li>
+                <p><a href="/viewListings/removedListings">Removed Listings</a></p>
+            </li>
+            <li>
+                <p><a href="/viewListings/unpublishedListings">Unpublished Listings</a></p>
+            </li>
         </ul>
     </nav>
 </header>
@@ -76,8 +84,10 @@ else
                     <iframe src="@selectedPageUrl" width="100%" height="600px" frameborder="0"></iframe>
                 </div>
                 <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-approve" @onclick='async () => {await ListingService.ChangeListingStatusToPublished(selectedEntry.Id); await LoadData(); CloseModal();}'>Approve</button>
-                    <button type="button" class="btn-deny" @onclick='async () => { await ListingService.ChangeListingStatusToInactive(selectedEntry.Id); await LoadData(); CloseModal();}'>Deny</button>
+                    <button type="button" class="btn-approve"
+                        @onclick='async () => { await ListingService.ChangeListingStatusToPublished(selectedEntry.Id); await LoadData(); CloseModal(); }'>Approve</button>
+                    <button type="button" class="btn-deny"
+                        @onclick='async () => { await ListingService.ChangeListingStatusToInactive(selectedEntry.Id); await LoadData(); CloseModal(); }'>Deny</button>
                 </div>
             </div>
         </div>
@@ -88,22 +98,22 @@ else
 @code {
     [Parameter] public string StatusFilter { get; set; } = string.Empty;
     public ListingStatus filter = 0;
-    private List<ListingDTO> entries;
-    private ListingDTO? selectedEntry;
+    private List<VendorListingDTO> entries;
+    private VendorListingDTO? selectedEntry;
     private string selectedPageUrl;
 
     private bool showModal;
 
 
     private string PageTitle =>
-        StatusFilter switch
-        {
-            "pendingListings" => "Pending Product Listings",
-            "publishedListings" => "Published Product Listings",
-            "removedListings" => "Removed Product Listings",
-            "unpublishedListings" => "Unpublished Product Listings",
-            _ => "Listings"
-        };
+    StatusFilter switch
+    {
+        "pendingListings" => "Pending Product Listings",
+        "publishedListings" => "Published Product Listings",
+        "removedListings" => "Removed Product Listings",
+        "unpublishedListings" => "Unpublished Product Listings",
+        _ => "Listings"
+    };
 
     protected override async Task OnParametersSetAsync()
     {
@@ -117,8 +127,9 @@ else
         try
         {
             filter = MapStatus(StatusFilter);
-            ListingListResponse result = await ListingService.GetListingsByStatus(filter);
-            entries = result.Listings;
+            ListResponse<VendorListingDTO> result = await ListingService.GetListingsByStatus(filter);
+            entries = result.List;
+            Console.WriteLine($"Got entries {entries?.Count ?? -1}");
             await InvokeAsync(StateHasChanged);
 
         }
@@ -141,7 +152,7 @@ else
         };
     }
 
-    private void OpenModal(ListingDTO entry)
+    private void OpenModal(VendorListingDTO entry)
     {
         selectedEntry = entry;
         selectedPageUrl = $"/product/{entry.Id}";

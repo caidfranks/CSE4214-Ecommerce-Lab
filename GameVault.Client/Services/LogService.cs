@@ -21,7 +21,7 @@ public class LogService
   {
     try
     {
-      var response = await _httpClient.GetAsync("api/logs");
+      var response = await _httpClient.GetAsync("api/log");
 
       if (!response.IsSuccessStatusCode)
       {
