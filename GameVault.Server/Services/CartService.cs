@@ -73,10 +73,11 @@ public class CartService
             cart.Items.Remove(cartItem);
             await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
         }
-
-        cartItem.Quantity = newQuantity;
-        await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
-
+        else
+        {
+            cartItem.Quantity = newQuantity;
+            await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+        }
         return cartItem;
     }
 
