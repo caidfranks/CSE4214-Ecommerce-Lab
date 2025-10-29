@@ -83,6 +83,22 @@ public class FirestoreService : IFirestoreService
         return results;
     }
 
+    public async Task<List<T>> GetCollectionAsyncWithId<T>(string collection) where T : IHasId
+    {
+        var collectionRef = _firestoreDb.Collection(collection);
+        var snapshot = await collectionRef.GetSnapshotAsync();
+
+        var results = new List<T>();
+        foreach (var document in snapshot.Documents)
+        {
+            T newResult = document.ConvertTo<T>();
+            newResult.Id = document.Id;
+            results.Add(newResult);
+        }
+
+        return results;
+    }
+
     public async Task SetDocumentAsync(string collection, string documentId, object data)
     {
         var docRef = _firestoreDb.Collection(collection).Document(documentId);

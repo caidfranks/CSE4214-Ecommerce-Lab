@@ -1,5 +1,8 @@
 ﻿@page "/actionLogs"
+@using GameVault.Client.Services
+@using GameVault.Shared.Models
 @inject Services.AuthService AuthService
+@inject Services.LogService LogService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
@@ -18,18 +21,27 @@ else
     <table>
         <thead>
             <tr>
-                <th>Action</th>
-                <th>User</th>
-                <th>Date</th>
+                <th>Timestamp</th>
+                <th>Type</th>
+                <th>Affected Object ID</th>
+                <th>Status</th>
+                <th>Summary</th>
+                <th>Details</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var entry in entries)
             {
                 <tr>
-                    <td>@entry.Action</td>
-                    <td>@entry.User</td>
-                    <td>@entry.Date</td>
+                    <td>@entry.Timestamp.ToString()</td>
+                    @* TODO: Display logs differently by type *@
+                    <td>@entry.Type</td>
+                    @* TODO: Make ObjectId field link to object (type of object based on type of log) *@
+                    <td>@entry.ObjectId</td>
+                    @* TODO: Display logs differently by type *@
+                    <td>@entry.Status</td>
+                    <td>@entry.Summary</td>
+                    <td>@entry.Details</td>
                 </tr>
             }
         </tbody>
@@ -37,48 +49,31 @@ else
 }
 
 @code {
-    private List<FirebaseEntry> entries;
-    private string errorMessage;
+    private List<LogDTO>? entries;
+    private string errorMessage = string.Empty;
+
+    private async Task LoadData()
+    {
+        entries = null;
+
+        // TODO: Make sure logged in, etc.
+
+        LogListResponse result = await LogService.GetAllLogsAsync();
+        entries = result.Logs;
+        errorMessage = result.Message ?? "";
+        await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var data = await JS.InvokeAsync<object[]>("firebaseInterop.getAllDocs", "Action Logs");
-            entries = new List<FirebaseEntry>();
-
-            if (data != null)
-            {
-                foreach (var item in data)
-                {
-                    if (item is System.Text.Json.JsonElement json)
-                    {
-                        var entry = new FirebaseEntry
-                        {
-                            Action = json.TryGetProperty("action", out var actionProp) ? actionProp.GetString() :
-                                     json.TryGetProperty("Action", out actionProp) ? actionProp.GetString() : "",
-                            User = json.TryGetProperty("user", out var userProp) ? userProp.GetString() :
-                                   json.TryGetProperty("User", out userProp) ? userProp.GetString() : "",
-                            Date = json.TryGetProperty("date", out var dateProp) ? dateProp.GetString() :
-                                   json.TryGetProperty("Date", out dateProp) ? dateProp.GetString() : ""
-                        };
-                        entries.Add(entry);
-                    }
-                }
-            }
+            await LoadData();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Exception: {ex}");
             errorMessage = $"Error loading action logs: {ex.Message}";
-            entries = new List<FirebaseEntry>();
         }
-    }
-
-    public class FirebaseEntry
-    {
-        public string Action { get; set; }
-        public string User { get; set; }
-        public string Date { get; set; }
     }
 }
