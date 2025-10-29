@@ -113,7 +113,7 @@ namespace GameVault.Server.Controllers
         }
 
         [HttpGet("status")]
-        public async Task<ActionResult<ListingListResponse>> GetListingsByStatus([FromQuery] ListingStatus s)
+        public async Task<ActionResult<ListResponse<VendorListingDTO>>> GetListingsByStatus([FromQuery] ListingStatus s)
         {
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
@@ -135,7 +135,7 @@ namespace GameVault.Server.Controllers
                 ]
             );
 
-            List<ListingDTO> listingDTOs = [];
+            List<VendorListingDTO> listingDTOs = [];
 
             foreach (var listing in listings)
             {
@@ -157,57 +157,9 @@ namespace GameVault.Server.Controllers
 
             //Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
 
-            return new VendorListingListResponse { Success = true, Listings = listingDTOs };
+            return new ListResponse<VendorListingDTO> { Success = true, List = listingDTOs };
 
             // return new ListingListResponse { Success = false, Message = "Not configured" };
-        }
-
-        [HttpGet("status")]
-        public async Task<ActionResult<ListingListResponse>> GetListingsByStatus([FromQuery] ListingStatus s)
-        {
-            var apiKey = _configuration["Firebase:ApiKey"];
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return StatusCode(500, new ListingListResponse
-                {
-                    Success = false,
-                    Message = "Firebase configuration error"
-                });
-            }
-
-            var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>(
-                "listings",
-                [
-                    new() {
-                fieldName = "Status",
-                value = (int)s
-            }
-                ]
-            );
-
-            List<ListingDTO> listingDTOs = [];
-
-            foreach (var listing in listings)
-            {
-                ListingDTO listingDTO = new()
-                {
-                    Id = listing.Id,
-                    Name = listing.Name,
-                    Price = listing.Price,
-                    Description = listing.Description,
-                    Stock = listing.Stock,
-                    Status = listing.Status,
-                    OwnerID = listing.OwnerID,
-                    Image = listing.Image
-                };
-                listingDTOs.Add(listingDTO);
-            }
-
-            return new ListingListResponse
-            {
-                Success = true,
-                Listings = listingDTOs
-            };
         }
 
         [HttpPost("submit")]

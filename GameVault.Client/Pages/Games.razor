@@ -1,13 +1,13 @@
 ﻿@page "/games"
-@using GameVaultWeb.Services
-@using GameVaultWeb.Models
-@inject UserState User
+@using GameVault.Client.Services
+@using GameVault.Client.Models
+@inject Services.AuthService AuthService
 @inject ProductService ProductService
 @inject NavigationManager Nav
 
 <PageTitle>Browse Products - GameVault</PageTitle>
 
-@if (!User.IsLoggedIn)
+@if (AuthService.CurrentUserId is null)
 {
     <div class="container mt-5">
         <div class="alert alert-info">
@@ -16,7 +16,7 @@
         </div>
     </div>
 }
-else if (User.Role == "Customer")
+else if (AuthService.CurrentUser?.Role == "Customer")
 {
     <div class="browse-container">
         <div class="row">
@@ -27,44 +27,39 @@ else if (User.Role == "Customer")
                     <div class="filter-options">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="actionFilter"
-                                   checked="@selectedFilters.Contains("Action")"
-                                   @onchange="@(e => ToggleFilter("Action"))">
+                                checked="@selectedFilters.Contains("Action")" @onchange="@(e => ToggleFilter("Action"))">
                             <label class="form-check-label" for="actionFilter">Action</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="rpgFilter"
-                                   checked="@selectedFilters.Contains("RPG")"
-                                   @onchange="@(e => ToggleFilter("RPG"))">
+                                checked="@selectedFilters.Contains("RPG")" @onchange="@(e => ToggleFilter("RPG"))">
                             <label class="form-check-label" for="rpgFilter">RPG</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="adventureFilter"
-                                   checked="@selectedFilters.Contains("Adventure")"
-                                   @onchange="@(e => ToggleFilter("Adventure"))">
+                                checked="@selectedFilters.Contains("Adventure")"
+                                @onchange="@(e => ToggleFilter("Adventure"))">
                             <label class="form-check-label" for="adventureFilter">Adventure</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="strategyFilter"
-                                   checked="@selectedFilters.Contains("Strategy")"
-                                   @onchange="@(e => ToggleFilter("Strategy"))">
+                                checked="@selectedFilters.Contains("Strategy")"
+                                @onchange="@(e => ToggleFilter("Strategy"))">
                             <label class="form-check-label" for="strategyFilter">Strategy</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="sportsFilter"
-                                   checked="@selectedFilters.Contains("Sports")"
-                                   @onchange="@(e => ToggleFilter("Sports"))">
+                                checked="@selectedFilters.Contains("Sports")" @onchange="@(e => ToggleFilter("Sports"))">
                             <label class="form-check-label" for="sportsFilter">Sports</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="puzzleFilter"
-                                   checked="@selectedFilters.Contains("Puzzle")"
-                                   @onchange="@(e => ToggleFilter("Puzzle"))">
+                                checked="@selectedFilters.Contains("Puzzle")" @onchange="@(e => ToggleFilter("Puzzle"))">
                             <label class="form-check-label" for="puzzleFilter">Puzzle</label>
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="horrorFilter"
-                                   checked="@selectedFilters.Contains("Horror")"
-                                   @onchange="@(e => ToggleFilter("Horror"))">
+                                checked="@selectedFilters.Contains("Horror")" @onchange="@(e => ToggleFilter("Horror"))">
                             <label class="form-check-label" for="horrorFilter">Horror</label>
                         </div>
                     </div>
@@ -94,9 +89,8 @@ else if (User.Role == "Customer")
                         {
                             <span class="badge bg-primary me-2">
                                 @filter
-                                <button type="button" class="btn-close btn-close-white ms-1"
-                                        style="font-size: 0.6rem;"
-                                        @onclick="() => RemoveFilter(filter)"></button>
+                                <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.6rem;"
+                                    @onclick="() => RemoveFilter(filter)"></button>
                             </span>
                         }
                     </div>
@@ -188,8 +182,8 @@ else
     <!-- For Vendors and Admins -->
     <div class="container mt-5">
         <div class="alert alert-info">
-            <h4>Welcome, @(User.Username ?? "Guest")!</h4>
-            <p>Your role is: <strong>@User.Role</strong></p>
+            <h4>Welcome, @(AuthService.CurrentUser?.DisplayName ?? "User")!</h4>
+            <p>Your role is: <strong>@AuthService.CurrentUser?.Role</strong></p>
             <p>This page is for customers only. Please use the navigation menu to access your dashboard.</p>
             <a href="/account" class="btn btn-primary">Go to Account</a>
         </div>
@@ -248,8 +242,8 @@ else
     {
         // REQ-42, REQ-43, REQ-44: Apply filter and retrieve matching listings
         var filtered = selectedFilters.Count == 0
-            ? allProducts.ToList()
-            : allProducts.Where(p => selectedFilters.Contains(p.Category)).ToList();
+        ? allProducts.ToList()
+        : allProducts.Where(p => selectedFilters.Contains(p.Category)).ToList();
 
         // Calculate pagination
         totalPages = (int)Math.Ceiling(filtered.Count / (double)pageSize);
@@ -257,9 +251,9 @@ else
 
         // Get current page items
         filteredProducts = filtered
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        .Skip((currentPage - 1) * pageSize)
+        .Take(pageSize)
+        .ToList();
     }
 
     private void NextPage()
@@ -283,13 +277,13 @@ else
     private void UpdatePagedProducts()
     {
         var filtered = selectedFilters.Count == 0
-            ? allProducts.ToList()
-            : allProducts.Where(p => selectedFilters.Contains(p.Category)).ToList();
+        ? allProducts.ToList()
+        : allProducts.Where(p => selectedFilters.Contains(p.Category)).ToList();
 
         filteredProducts = filtered
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        .Skip((currentPage - 1) * pageSize)
+        .Take(pageSize)
+        .ToList();
     }
 
     private void ViewProduct(string productId)

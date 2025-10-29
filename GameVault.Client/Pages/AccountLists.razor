@@ -107,7 +107,7 @@ else
                     <p>Are you sure?</p>
                 </div>
                 <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-approve" @onclick='async () => { await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID); await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); await LoadData(); CloseConfirmation(); }'>Approve</button>
+                    <button type="button" class="btn-approve" @onclick='async () => { await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID); /* await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); */ await LoadData(); CloseConfirmation(); }'>Approve</button>
                     <button type="button" class="btn-deny" @onclick='async () => { CloseConfirmation(); }'>Deny</button>
                 </div>
             </div>

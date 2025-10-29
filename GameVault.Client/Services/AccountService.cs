@@ -1,6 +1,6 @@
 using GameVault.Shared.DTOs;
 using GameVault.Shared.Models;
-using GameVaultWeb.Models;
+using GameVault.Client.Models;
 using Grpc.Net.Client.Balancer;
 using System;
 using System.Net;
@@ -11,12 +11,12 @@ namespace GameVault.Client.Services;
 
 public class AccountService
 {
-  private readonly HttpClient _httpClient;
+    private readonly HttpClient _httpClient;
 
-  public AccountService(HttpClient httpClient)
-  {
-    _httpClient = httpClient;
-  }
+    public AccountService(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+    }
     public async Task<BaseResponse> ChangeAccountStatusToActive(string id)
     {
         var response = await _httpClient.PostAsJsonAsync("api/account/approve", id);

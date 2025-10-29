@@ -1,13 +1,13 @@
 ﻿@page "/product/{id}"
-@using GameVaultWeb.Services
-@using GameVaultWeb.Models
-@inject UserState User
+@using GameVault.Client.Services
+@using GameVault.Client.Models
+@inject Services.AuthService AuthService
 @inject ProductService ProductService
 @inject NavigationManager Nav
 
 <PageTitle>@(product?.Name ?? "Product") - GameVault</PageTitle>
 
-@if (!User.IsLoggedIn)
+@if (AuthService.CurrentUserId is null)
 {
     <div class="container mt-5">
         <div class="alert alert-warning">
@@ -104,7 +104,7 @@ else
                     </div>
 
                     <!-- Add to Cart Section (REQ-48, REQ-62-63) -->
-                    @if (User.Role == "Customer" && product.Stock > 0)
+                    @if (AuthService.CurrentUser?.Role == "Customer" && product.Stock > 0)
                     {
                         <div class="add-to-cart-section p-4 border rounded bg-light">
                             <div class="row align-items-center">
@@ -140,7 +140,7 @@ else
                             </div>
                         }
                     }
-                    else if (User.Role != "Customer")
+                    else if (AuthService.CurrentUser.Role != "Customer")
                     {
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i> Only customers can purchase products.
@@ -214,9 +214,9 @@ else
         {
             var categoryProducts = await ProductService.GetProductsByCategoryAsync(product.Category);
             suggestedProducts = categoryProducts
-                .Where(p => p.Id != product.Id)
-                .Take(4)
-                .ToList();
+            .Where(p => p.Id != product.Id)
+            .Take(4)
+            .ToList();
         }
     }
 

@@ -16,7 +16,7 @@ public class FirestoreService : IFirestoreService
     {
 
 
-        string emulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
+        string? emulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
         if (string.IsNullOrEmpty(emulatorHost))
         {
             // Handle the case where the emulator variable is not set
