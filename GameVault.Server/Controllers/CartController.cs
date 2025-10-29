@@ -1,25 +1,28 @@
-﻿using System.ComponentModel.DataAnnotations;
-using GameVault.Server.Services;
+﻿using GameVault.Server.Services;
 using GameVault.Shared.Models;
 using GameVault.Shared.DTOs;
 using Microsoft.AspNetCore.Mvc;
 using Google.Cloud.Firestore.V1;
-//using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
+using GameVault.Server.Filters;
 
 namespace GameVault.Server.Controllers;
 
-
+[Authorize]
+[RequireAuthUser]
 [ApiController]
 [Route("api/[controller]")]
 public class CartController : ControllerBase
 {
     private readonly CartService _cartService;
     private readonly ILogger<CartController> _logger;
+    private readonly ICurrentUserService _currentUser;
 
-    public CartController(CartService cartService, ILogger<CartController> logger)
+    public CartController(CartService cartService, ILogger<CartController> logger, ICurrentUserService currentUser)
     {
         _cartService = cartService;
         _logger = logger;
+        _currentUser = currentUser;
     }
 
     [HttpGet]
@@ -27,11 +30,11 @@ public class CartController : ControllerBase
     {
         try
         {
-            var userId = "testUser456";
+            _logger.LogInformation("{UserId} accessed cart", _currentUser.UserId);
 
             _logger.LogInformation("testUser456 accessed cart");
 
-            var dbCart = await _cartService.GetCartAsync(userId);
+            var dbCart = await _cartService.GetCartAsync(_currentUser.UserId);
 
             List<CartItemDTO> items = [];
             foreach (Models.Firestore.CartItem item in dbCart.Items)
@@ -47,9 +50,9 @@ public class CartController : ControllerBase
 
             return Ok(cart);
         }
-        catch
+        catch (Exception ex)
         {
-            _logger.LogError("No cart found");
+            _logger.LogError(ex, "No cart found");
             return StatusCode(500);
         }
     }
@@ -60,12 +63,10 @@ public class CartController : ControllerBase
     {
         try
         {
-            var userId = "testUser456";
-
-            _logger.LogInformation("testUser456 adding to cart");
+            _logger.LogInformation("{UserId} adding to cart", _currentUser.UserId);
 
             var cartItemDetails = await _cartService.AddToCartAsync(
-                userId,
+                _currentUser.UserId,
                 addToCartDto.ListingId,
                 addToCartDto.Quantity
             );
@@ -76,7 +77,8 @@ public class CartController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError("Failed to add to cart");
+            _logger.LogError(ex, "Failed to add to cart");
+
             return StatusCode(500, new { message = ex.Message, details = ex.StackTrace });
         }
     }
@@ -88,9 +90,9 @@ public class CartController : ControllerBase
     {
         try
         {
-            var userId = "testUser456";
-            _logger.LogInformation("testUser456 updating item");
-            var updatedItem = await _cartService.UpdateQuantityAsync(userId, listingId, request.Quantity);
+            _logger.LogInformation("{UserId} updating item", _currentUser.UserId);
+
+            var updatedItem = await _cartService.UpdateQuantityAsync(_currentUser.UserId, listingId, request.Quantity);
 
             CartItemDTO fullItem = await _cartService.PopulateCartItem(updatedItem);
 
@@ -98,8 +100,7 @@ public class CartController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError("Failed to update item");
-            Console.WriteLine(ex.Message);
+            _logger.LogError(ex, "Failed to update item");
             return StatusCode(500);
 
         }
@@ -110,16 +111,15 @@ public class CartController : ControllerBase
     {
         try
         {
-            var userId = "testUser456";
-            _logger.LogInformation("testUser456 removing item");
+            _logger.LogInformation("{UserId} removing item", _currentUser.UserId);
 
-            await _cartService.RemoveFromCartAsync(userId, listingId);
+            await _cartService.RemoveFromCartAsync(_currentUser.UserId, listingId);
 
             return Ok();
         }
-        catch
+        catch (Exception ex)
         {
-            _logger.LogError("Failed to remove item");
+            _logger.LogError(ex, "Failed to remove item");
             return StatusCode(500);
         }
     }
@@ -129,16 +129,16 @@ public class CartController : ControllerBase
     {
         try
         {
-            var userId = "testUser456";
-            _logger.LogInformation("testUser456 clearing cart");
+            _logger.LogInformation("{UserId} clearing cart", _currentUser.UserId);
 
-            await _cartService.ClearCartAsync(userId);
+            await _cartService.ClearCartAsync(_currentUser.UserId);
 
             return Ok();
         }
-        catch
+        catch (Exception ex)
         {
-            _logger.LogError("Failed to clear cart");
+            _logger.LogError(ex, "Failed to clear cart");
+
             return StatusCode(500);
         }
     }
