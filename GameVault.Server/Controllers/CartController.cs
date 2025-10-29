@@ -3,6 +3,7 @@ using GameVault.Server.Services;
 using GameVault.Shared.Models;
 using GameVault.Shared.DTOs;
 using Microsoft.AspNetCore.Mvc;
+using Google.Cloud.Firestore.V1;
 //using Microsoft.AspNetCore.Authorization;
 
 namespace GameVault.Server.Controllers;
@@ -22,7 +23,7 @@ public class CartController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<ShoppingCart>> GetCart()
+    public async Task<ActionResult<CartDTO>> GetCart()
     {
         try
         {
@@ -30,7 +31,19 @@ public class CartController : ControllerBase
 
             _logger.LogInformation("testUser456 accessed cart");
 
-            var cart = await _cartService.GetCartAsync(userId);
+            var dbCart = await _cartService.GetCartAsync(userId);
+
+            List<CartItemDTO> items = [];
+            foreach (Models.Firestore.CartItem item in dbCart.Items)
+            {
+                items.Add(await _cartService.PopulateCartItem(item));
+            }
+
+            CartDTO cart = new()
+            {
+                UserId = dbCart.OwnerId,
+                Items = items
+            };
 
             return Ok(cart);
         }
@@ -43,7 +56,7 @@ public class CartController : ControllerBase
 
 
     [HttpPost("item")]
-    public async Task<ActionResult<CartItem>> AddToCart([FromBody] AddToCartDto addToCartDto)
+    public async Task<ActionResult<CartItemDTO>> AddToCart([FromBody] NewCartItemDTO addToCartDto)
     {
         try
         {
@@ -57,7 +70,9 @@ public class CartController : ControllerBase
                 addToCartDto.Quantity
             );
 
-            return Ok(cartItemDetails);
+            CartItemDTO fullItem = await _cartService.PopulateCartItem(cartItemDetails);
+
+            return Ok(fullItem);
         }
         catch (Exception ex)
         {
@@ -77,11 +92,14 @@ public class CartController : ControllerBase
             _logger.LogInformation("testUser456 updating item");
             var updatedItem = await _cartService.UpdateQuantityAsync(userId, listingId, request.Quantity);
 
-            return Ok(updatedItem);
+            CartItemDTO fullItem = await _cartService.PopulateCartItem(updatedItem);
+
+            return Ok(fullItem);
         }
-        catch
+        catch (Exception ex)
         {
             _logger.LogError("Failed to update item");
+            Console.WriteLine(ex.Message);
             return StatusCode(500);
 
         }
@@ -124,9 +142,4 @@ public class CartController : ControllerBase
             return StatusCode(500);
         }
     }
-}
-
-public class UpdateCartItemQuantityRequest
-{
-    public int Quantity { get; set; }
 }

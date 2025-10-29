@@ -7,27 +7,25 @@
 
 <div>
     <img src="@Item.ThumbnailUrl" alt="@Item.ListingName" />
-    
+
     <div>
         <h3>@Item.ListingName</h3>
         <p>Sold by: @Item.VendorName</p>
         <p>Price: $@FormatPrice(Item.PriceInCents)</p>
         <p>Quantity: @Item.Quantity</p>
         <p>Total Price: $@FormatPrice(Item.LineTotalInCents)</p>
-    
-        <QuantitySelector
-            Quantity="@Item.Quantity"
-            QuantityChanged="OnQuantityChanged" />
-    
+
+        <QuantitySelector Quantity="@Item.Quantity" QuantityChanged="OnQuantityChanged" />
+
         <button @onclick="RemoveFromCartAsync" disabled="@_isUpdating">Remove</button>
     </div>
 </div>
 
-@code 
+@code
 {
-    [Parameter] public CartItemDto Item { get; set; } = null!;
+    [Parameter] public CartItemDTO Item { get; set; } = null!;
     [Parameter] public EventCallback OnCartChanged { get; set; }
-    
+
     private bool _isUpdating = false;
 
     private string FormatPrice(int priceInCents)
@@ -51,7 +49,7 @@
         _isUpdating = true;
 
         await CartService.RemoveFromCartAsync(Item, EventCallback.Empty);
-        
+
         _isUpdating = false;
     }
 
@@ -62,6 +60,6 @@
         await CartService.UpdateQuantityAsync(newQuantity, Item, EventCallback.Empty);
 
         _isUpdating = false;
-        
+
     }
 }

@@ -25,18 +25,16 @@ else
         <div class="cart-items">
             @foreach (var item in _cart.Items)
             {
-                <CartItemCard 
-                    Item="@item" 
-                    OnCartChanged="RefreshCartAsync" />
+                <CartItemCard Item="@item" OnCartChanged="RefreshCartAsync" />
             }
         </div>
-        
+
         <CartSummary Cart="@_cart" />
     </div>
 }
 
 @code {
-    private ShoppingCartDto? _cart;
+    private CartDTO? _cart;
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -61,6 +59,6 @@ else
 
     private void GoToBrowse()
     {
-        
+
     }
 }

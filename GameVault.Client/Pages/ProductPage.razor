@@ -118,9 +118,10 @@ else
                                     </select>
                                 </div>
                                 <div class="col-md-8 mt-3 mt-md-0">
-                                    <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
+                                    @* <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
                                         <i class="bi bi-cart-plus"></i> Add to Cart
-                                    </button>
+                                    </button> *@
+                                    <GameVault.Client.Components.AddToCartButton ListingId="@Id" Quantity="@selectedQuantity" />
                                 </div>
                             </div>
                         </div>

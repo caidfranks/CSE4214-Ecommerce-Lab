@@ -1,5 +1,8 @@
-﻿using GameVault.Shared.Models;
+﻿using GameVault.Server.Models.Firestore;
+using GameVault.Shared.DTOs;
+using GameVault.Shared.Models;
 using Google.Cloud.Firestore;
+using Google.Cloud.Firestore.V1;
 //using Microsoft.AspNetCore.Authorization;
 
 namespace GameVault.Server.Services;
@@ -15,21 +18,30 @@ public class CartService
         _firestore = firestore;
     }
 
-    public async Task<ShoppingCart> GetCartAsync(string userId)
+    public async Task<Cart> GetCartAsync(string userId)
     {
-        var cart = await _firestore.GetDocumentAsync<ShoppingCart>(CartsCollection, userId);
+        var result = await _firestore.GetDocumentAsync<FirestoreCart>(CartsCollection, userId);
 
-        if (cart == null)
+        Cart cart;
+        if (result == null)
         {
-            cart = new ShoppingCart(userId);
+            cart = new Cart()
+            {
+                OwnerId = userId,
+                Items = []
+            };
             await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+        }
+        else
+        {
+            cart = Cart.FromCart(result, userId);
         }
 
         return cart;
     }
 
 
-    public async Task<CartItem> AddToCartAsync(
+    public async Task<Models.Firestore.CartItem> AddToCartAsync(
         string userId,
         string listingId,
         int quantity)
@@ -38,7 +50,7 @@ public class CartService
 
         var existingItem = cart.Items.FirstOrDefault(item => item.ListingId == listingId);
 
-        CartItem? cartItem;
+        Models.Firestore.CartItem? cartItem;
 
         if (existingItem != null)
         {
@@ -47,20 +59,24 @@ public class CartService
         }
         else
         {
-            cartItem = new CartItem(
-                listingId,
-                quantity
-            );
+            cartItem = new Models.Firestore.CartItem()
+            {
+                ListingId = listingId,
+                Quantity = quantity
+            };
 
             cart.Items.Add(cartItem);
         }
 
-        await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+        await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
+        {
+            Items = cart.Items
+        });
 
         return cartItem;
     }
 
-    public async Task<CartItem?> UpdateQuantityAsync(
+    public async Task<Models.Firestore.CartItem?> UpdateQuantityAsync(
         string userId,
         string ListingId,
         int newQuantity)
@@ -71,11 +87,18 @@ public class CartService
         if (newQuantity <= 0)
         {
             cart.Items.Remove(cartItem);
-            await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+            await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
+            {
+                Items = cart.Items
+            });
+            return cartItem;
         }
 
         cartItem.Quantity = newQuantity;
-        await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+        await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
+        {
+            Items = cart.Items
+        });
 
         return cartItem;
     }
@@ -86,13 +109,58 @@ public class CartService
         var cartItem = cart.Items.FirstOrDefault(item => item.ListingId == listingId);
 
         cart.Items.Remove(cartItem);
-        await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+        await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
+        {
+            Items = cart.Items
+        });
     }
 
     public async Task ClearCartAsync(string userId)
     {
         var cart = await GetCartAsync(userId);
         cart.Items.Clear();
-        await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+        await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
+        {
+            Items = cart.Items
+        });
+    }
+
+    public async Task<CartItemDTO> PopulateCartItem(Models.Firestore.CartItem cartItem)
+    {
+        // Get listing details
+        // * Price
+        // * Image
+        // * Name
+        // * VendorId
+        Listing? listing = await _firestore.GetDocumentAsync<Listing>("listings", cartItem.ListingId);
+
+        if (listing is null)
+        {
+            return new()
+            {
+                ListingId = cartItem.ListingId,
+                Quantity = cartItem.Quantity,
+                ListingName = "Not Found",
+                PriceInCents = 0,
+                ThumbnailUrl = "",
+                VendorId = "",
+                VendorName = "Not Found",
+            };
+        }
+
+        // Get vendor name
+        Models.User? vendor = await _firestore.GetDocumentAsync<Models.User>("users", listing.OwnerID);
+        string vendorName = vendor?.DisplayName ?? "Unknown Vendor";
+
+        return new()
+        {
+            ListingId = cartItem.ListingId,
+            Quantity = cartItem.Quantity,
+            ListingName = listing.Name,
+            PriceInCents = listing.Price,
+            ThumbnailUrl = listing.Image,
+            VendorId = listing.OwnerID,
+            VendorName = vendorName
+        };
     }
 }

@@ -10,7 +10,7 @@ public class FirestoreCart
   // public required string OwnerId { get; set; }
 
   [FirestoreProperty]
-  public required List<CartItem> Items {get; set;}
+  public required List<CartItem> Items { get; set; }
 }
 
 [FirestoreData]
@@ -28,6 +28,14 @@ public class Cart : FirestoreCart
     return new()
     {
       OwnerId = oldCart.Id,
+      Items = oldCart.Items
+    };
+  }
+  public static Cart FromCart(FirestoreCart oldCart, string id)
+  {
+    return new()
+    {
+      OwnerId = id,
       Items = oldCart.Items
     };
   }
