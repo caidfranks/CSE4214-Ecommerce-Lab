@@ -1,16 +1,16 @@
 ﻿using GameVault.Shared.Models;
 using Google.Cloud.Firestore;
-//using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
+using GameVault.Server.Filters;
 
 namespace GameVault.Server.Services;
 
-///[Authorize]
 public class CartService
 {
     private readonly IFirestoreService _firestore;
     private const string CartsCollection = "carts";
 
-    public CartService(IFirestoreService firestore)
+    public CartService(IFirestoreService firestore, ICurrentUserService currentUserService)
     {
         _firestore = firestore;
     }
@@ -73,10 +73,11 @@ public class CartService
             cart.Items.Remove(cartItem);
             await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
         }
-
-        cartItem.Quantity = newQuantity;
-        await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
-
+        else
+        {
+            cartItem.Quantity = newQuantity;
+            await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+        }
         return cartItem;
     }
 
