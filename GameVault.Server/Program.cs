@@ -10,7 +10,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddSingleton<IFirebaseAuthService, FirebaseAuthService>();
 builder.Services.AddSingleton<IFirestoreService, FirestoreService>();
-builder.Services.AddScoped<CurrentUserService>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<CartService>();
 
 var allowedOrigins = builder.Configuration
