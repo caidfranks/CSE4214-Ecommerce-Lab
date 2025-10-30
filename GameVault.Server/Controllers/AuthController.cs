@@ -198,7 +198,7 @@ public class AuthController : ControllerBase
             //     UserId = userId!,
             //     Email = request.Email,
             //     DisplayName = request.DisplayName ?? string.Empty,
-            //     Role = nameof(UserRole.Vendor),
+            //     Role = nameof(AccountType.Vendor),
             //     ApprovalStatus = nameof(ApprovalStatus.Pending),
             //     BusinessName = request.BusinessName,
             //     BusinessDescription = request.BusinessDescription

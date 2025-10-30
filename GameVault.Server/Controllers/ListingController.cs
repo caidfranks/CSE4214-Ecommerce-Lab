@@ -45,7 +45,7 @@ namespace GameVault.Server.Controllers
             {
                 return Forbid();
             }
-            else if (user.Role != nameof(UserRole.Vendor))
+            else if (user.Type != AccountType.Vendor)
             {
                 return Unauthorized();
             }
@@ -58,7 +58,7 @@ namespace GameVault.Server.Controllers
                 Price = newListing.Price,
                 Stock = newListing.Stock,
                 Status = newListing.Status,
-                OwnerID = user.UserId,
+                OwnerID = user.Id,
                 LastModified = DateTime.UtcNow
             };
 
@@ -91,7 +91,7 @@ namespace GameVault.Server.Controllers
             {
                 return Forbid();
             }
-            else if (user.Role == nameof(UserRole.Customer))
+            else if (user.Type == AccountType.Customer)
             {
                 return Unauthorized(new VendorListingListResponse
                 {
@@ -100,7 +100,7 @@ namespace GameVault.Server.Controllers
                 });
             }
 
-            Console.WriteLine(user?.Role ?? "Not logged in");
+            Console.WriteLine(user?.Type.ToString() ?? "Not logged in");
 
             var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>("listings",
             [

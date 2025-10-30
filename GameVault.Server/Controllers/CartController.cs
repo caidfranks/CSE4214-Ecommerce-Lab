@@ -35,14 +35,14 @@ public class CartController : ControllerBase
             {
                 return Forbid();
             }
-            else if (user.Role != nameof(UserRole.Customer))
+            else if (user.Type != AccountType.Customer)
             {
                 return Unauthorized();
             }
 
-            _logger.LogInformation("{UserId} accessed cart", user.UserId);
+            _logger.LogInformation("{UserId} accessed cart", user.Id);
 
-            var dbCart = await _cartService.GetCartAsync(user.UserId);
+            var dbCart = await _cartService.GetCartAsync(user.Id);
 
             List<CartItemDTO> items = [];
             foreach (Models.Firestore.CartItem item in dbCart.Items)
@@ -77,15 +77,15 @@ public class CartController : ControllerBase
             {
                 return Forbid();
             }
-            else if (user.Role != nameof(UserRole.Customer))
+            else if (user.Type != AccountType.Customer)
             {
                 return Unauthorized();
             }
 
-            _logger.LogInformation("{UserId} adding to cart", user.UserId);
+            _logger.LogInformation("{UserId} adding to cart", user.Id);
 
             var cartItemDetails = await _cartService.AddToCartAsync(
-                user.UserId,
+                user.Id,
                 addToCartDto.ListingId,
                 addToCartDto.Quantity
             );
@@ -115,14 +115,14 @@ public class CartController : ControllerBase
             {
                 return Forbid();
             }
-            else if (user.Role != nameof(UserRole.Customer))
+            else if (user.Type != AccountType.Customer)
             {
                 return Unauthorized();
             }
 
-            _logger.LogInformation("{UserId} updating item", user.UserId);
+            _logger.LogInformation("{UserId} updating item", user.Id);
 
-            var updatedItem = await _cartService.UpdateQuantityAsync(user.UserId, listingId, request.Quantity);
+            var updatedItem = await _cartService.UpdateQuantityAsync(user.Id, listingId, request.Quantity);
 
             CartItemDTO fullItem = await _cartService.PopulateCartItem(updatedItem);
 
@@ -147,14 +147,14 @@ public class CartController : ControllerBase
             {
                 return Forbid();
             }
-            else if (user.Role != nameof(UserRole.Customer))
+            else if (user.Type != AccountType.Customer)
             {
                 return Unauthorized();
             }
 
-            _logger.LogInformation("{UserId} removing item", user.UserId);
+            _logger.LogInformation("{UserId} removing item", user.Id);
 
-            await _cartService.RemoveFromCartAsync(user.UserId, listingId);
+            await _cartService.RemoveFromCartAsync(user.Id, listingId);
 
             return Ok();
         }
@@ -176,14 +176,14 @@ public class CartController : ControllerBase
             {
                 return Forbid();
             }
-            else if (user.Role != nameof(UserRole.Customer))
+            else if (user.Type != AccountType.Customer)
             {
                 return Unauthorized();
             }
 
-            _logger.LogInformation("{UserId} clearing cart", user.UserId);
+            _logger.LogInformation("{UserId} clearing cart", user.Id);
 
-            await _cartService.ClearCartAsync(user.UserId);
+            await _cartService.ClearCartAsync(user.Id);
 
             return Ok();
         }

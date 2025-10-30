@@ -8,6 +8,7 @@ using Square;
 using System.Security.Cryptography.X509Certificates;
 using System.Reflection.Metadata;
 using FirebaseAdmin.Messaging;
+using GameVault.Server.Models.Firestore;
 
 namespace GameVault.Server.Controllers;
 
@@ -49,8 +50,8 @@ public class ProductController : ControllerBase
                     else
                     {
                         // Look up vendor in database
-                        var vendor = await _firestore.GetDocumentAsync<Models.User>("users", product.OwnerID);
-                        vendorName = vendor?.DisplayName ?? "Unknown Vendor";
+                        var vendor = await _firestore.GetDocumentAsync<FirestoreUser>("users", product.OwnerID);
+                        vendorName = vendor?.Name ?? "Unknown Vendor";
                         vendorCache.Add(new()
                         {
                             Id = product.OwnerID,
@@ -111,8 +112,8 @@ public class ProductController : ControllerBase
             // Check for if published or not
 
             // Look up vendor in database
-            Models.User? vendor = await _firestore.GetDocumentAsync<Models.User>("users", product.OwnerID);
-            string vendorName = vendor?.DisplayName ?? "Unknown Vendor";
+            var vendor = await _firestore.GetDocumentAsync<Models.Firestore.FirestoreUser>("users", product.OwnerID);
+            string vendorName = vendor?.Name ?? "Unknown Vendor";
 
             Console.WriteLine($"Product found: {product.Name}");
             return Ok(new DataResponse<FullListingDTO>()
@@ -171,8 +172,8 @@ public class ProductController : ControllerBase
                     else
                     {
                         // Look up vendor in database
-                        var vendor = await _firestore.GetDocumentAsync<Models.User>("users", product.OwnerID);
-                        vendorName = vendor?.DisplayName ?? "Unknown Vendor";
+                        var vendor = await _firestore.GetDocumentAsync<Models.Firestore.FirestoreUser>("users", product.OwnerID);
+                        vendorName = vendor?.Name ?? "Unknown Vendor";
                         vendorCache.Add(new()
                         {
                             Id = product.OwnerID,
@@ -254,8 +255,8 @@ public class ProductController : ControllerBase
                     else
                     {
                         // Look up vendor in database
-                        var vendor = await _firestore.GetDocumentAsync<Models.User>("users", product.OwnerID);
-                        vendorName = vendor?.DisplayName ?? "Unknown Vendor";
+                        var vendor = await _firestore.GetDocumentAsync<Models.Firestore.FirestoreUser>("users", product.OwnerID);
+                        vendorName = vendor?.Name ?? "Unknown Vendor";
                         vendorCache.Add(new()
                         {
                             Id = product.OwnerID,

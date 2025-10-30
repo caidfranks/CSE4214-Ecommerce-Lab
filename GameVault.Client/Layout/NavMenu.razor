@@ -44,6 +44,12 @@
                     </NavLink>
                 </div>
             }
+            else
+            {
+                <div class="nav-item px-3">
+                    <CartButton />
+                </div>
+            }
 
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="profile">
@@ -58,9 +64,6 @@
             </NavLink>
         </div>
     </nav>
-    <div class="nav-item px-3">
-        <CartButton />
-    </div>
 
     <div class="nav-auth-section">
         @if (AuthService.IsAuthenticated)
@@ -85,7 +88,7 @@
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="register-customer">
+                <NavLink class="nav-link" href="register/customer">
                     <span class="bi bi-person-plus" aria-hidden="true"></span> Sign Up
                 </NavLink>
             </div>

@@ -14,7 +14,7 @@ public class UserService
     _firestore = firestore;
   }
 
-  public async Task<User?> GetUserFromHeader(string? header)
+  public async Task<Models.Firestore.User?> GetUserFromHeader(string? header)
   {
     if (header is null) return null;
     try
@@ -25,9 +25,20 @@ public class UserService
 
       if (userId is null) return null;
 
-      var user = await _firestore.GetDocumentAsync<User>("users", userId);
+      var user = await _firestore.GetDocumentAsync<Models.Firestore.FirestoreUser>("users", userId);
 
-      return user;
+      if (user is null) return null;
+
+      return new Models.Firestore.User()
+      {
+        Id = userId,
+        Type = user.Type,
+        Email = user.Email,
+        Banned = user.Banned,
+        BanMsg = user.BanMsg,
+        Name = user.Name,
+        ReviewedBy = user.ReviewedBy
+      };
     }
     catch (Exception ex)
     {

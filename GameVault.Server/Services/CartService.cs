@@ -153,8 +153,8 @@ public class CartService
         }
 
         // Get vendor name
-        Models.User? vendor = await _firestore.GetDocumentAsync<Models.User>("users", listing.OwnerID);
-        string vendorName = vendor?.DisplayName ?? "Unknown Vendor";
+        var vendor = await _firestore.GetDocumentAsync<Models.Firestore.FirestoreUser>("users", listing.OwnerID);
+        string vendorName = vendor?.Name ?? "Unknown Vendor";
 
         return new()
         {
