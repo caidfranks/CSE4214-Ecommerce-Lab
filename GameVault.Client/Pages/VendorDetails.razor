@@ -15,22 +15,22 @@
 }
 else
 {
-    <h3>VendorDetails</h3>
+    <h3>Vendor Details</h3>
 
-    <p>Name: @account.DisplayName</p>
+    <p>Name: @account.Name</p>
     <p>Email: @account.Email</p>
-    <p>Business Name: @account.BusinessName</p>
 }
 
 @code {
     [Parameter] public string? UserID { get; set; }
-    private AccountDTO? account;
+    private UserDTO? account;
 
     protected override async Task OnParametersSetAsync()
     {
         if (UserID is not null)
         {
-            account = await AccountService.GetAccountByIdAsync(UserID);
+            var result = await AccountService.GetAccountByIdAsync(UserID);
+            if (result is not null && result.Success) account = result.Data;
         }
         else
         {

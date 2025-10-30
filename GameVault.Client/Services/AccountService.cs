@@ -17,82 +17,89 @@ public class AccountService
     {
         _httpClient = httpClient;
     }
-    public async Task<BaseResponse> ChangeAccountStatusToActive(string id)
+
+    public async Task<BaseResponse> BanAccount(string id, string reason)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/account/approve", id);
+        var response = await _httpClient.PostAsJsonAsync("api/account/ban", new BanUserDTO()
+        {
+            Id = id,
+            BanMsg = reason
+        });
         var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
 
         return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
     }
-
-    public async Task<BaseResponse> ChangeAccountStatusToDenied(string id)
+    public async Task<BaseResponse> UnbanAccount(string id)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/account/deny", id);
+        var response = await _httpClient.PostAsJsonAsync("api/account/unban", new UnbanUserDTO()
+        {
+            Id = id
+        });
         var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
 
         return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
     }
-
-    public async Task<BaseResponse> ChangeAccountStatusToBanned(string id)
+    public async Task<ListResponse<UserDTO>> GetVendorAccounts()
     {
-        var response = await _httpClient.PostAsJsonAsync("api/account/ban", id);
-        var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
-
-        return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+        var response = await _httpClient.GetAsync("api/account/vendors");
+        var result = await response.Content.ReadFromJsonAsync<ListResponse<UserDTO>>();
+        return result ?? new ListResponse<UserDTO> { Success = false, Message = "Unknown error" };
     }
-    public async Task<AccountListResponse> GetAccountsByStatus(AccountStatus status)
+    public async Task<ListResponse<UserDTO>> GetCustomerAccounts()
     {
-        var response = await _httpClient.GetAsync($"api/account/status?s={(int)status}");
-        var result = await response.Content.ReadFromJsonAsync<AccountListResponse>();
-        return result ?? new AccountListResponse { Success = false, Message = "Unknown error" };
+        var response = await _httpClient.GetAsync("api/account/customers");
+        var result = await response.Content.ReadFromJsonAsync<ListResponse<UserDTO>>();
+        return result ?? new ListResponse<UserDTO> { Success = false, Message = "Unknown error" };
     }
-    public async Task<AccountDTO?> GetAccountByIdAsync(string id)
+    public async Task<ListResponse<UserDTO>> GetBannedAccounts()
+    {
+        var response = await _httpClient.GetAsync("api/account/banned");
+        var result = await response.Content.ReadFromJsonAsync<ListResponse<UserDTO>>();
+        return result ?? new ListResponse<UserDTO> { Success = false, Message = "Unknown error" };
+    }
+    public async Task<ListResponse<RequestDTO>> GetVendorRequests()
+    {
+        var response = await _httpClient.GetAsync("api/account/requests");
+        var result = await response.Content.ReadFromJsonAsync<ListResponse<RequestDTO>>();
+        return result ?? new ListResponse<RequestDTO> { Success = false, Message = "Unknown error" };
+    }
+    public async Task<DataResponse<UserDTO>> GetAccountByIdAsync(string id)
     {
         try
         {
-            var response = await _httpClient.GetAsync($"api/account/{id}");
+            var response = await _httpClient.GetAsync($"api/account/id/{id}");
 
             if (!response.IsSuccessStatusCode)
             {
-                Console.WriteLine($"Error fetching product: {response.StatusCode}");
-                return null;
+                Console.WriteLine($"Error fetching user: {response.StatusCode}");
+                return new DataResponse<UserDTO>()
+                {
+                    Success = false,
+                    Message = "Unknown error"
+                };
             }
 
-            var result = await response.Content.ReadFromJsonAsync<AccountDTO>();
+            var result = await response.Content.ReadFromJsonAsync<DataResponse<UserDTO>>();
 
             if (result == null)
             {
-                return null;
+                return new DataResponse<UserDTO>()
+                {
+                    Success = false,
+                    Message = "Unknown error"
+                };
             }
 
             return result;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error fetching product: {ex.Message}");
-            return null;
-        }
-    }
-
-
-    public async Task<BaseResponse> AddRemovalReason(string id, string reason)
-    {
-        try
-        {
-            var response = await _httpClient.PostAsJsonAsync($"api/account/addRemovalReason/{id}", reason);
-
-            if (!response.IsSuccessStatusCode)
+            Console.WriteLine($"Error fetching user: {ex.Message}");
+            return new DataResponse<UserDTO>()
             {
-                Console.WriteLine($"Error fetching product: {response.StatusCode}");
-                return null;
-            }
-
-            return await response.Content.ReadFromJsonAsync<BaseResponse>() ?? new BaseResponse { Success = false, Message = "No response from server" }; ;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error fetching product: {ex.Message}");
-            return null;
+                Success = false,
+                Message = "Unknown error"
+            };
         }
     }
 }

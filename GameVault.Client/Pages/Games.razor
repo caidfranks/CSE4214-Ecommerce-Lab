@@ -16,7 +16,7 @@
         </div>
     </div>
 }
-else if (AuthService.CurrentUser?.Role == "Customer")
+else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer)
 {
     <div class="browse-container">
         <div class="row">
@@ -182,8 +182,8 @@ else
     <!-- For Vendors and Admins -->
     <div class="container mt-5">
         <div class="alert alert-info">
-            <h4>Welcome, @(AuthService.CurrentUser?.DisplayName ?? "User")!</h4>
-            <p>Your role is: <strong>@AuthService.CurrentUser?.Role</strong></p>
+            <h4>Welcome, @(AuthService.CurrentUser?.Name ?? "User")!</h4>
+            <p>Your role is: <strong>@AuthService.CurrentUser?.Type</strong></p>
             <p>This page is for customers only. Please use the navigation menu to access your dashboard.</p>
             <a href="/account" class="btn btn-primary">Go to Account</a>
         </div>

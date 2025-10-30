@@ -70,9 +70,9 @@
     <div class="login-footer">
       <p class="register-text">
         Don't have an account?
-        <a href="/register-customer" class="register-link">Sign up as Customer</a>
+        <a href="/register/customer" class="register-link">Sign up as Customer</a>
         or
-        <a href="/register-vendor" class="register-link">Register as Vendor</a>
+        <a href="/register/vendor" class="register-link">Register as Vendor</a>
       </p>
     </div>
   </div>
@@ -151,7 +151,7 @@
     {
       var result = await AuthService.LoginAsync(_email, _password);
 
-      if (result is { Success: true })
+      if (result is not null && result.Success)
       {
         Navigation.NavigateTo("/");
       }
@@ -163,7 +163,7 @@
     catch (Exception ex)
     {
       Console.WriteLine(ex);
-    _error = "An unexpected error occurred. Please try again later.";
+      _error = "An unexpected error occurred. Please try again later.";
     }
     finally
     {

@@ -30,6 +30,12 @@
                 </NavLink>
             </div>
 
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="search">
+                    <span class="bi bi-search" aria-hidden="true"></span> Search
+                </NavLink>
+            </div>
+
             @if (IsVendor)
             {
                 <div class="nav-item px-3">
@@ -62,7 +68,7 @@
             <div class="nav-item px-3">
                 <div class="user-info">
                     <i class="bi bi-person-circle me-2"></i>
-                    <span class="user-name">@AuthService.CurrentUser?.DisplayName</span>
+                    <span class="user-name">@AuthService.CurrentUser?.Name</span>
                 </div>
             </div>
             <div class="nav-item px-3">
@@ -168,7 +174,7 @@
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-    private bool IsVendor => AuthService.CurrentUser?.Role == "Vendor";
+    private bool IsVendor => AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor;
 
     private void ToggleNavMenu()
     {

@@ -104,7 +104,7 @@ else
                     </div>
 
                     <!-- Add to Cart Section (REQ-48, REQ-62-63) -->
-                    @if (AuthService.CurrentUser?.Role == "Customer" && product.Stock > 0)
+                    @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer && product.Stock > 0)
                     {
                         <div class="add-to-cart-section p-4 border rounded bg-light">
                             <div class="row align-items-center">
@@ -141,7 +141,7 @@ else
                             </div>
                         }
                     }
-                    else if (AuthService.CurrentUser.Role != "Customer")
+                    else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
                     {
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i> Only customers can purchase products.
