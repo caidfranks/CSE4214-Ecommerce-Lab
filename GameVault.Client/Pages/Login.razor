@@ -160,9 +160,10 @@
         _error = result?.Message ?? "Login failed. Please check your credentials and try again.";
       }
     }
-    catch (Exception)
+    catch (Exception ex)
     {
-      _error = "An unexpected error occurred. Please try again later.";
+      Console.WriteLine(ex);
+    _error = "An unexpected error occurred. Please try again later.";
     }
     finally
     {

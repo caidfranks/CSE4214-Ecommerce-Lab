@@ -5,34 +5,44 @@ using Microsoft.AspNetCore.Mvc;
 using Google.Cloud.Firestore.V1;
 using Microsoft.AspNetCore.Authorization;
 using GameVault.Server.Filters;
+using GameVault.Server.Models;
 
 namespace GameVault.Server.Controllers;
 
-[Authorize]
-[RequireAuthUser]
 [ApiController]
 [Route("api/[controller]")]
 public class CartController : ControllerBase
 {
     private readonly CartService _cartService;
     private readonly ILogger<CartController> _logger;
-    private readonly ICurrentUserService _currentUser;
+    private readonly UserService _userService;
 
-    public CartController(CartService cartService, ILogger<CartController> logger, ICurrentUserService currentUser)
+    public CartController(CartService cartService, ILogger<CartController> logger, UserService userService)
     {
         _cartService = cartService;
         _logger = logger;
-        _currentUser = currentUser;
+        _userService = userService;
     }
 
     [HttpGet]
-    public async Task<ActionResult<CartDTO>> GetCart()
+    public async Task<ActionResult<CartDTO>> GetCart([FromHeader] string? Authorization)
     {
         try
         {
-            _logger.LogInformation("{UserId} accessed cart", _currentUser.UserId);
+            var user = await _userService.GetUserFromHeader(Authorization);
 
-            var dbCart = await _cartService.GetCartAsync(_currentUser.UserId);
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Role != nameof(UserRole.Customer))
+            {
+                return Unauthorized();
+            }
+
+            _logger.LogInformation("{UserId} accessed cart", user.UserId);
+
+            var dbCart = await _cartService.GetCartAsync(user.UserId);
 
             List<CartItemDTO> items = [];
             foreach (Models.Firestore.CartItem item in dbCart.Items)
@@ -57,14 +67,25 @@ public class CartController : ControllerBase
 
 
     [HttpPost("item")]
-    public async Task<ActionResult<CartItemDTO>> AddToCart([FromBody] NewCartItemDTO addToCartDto)
+    public async Task<ActionResult<CartItemDTO>> AddToCart([FromBody] NewCartItemDTO addToCartDto, [FromHeader] string? Authorization)
     {
         try
         {
-            _logger.LogInformation("{UserId} adding to cart", _currentUser.UserId);
+            var user = await _userService.GetUserFromHeader(Authorization);
+
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Role != nameof(UserRole.Customer))
+            {
+                return Unauthorized();
+            }
+
+            _logger.LogInformation("{UserId} adding to cart", user.UserId);
 
             var cartItemDetails = await _cartService.AddToCartAsync(
-                _currentUser.UserId,
+                user.UserId,
                 addToCartDto.ListingId,
                 addToCartDto.Quantity
             );
@@ -84,13 +105,24 @@ public class CartController : ControllerBase
     [HttpPut("item/{listingId}/quantity")]
     public async Task<ActionResult> UpdateCartItemQuantityAsync(
         string listingId,
-        [FromBody] UpdateCartItemQuantityRequest request)
+        [FromBody] UpdateCartItemQuantityRequest request, [FromHeader] string Authorization)
     {
         try
         {
-            _logger.LogInformation("{UserId} updating item", _currentUser.UserId);
+            var user = await _userService.GetUserFromHeader(Authorization);
 
-            var updatedItem = await _cartService.UpdateQuantityAsync(_currentUser.UserId, listingId, request.Quantity);
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Role != nameof(UserRole.Customer))
+            {
+                return Unauthorized();
+            }
+
+            _logger.LogInformation("{UserId} updating item", user.UserId);
+
+            var updatedItem = await _cartService.UpdateQuantityAsync(user.UserId, listingId, request.Quantity);
 
             CartItemDTO fullItem = await _cartService.PopulateCartItem(updatedItem);
 
@@ -105,13 +137,24 @@ public class CartController : ControllerBase
     }
 
     [HttpDelete("item/{ListingId}")]
-    public async Task<ActionResult> RemoveFromCartAsync([FromRoute] string listingId)
+    public async Task<ActionResult> RemoveFromCartAsync([FromRoute] string listingId, [FromHeader] string Authorization)
     {
         try
         {
-            _logger.LogInformation("{UserId} removing item", _currentUser.UserId);
+            var user = await _userService.GetUserFromHeader(Authorization);
 
-            await _cartService.RemoveFromCartAsync(_currentUser.UserId, listingId);
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Role != nameof(UserRole.Customer))
+            {
+                return Unauthorized();
+            }
+
+            _logger.LogInformation("{UserId} removing item", user.UserId);
+
+            await _cartService.RemoveFromCartAsync(user.UserId, listingId);
 
             return Ok();
         }
@@ -123,13 +166,24 @@ public class CartController : ControllerBase
     }
 
     [HttpDelete]
-    public async Task<ActionResult> ClearCartAsync()
+    public async Task<ActionResult> ClearCartAsync([FromHeader] string Authorization)
     {
         try
         {
-            _logger.LogInformation("{UserId} clearing cart", _currentUser.UserId);
+            var user = await _userService.GetUserFromHeader(Authorization);
 
-            await _cartService.ClearCartAsync(_currentUser.UserId);
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Role != nameof(UserRole.Customer))
+            {
+                return Unauthorized();
+            }
+
+            _logger.LogInformation("{UserId} clearing cart", user.UserId);
+
+            await _cartService.ClearCartAsync(user.UserId);
 
             return Ok();
         }

@@ -41,12 +41,7 @@ public class FirebaseAuthService : IFirebaseAuthService
 
     public async Task<string?> VerifyTokenAsync(string idToken)
     {
-        Console.WriteLine("Entered Service!");
-        Console.WriteLine(idToken);
-        Console.WriteLine("_firebaseAuth");
-        Console.WriteLine(_firebaseAuth?.ToString() ?? "null");
         var decodedToken = await _firebaseAuth.VerifyIdTokenAsync(idToken);
-        Console.WriteLine("Decoded token\n");
         return decodedToken?.Uid ?? null;
     }
 

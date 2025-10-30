@@ -28,11 +28,11 @@
             <div class="cart-items">
                 @foreach (var item in _cart.Items)
                 {
-                    <@CartItemCar d Item="@item" OnCartChanged="RefreshCartAsync" />
+                    <CartItemCard Item="@item" OnCartChanged="RefreshCartAsync" />
                 }
             </div>
 
-            <@CartSummar y Cart="@_cart" />
+            <CartSummary Cart="@_cart" />
         </div>
     }
 }

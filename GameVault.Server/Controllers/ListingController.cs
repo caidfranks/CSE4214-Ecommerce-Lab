@@ -15,17 +15,19 @@ namespace GameVault.Server.Controllers
     {
         private readonly IFirebaseAuthService _firebaseAuth;
         private readonly IFirestoreService _firestore;
+        private readonly UserService _userService;
         private readonly IConfiguration _configuration;
 
-        public ListingController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, IConfiguration configuration)
+        public ListingController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, UserService userService, IConfiguration configuration)
         {
             _firebaseAuth = firebaseAuth;
             _firestore = firestore;
+            _userService = userService;
             _configuration = configuration;
         }
 
         [HttpPost("create")]
-        public async Task<ActionResult<BaseResponse>> Create([FromBody] NewListingDTO newListing)
+        public async Task<ActionResult<BaseResponse>> Create([FromBody] NewListingDTO newListing, [FromHeader] string? Authorization)
         {
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
@@ -37,6 +39,17 @@ namespace GameVault.Server.Controllers
                 });
             }
 
+            var user = await _userService.GetUserFromHeader(Authorization);
+
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Role != nameof(UserRole.Vendor))
+            {
+                return Unauthorized();
+            }
+
             FirestoreListing newListingObj = new()
             {
                 // Id = "",
@@ -45,8 +58,7 @@ namespace GameVault.Server.Controllers
                 Price = newListing.Price,
                 Stock = newListing.Stock,
                 Status = newListing.Status,
-                // TODO: User ID not accessible on server - huge security risk
-                OwnerID = "Fo3LIgVvpBrteVibSry2smUk2nTn",
+                OwnerID = user.UserId,
                 LastModified = DateTime.UtcNow
             };
 
@@ -73,8 +85,22 @@ namespace GameVault.Server.Controllers
                 });
             }
 
-            string token = Authorization.Split(" ").ToList()[1];
-            var userId = await _firebaseAuth.VerifyTokenAsync(token);
+            var user = await _userService.GetUserFromHeader(Authorization);
+
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Role == nameof(UserRole.Customer))
+            {
+                return Unauthorized(new VendorListingListResponse
+                {
+                    Success = false,
+                    Message = "Must be a vendor to view this page",
+                });
+            }
+
+            Console.WriteLine(user?.Role ?? "Not logged in");
 
             var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>("listings",
             [

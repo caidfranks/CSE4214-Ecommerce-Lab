@@ -25,12 +25,16 @@ public class CartService
         Cart cart;
         if (result == null)
         {
+            var firestoreCart = new FirestoreCart()
+            {
+                Items = []
+            };
             cart = new Cart()
             {
                 OwnerId = userId,
                 Items = []
             };
-            await _firestore.SetDocumentAsync(CartsCollection, userId, cart);
+            await _firestore.SetDocumentAsync(CartsCollection, userId, firestoreCart);
         }
         else
         {
