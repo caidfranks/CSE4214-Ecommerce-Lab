@@ -13,17 +13,21 @@ namespace GameVault.Server.Controllers
     [Route("api/[controller]")]
     public class ListingController : ControllerBase
     {
+        private readonly IFirebaseAuthService _firebaseAuth;
         private readonly IFirestoreService _firestore;
+        private readonly UserService _userService;
         private readonly IConfiguration _configuration;
 
-        public ListingController(IFirestoreService firestore, IConfiguration configuration)
+        public ListingController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, UserService userService, IConfiguration configuration)
         {
+            _firebaseAuth = firebaseAuth;
             _firestore = firestore;
+            _userService = userService;
             _configuration = configuration;
         }
 
         [HttpPost("create")]
-        public async Task<ActionResult<BaseResponse>> Create([FromBody] NewListingDTO newListing)
+        public async Task<ActionResult<BaseResponse>> Create([FromBody] NewListingDTO newListing, [FromHeader] string? Authorization)
         {
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
@@ -35,6 +39,17 @@ namespace GameVault.Server.Controllers
                 });
             }
 
+            var user = await _userService.GetUserFromHeader(Authorization);
+
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Type != AccountType.Vendor)
+            {
+                return Unauthorized();
+            }
+
             FirestoreListing newListingObj = new()
             {
                 // Id = "",
@@ -43,8 +58,7 @@ namespace GameVault.Server.Controllers
                 Price = newListing.Price,
                 Stock = newListing.Stock,
                 Status = newListing.Status,
-                // TODO: User ID not accessible on server - huge security risk
-                OwnerID = "Fo3LIgVvpBrteVibSry2smUk2nTn",
+                OwnerID = user.Id,
                 LastModified = DateTime.UtcNow
             };
 
@@ -58,7 +72,7 @@ namespace GameVault.Server.Controllers
         }
 
         [HttpGet("vendor")]
-        public async Task<ActionResult<VendorListingListResponse>> GetVendorListingsByStatus([FromQuery] string v, [FromQuery] ListingStatus s)
+        public async Task<ActionResult<VendorListingListResponse>> GetVendorListingsByStatus([FromQuery] string v, [FromQuery] ListingStatus s, [FromHeader] string Authorization)
         {
             // Console.WriteLine($"Got query for User {v} with status {s}");
             var apiKey = _configuration["Firebase:ApiKey"];
@@ -70,6 +84,23 @@ namespace GameVault.Server.Controllers
                     Message = "Firebase configuration error"
                 });
             }
+
+            var user = await _userService.GetUserFromHeader(Authorization);
+
+            if (user is null)
+            {
+                return Forbid();
+            }
+            else if (user.Type == AccountType.Customer)
+            {
+                return Unauthorized(new VendorListingListResponse
+                {
+                    Success = false,
+                    Message = "Must be a vendor to view this page",
+                });
+            }
+
+            Console.WriteLine(user?.Type.ToString() ?? "Not logged in");
 
             var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>("listings",
             [
@@ -113,7 +144,7 @@ namespace GameVault.Server.Controllers
         }
 
         [HttpGet("status")]
-        public async Task<ActionResult<ListingListResponse>> GetListingsByStatus([FromQuery] ListingStatus s)
+        public async Task<ActionResult<ListResponse<VendorListingDTO>>> GetListingsByStatus([FromQuery] ListingStatus s)
         {
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
@@ -135,7 +166,7 @@ namespace GameVault.Server.Controllers
                 ]
             );
 
-            List<ListingDTO> listingDTOs = [];
+            List<VendorListingDTO> listingDTOs = [];
 
             foreach (var listing in listings)
             {
@@ -157,57 +188,9 @@ namespace GameVault.Server.Controllers
 
             //Console.WriteLine($"Controller returning {listingDTOs.Count} listings");
 
-            return new VendorListingListResponse { Success = true, Listings = listingDTOs };
+            return new ListResponse<VendorListingDTO> { Success = true, List = listingDTOs };
 
             // return new ListingListResponse { Success = false, Message = "Not configured" };
-        }
-
-        [HttpGet("status")]
-        public async Task<ActionResult<ListingListResponse>> GetListingsByStatus([FromQuery] ListingStatus s)
-        {
-            var apiKey = _configuration["Firebase:ApiKey"];
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return StatusCode(500, new ListingListResponse
-                {
-                    Success = false,
-                    Message = "Firebase configuration error"
-                });
-            }
-
-            var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>(
-                "listings",
-                [
-                    new() {
-                fieldName = "Status",
-                value = (int)s
-            }
-                ]
-            );
-
-            List<ListingDTO> listingDTOs = [];
-
-            foreach (var listing in listings)
-            {
-                ListingDTO listingDTO = new()
-                {
-                    Id = listing.Id,
-                    Name = listing.Name,
-                    Price = listing.Price,
-                    Description = listing.Description,
-                    Stock = listing.Stock,
-                    Status = listing.Status,
-                    OwnerID = listing.OwnerID,
-                    Image = listing.Image
-                };
-                listingDTOs.Add(listingDTO);
-            }
-
-            return new ListingListResponse
-            {
-                Success = true,
-                Listings = listingDTOs
-            };
         }
 
         [HttpPost("submit")]

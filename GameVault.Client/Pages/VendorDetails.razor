@@ -9,20 +9,32 @@
 @using GameVault.Shared.DTOs
 @using Grpc.Net.Client.Balancer
 
-<h3>VendorDetails</h3>
+@if (account is null)
+{
+    <h3>Vendor not found</h3>
+}
+else
+{
+    <h3>Vendor Details</h3>
 
-<p>Name: @account.DisplayName</p>
-<p>Email: @account.Email</p>
-<p>Business Name: @account.BusinessName</p>
-
-
+    <p>Name: @account.Name</p>
+    <p>Email: @account.Email</p>
+}
 
 @code {
     [Parameter] public string? UserID { get; set; }
-    private AccountDTO? account;
+    private UserDTO? account;
 
     protected override async Task OnParametersSetAsync()
     {
-        account = await AccountService.GetAccountByIdAsync(UserID);
+        if (UserID is not null)
+        {
+            var result = await AccountService.GetAccountByIdAsync(UserID);
+            if (result is not null && result.Success) account = result.Data;
+        }
+        else
+        {
+            Console.WriteLine("No User Id provided");
+        }
     }
 }

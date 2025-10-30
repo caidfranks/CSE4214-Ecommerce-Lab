@@ -1,17 +1,19 @@
 ﻿@page "/manageAccounts"
-@inject NavigationManager Navigation
+@inject NavigationManager Nav
 
 <h3>Manage Account Page</h3>
 
 <header>
-    <nav>
-        <ul>
-            <li><a href="/manageAccounts/pendingVendors">Pending Vendor Accounts</a></li>
-            <li><a href="/manageAccounts/activeVendors">Vendor Accounts</a></li>
-            <li><a href="/manageAccounts/userAccounts">User Accounts</a></li>
-            <li><a href="/manageAccounts/bannedAccounts">Banned Accounts</a></li>
-        </ul>
-    </nav>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/pendingVendors")' class="btn btn-secondary">Pending Vendor
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/activeVendors")' class="btn btn-secondary">Vendor
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/userAccounts")' class="btn btn-secondary">Customer
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/bannedAccounts")' class="btn btn-secondary">Banned
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/adminAccounts")' class="btn btn-secondary">Admin
+        Accounts</button>
 </header>
 
 <p>Select a category above to view account entries.</p>

@@ -16,36 +16,33 @@ public class FirebaseAuthService : IFirebaseAuthService
 
             Console.WriteLine("Connecting to local auth emulator.");
         }
-        else
-        {
-            var projectId = configuration["Firebase:ProjectId"] ?? throw new InvalidOperationException("Firebase ProjectId is required");
-            var clientEmail = configuration["Firebase:ClientEmail"] ?? throw new InvalidOperationException("Firebase ClientEmail is required");
-            var privateKey = configuration["Firebase:PrivateKey"] ?? throw new InvalidOperationException("Firebase PrivateKey is required");
+        var projectId = configuration["Firebase:ProjectId"] ?? throw new InvalidOperationException("Firebase ProjectId is required");
+        var clientEmail = configuration["Firebase:ClientEmail"] ?? throw new InvalidOperationException("Firebase ClientEmail is required");
+        var privateKey = configuration["Firebase:PrivateKey"] ?? throw new InvalidOperationException("Firebase PrivateKey is required");
 
-            var credential = GoogleCredential.FromJson($@"{{
+        var credential = GoogleCredential.FromJson($@"{{
                     ""type"": ""service_account"",
                     ""project_id"": ""{projectId}"",
                     ""client_email"": ""{clientEmail}"",
                     ""private_key"": ""{privateKey.Replace("\\n", "\n")}""
                 }}");
 
-            if (FirebaseApp.DefaultInstance == null)
+        if (FirebaseApp.DefaultInstance == null)
+        {
+            FirebaseApp.Create(new AppOptions
             {
-                FirebaseApp.Create(new AppOptions
-                {
-                    Credential = credential,
-                    ProjectId = projectId
-                });
-            }
-
-            _firebaseAuth = FirebaseAuth.DefaultInstance;
+                Credential = credential,
+                ProjectId = projectId
+            });
         }
+
+        _firebaseAuth = FirebaseAuth.DefaultInstance;
     }
 
     public async Task<string?> VerifyTokenAsync(string idToken)
     {
         var decodedToken = await _firebaseAuth.VerifyIdTokenAsync(idToken);
-        return decodedToken.Uid;
+        return decodedToken?.Uid ?? null;
     }
 
     public async Task<string?> CreateUserAsync(string email, string password)

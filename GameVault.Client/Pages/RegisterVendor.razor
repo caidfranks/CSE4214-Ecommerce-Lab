@@ -52,7 +52,7 @@
             </div>
 
             <div class="form-group">
-                <label for="displayName" class="form-label">Your Name</label>
+                <label for="displayName" class="form-label">Display Name</label>
                 <input 
                     type="text" 
                     id="displayName"
@@ -68,6 +68,17 @@
             </div>
 
             <div class="form-group">
+                <label for="reason" class="form-label">Why should you be accepted?</label>
+                <input type="text" id="reason"
+                    class="form-control @(reasonError != null ? "is-invalid" : "")" @bind="reason"
+                    @oninput="ClearReasonError" placeholder="Enter your reasoning" required />
+                @if (reasonError != null)
+                {
+                    <div class="invalid-feedback">@reasonError</div>
+                }
+            </div>
+
+            @* <div class="form-group">
                 <label for="businessName" class="form-label">Business Name</label>
                 <input 
                     type="text" 
@@ -96,7 +107,7 @@
                 {
                     <div class="invalid-feedback">@businessDescriptionError</div>
                 }
-            </div>
+            </div> *@
 
             @if (!string.IsNullOrEmpty(error))
             {
@@ -145,14 +156,12 @@
     private string email = "";
     private string password = "";
     private string displayName = "";
-    private string businessName = "";
-    private string businessDescription = "";
+    private string reason = "";
     private string? error;
     private string? emailError;
     private string? passwordError;
     private string? displayNameError;
-    private string? businessNameError;
-    private string? businessDescriptionError;
+    private string? reasonError;
     private bool isLoading = false;
     private bool showPassword = false;
 
@@ -174,15 +183,9 @@
         error = null;
     }
 
-    private void ClearBusinessNameError()
+    private void ClearReasonError()
     {
-        businessNameError = null;
-        error = null;
-    }
-
-    private void ClearBusinessDescriptionError()
-    {
-        businessDescriptionError = null;
+        reasonError = null;
         error = null;
     }
 
@@ -197,8 +200,7 @@
         emailError = null;
         passwordError = null;
         displayNameError = null;
-        businessNameError = null;
-        businessDescriptionError = null;
+        reasonError = null;
 
         if (string.IsNullOrWhiteSpace(email))
         {
@@ -228,20 +230,13 @@
             isValid = false;
         }
 
-        if (string.IsNullOrWhiteSpace(businessName))
+        if (string.IsNullOrWhiteSpace(reason))
         {
-            businessNameError = "Business name is required";
+            reasonError = "Reasoning is required";
             isValid = false;
-        }
-
-        if (string.IsNullOrWhiteSpace(businessDescription))
+        } else if (reason.Length < 20)
         {
-            businessDescriptionError = "Business description is required";
-            isValid = false;
-        }
-        else if (businessDescription.Length < 20)
-        {
-            businessDescriptionError = "Please provide a more detailed description (at least 20 characters)";
+            reasonError = "Please provide a more detailed explanation (at least 20 characters)";
             isValid = false;
         }
 
@@ -261,10 +256,11 @@
         try
         {
             var result = await AuthService.RegisterVendorAsync(
-                email, password, displayName, businessName, businessDescription);
+                email, password, displayName, reason);
             
             if (result?.Success == true)
             {
+                Console.WriteLine($"Registration successful! Reference ID: {result.Data}");
                 Navigation.NavigateTo("/");
             }
             else

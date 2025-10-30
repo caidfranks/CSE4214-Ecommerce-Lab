@@ -13,6 +13,9 @@ Every time:
   * On Windows/Powershell ```$env:FIRESTORE_EMULATOR_HOST="localhost:8080"; $env:FIREBASE_AUTH_EMULATOR_HOST="localhost:9099"; dotnet run```
 3. In a third terminal, navigate to the client and run ```dotnet run```
 
+## To load new data (overwrites existing local data)
+Runs steps 2-4 of the First Time instructions, then run the normal instructions again.
+
 ## Default Credentials for Emulators
 
 Customer:
@@ -26,3 +29,11 @@ Password: ```password```
 Admin:
 Email: ```admin@gmail.com```
 Password: ```password```
+
+Other vendors: (same password as above)
+```from@software.net```
+```vendor@nebula.works```
+```dev@mythic.forge```
+```boo@deep.night.en```
+Applicant:
+```chuck@norris.net```

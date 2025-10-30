@@ -28,13 +28,11 @@
             <div class="cart-items">
                 @foreach (var item in _cart.Items)
                 {
-                    <@CartItemCard 
-                        Item="@item" 
-                        OnCartChanged="RefreshCartAsync" />
+                    <CartItemCard Item="@item" OnCartChanged="RefreshCartAsync" />
                 }
             </div>
-            
-            <@CartSummary Cart="@_cart" />
+
+            <CartSummary Cart="@_cart" />
         </div>
     }
 }
@@ -44,7 +42,7 @@ else if (!AuthService.IsAuthenticated)
 }
 
 @code {
-    private ShoppingCartDto? _cart;
+    private CartDTO? _cart;
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -69,6 +67,6 @@ else if (!AuthService.IsAuthenticated)
 
     private void GoToBrowse()
     {
-        
+
     }
 }

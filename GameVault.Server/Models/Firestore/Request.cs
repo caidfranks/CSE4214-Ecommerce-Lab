@@ -22,10 +22,13 @@ public class FirestoreRequest
     public required string Reason { get; set; }
 
     [FirestoreProperty]
-    public required string ReviewedBy { get; set; }
+    public string? ReviewedBy { get; set; }
 
     [FirestoreProperty]
     public required DateTime Timestamp { get; set; }
+
+    [FirestoreProperty]
+    public required bool Archived { get; set; }
 }
 
 [FirestoreData]

@@ -22,60 +22,60 @@ namespace GameVault.Server.Controllers
             _configuration = configuration;
         }
 
-        [HttpPost("approve")]
-        public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToActive([FromBody] string id)
-        {
-            var apiKey = _configuration["Firebase:ApiKey"];
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return StatusCode(500, new BaseResponse
-                {
-                    Success = false,
-                    Message = "Firebase configuration error"
-                });
-            }
+        // [HttpPost("approve")]
+        // public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToActive([FromBody] string id)
+        // {
+        //     var apiKey = _configuration["Firebase:ApiKey"];
+        //     if (string.IsNullOrEmpty(apiKey))
+        //     {
+        //         return StatusCode(500, new BaseResponse
+        //         {
+        //             Success = false,
+        //             Message = "Firebase configuration error"
+        //         });
+        //     }
 
-            // TODO: Make sure owner
+        //     // TODO: Make sure owner
 
-            await _firestore.SetDocumentFieldAsync("users", id, "ApprovalStatus", (int)AccountStatus.ActiveVendor);
+        //     await _firestore.SetDocumentFieldAsync("users", id, "ApprovalStatus", (int)AccountStatus.ActiveVendor);
 
-            // TODO: Handle firestore errors
+        //     // TODO: Handle firestore errors
 
-            return Ok(new BaseResponse
-            {
-                Success = true,
-                Message = "Listing status successfully updated to pending",
-            });
-        }
+        //     return Ok(new BaseResponse
+        //     {
+        //         Success = true,
+        //         Message = "Listing status successfully updated to pending",
+        //     });
+        // }
 
-        [HttpPost("deny")]
-        public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToDenied([FromBody] string id)
-        {
-            var apiKey = _configuration["Firebase:ApiKey"];
-            if (string.IsNullOrEmpty(apiKey))
-            {
-                return StatusCode(500, new BaseResponse
-                {
-                    Success = false,
-                    Message = "Firebase configuration error"
-                });
-            }
+        // [HttpPost("deny")]
+        // public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToDenied([FromBody] string id)
+        // {
+        //     var apiKey = _configuration["Firebase:ApiKey"];
+        //     if (string.IsNullOrEmpty(apiKey))
+        //     {
+        //         return StatusCode(500, new BaseResponse
+        //         {
+        //             Success = false,
+        //             Message = "Firebase configuration error"
+        //         });
+        //     }
 
-            // TODO: Make sure owner
+        //     // TODO: Make sure owner
 
-            await _firestore.SetDocumentFieldAsync("users", id, "ApprovalStatus", (int)AccountStatus.Denied);
+        //     await _firestore.SetDocumentFieldAsync("users", id, "ApprovalStatus", (int)AccountStatus.Denied);
 
-            // TODO: Handle firestore errors
+        //     // TODO: Handle firestore errors
 
-            return Ok(new BaseResponse
-            {
-                Success = true,
-                Message = "Listing status successfully updated to pending",
-            });
-        }
+        //     return Ok(new BaseResponse
+        //     {
+        //         Success = true,
+        //         Message = "Listing status successfully updated to pending",
+        //     });
+        // }
 
         [HttpPost("ban")]
-        public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToBanned([FromBody] string id)
+        public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToBanned([FromBody] BanUserDTO dto)
         {
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
@@ -87,9 +87,10 @@ namespace GameVault.Server.Controllers
                 });
             }
 
-            // TODO: Make sure owner
+            // TODO: Make sure admin
 
-            await _firestore.SetDocumentFieldAsync("users", id, "ApprovalStatus", (int)AccountStatus.Banned);
+            await _firestore.SetDocumentFieldAsync("users", dto.Id, "BanMsg", dto.BanMsg);
+            await _firestore.SetDocumentFieldAsync("users", dto.Id, "Banned", true);
 
             // TODO: Handle firestore errors
 
@@ -100,13 +101,39 @@ namespace GameVault.Server.Controllers
             });
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<AccountDTO>> GetAccountById(string id)
+        [HttpPost("unban")]
+        public async Task<ActionResult<BaseResponse>> UnbanUser([FromBody] UnbanUserDTO dto)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // TODO: Make sure admin
+
+            await _firestore.SetDocumentFieldAsync("users", dto.Id, "Banned", false);
+
+            // TODO: Handle firestore errors
+
+            return Ok(new BaseResponse
+            {
+                Success = true,
+                Message = "User successfully unbanned",
+            });
+        }
+
+        [HttpGet("id/{id}")]
+        public async Task<ActionResult<DataResponse<UserDTO>>> GetAccountById(string id)
         {
             try
             {
                 Console.WriteLine($"Fetching product with ID: {id}");
-                var account = await _firestore.GetDocumentAsync<Account>("users", id);
+                var account = await _firestore.GetDocumentAsync<FirestoreUser>("users", id);
 
                 if (account == null)
                 {
@@ -114,128 +141,178 @@ namespace GameVault.Server.Controllers
                     return NotFound(new { error = "Account not found" });
                 }
 
-                Console.WriteLine($"Account found: {account.DisplayName}");
-                var accountDTO = new AccountDTO
+                Console.WriteLine($"Account found: {account.Name}");
+                UserDTO accountDTO = new()
                 {
-                    ApprovalStatus = account.ApprovalStatus,
-                    //ApprovedAt = account.ApprovedAt?.ToDateTime().ToString("o") ?? string.Empty,
-                    ApprovedBy = account.ApprovedBy,
-                    BusinessName = account.BusinessName,
-                    //CreatedAt = account.CreatedAt?.ToDateTime().ToString("o") ?? string.Empty,
-                    DisplayName = account.DisplayName,
+                    Id = id,
+                    Type = account.Type,
                     Email = account.Email,
-                    RejectionReason = account.RejectionReason,
-                    Role = account.Role,
-                    //UpdatedAt = account.UpdatedAt?.ToDateTime().ToString("o") ?? string.Empty,
-                    UserID = account.Id
+                    Banned = account.Banned,
+                    BanMsg = account.BanMsg,
+                    Name = account.Name,
+                    ReviewedBy = account.ReviewedBy,
                 };
 
-                return accountDTO;
+                return new DataResponse<UserDTO>()
+                {
+                    Success = true,
+                    Data = accountDTO
+                };
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}");
-                return StatusCode(500, new { error = ex.Message });
+                return StatusCode(500, new DataResponse<UserDTO>()
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
             }
         }
 
-        [HttpGet("status")]
-        public async Task<ActionResult<AccountListResponse>> GetAccountsByStatus([FromQuery] AccountStatus s)
+        [HttpGet("vendors")]
+        public async Task<ActionResult<ListResponse<UserDTO>>> GetAllVendors()
         {
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                return StatusCode(500, new AccountListResponse
+                return StatusCode(500, new ListResponse<UserDTO>
                 {
                     Success = false,
                     Message = "Firebase configuration error"
                 });
             }
 
-            var accounts = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Account>(
+            var accounts = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.User>(
                 "users",
                 [
                     new() {
-                fieldName = "ApprovalStatus",
-                value = (int)s
-            }
+                    fieldName = "Type",
+                    value = (int)AccountType.Vendor
+                }, new () {
+                    fieldName = "Banned",
+                    value = false
+                }
                 ]
             );
 
-            List<AccountDTO> accountDTOs = [];
+            List<UserDTO> accountDTOs = [];
 
             foreach (var account in accounts)
             {
-                AccountDTO accountDTO = new()
+                UserDTO accountDTO = new()
                 {
-                    ApprovalStatus = account.ApprovalStatus,
-                    //ApprovedAt = account.ApprovedAt,
-                    ApprovedBy = account.ApprovedBy,
-                    BusinessName = account.BusinessName,
-                    //CreatedAt = account.CreatedAt,
-                    DisplayName = account.DisplayName,
+                    Id = account.Id,
+                    Type = account.Type,
                     Email = account.Email,
-                    RejectionReason = account.RejectionReason,
-                    Role = account.Role,
-                    //UpdatedAt = account.UpdatedAt,
-                    UserID = account.Id
+                    Banned = account.Banned,
+                    BanMsg = account.BanMsg,
+                    Name = account.Name,
+                    ReviewedBy = account.ReviewedBy,
                 };
                 accountDTOs.Add(accountDTO);
             }
 
-            return new AccountListResponse
+            return new ListResponse<UserDTO>
             {
                 Success = true,
-                Accounts = accountDTOs
+                List = accountDTOs
             };
         }
 
-        [HttpPost("addRemovalReason/{id}")]
-        public async Task<ActionResult<BaseResponse>> AddRemovalReason(string id, [FromBody] string reason)
+        [HttpGet("customers")]
+        public async Task<ActionResult<ListResponse<UserDTO>>> GetAllCustomers()
         {
             var apiKey = _configuration["Firebase:ApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                return StatusCode(500, new BaseResponse
+                return StatusCode(500, new ListResponse<UserDTO>
                 {
                     Success = false,
                     Message = "Firebase configuration error"
                 });
             }
 
-            if (string.IsNullOrWhiteSpace(reason))
+            var accounts = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.User>(
+                "users",
+                [
+                    new() {
+                    fieldName = "Type",
+                    value = (int)AccountType.Customer
+                }, new () {
+                    fieldName = "Banned",
+                    value = false
+                }
+                ]
+            );
+
+            List<UserDTO> accountDTOs = [];
+
+            foreach (var account in accounts)
             {
-                return BadRequest(new BaseResponse
+                UserDTO accountDTO = new()
                 {
-                    Success = false,
-                    Message = "Rejection reason cannot be empty"
-                });
+                    Id = account.Id,
+                    Type = account.Type,
+                    Email = account.Email,
+                    Banned = account.Banned,
+                    BanMsg = account.BanMsg,
+                };
+                accountDTOs.Add(accountDTO);
             }
 
-            // TODO: Make sure owner
-            try
+            return new ListResponse<UserDTO>
             {
-                await _firestore.SetDocumentFieldAsync("users", id, "RejectionReason", reason);
-
-                // TODO: Handle firestore errors
-
-                return Ok(new BaseResponse
-                {
-                    Success = true,
-                    Message = "Listing status successfully updated to pending",
-                });
-            }
-            catch (Exception ex)
-            {
-                
-                return StatusCode(500, new BaseResponse
-                {
-                    Success = false,
-                    Message = "Failed to add rejection reason"
-                });
-            }
-
+                Success = true,
+                List = accountDTOs
+            };
         }
 
+        [HttpGet("banned")]
+        public async Task<ActionResult<ListResponse<UserDTO>>> GetAllBannedUsers()
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new ListResponse<UserDTO>
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            var accounts = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.User>(
+                "users",
+                [
+                    new () {
+                    fieldName = "Banned",
+                    value = true
+                }
+                ]
+            );
+
+            List<UserDTO> accountDTOs = [];
+
+            foreach (var account in accounts)
+            {
+                UserDTO accountDTO = new()
+                {
+                    Id = account.Id,
+                    Type = account.Type,
+                    Email = account.Email,
+                    Banned = account.Banned,
+                    BanMsg = account.BanMsg,
+                    Name = account.Name,
+                    ReviewedBy = account.ReviewedBy,
+                };
+                accountDTOs.Add(accountDTO);
+            }
+
+            return new ListResponse<UserDTO>
+            {
+                Success = true,
+                List = accountDTOs
+            };
+        }
     }
 }

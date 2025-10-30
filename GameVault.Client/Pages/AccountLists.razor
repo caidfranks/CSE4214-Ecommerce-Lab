@@ -13,153 +13,197 @@
 <h3>@PageTitle</h3>
 
 <header>
-    <nav>
-        <ul>
-            <li><a href="/manageAccounts/pendingVendors">Pending Vendor Accounts</a></li>
-            <li><a href="/manageAccounts/activeVendors">Vendor Accounts</a></li>
-            <li><a href="/manageAccounts/userAccounts">User Accounts</a></li>
-            <li><a href="/manageAccounts/bannedAccounts">Banned Accounts</a></li>
-        </ul>
-    </nav>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/pendingVendors")' class="btn btn-secondary">Pending Vendor
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/activeVendors")' class="btn btn-secondary">Vendor
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/userAccounts")' class="btn btn-secondary">Customer
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/bannedAccounts")' class="btn btn-secondary">Banned
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/adminAccounts")' class="btn btn-secondary">Admin
+        Accounts</button>
 </header>
 
-@if (entries == null)
+@if (StatusFilter == "pendingVendors")
 {
-    <p><em>Loading...</em></p>
+
+    // Reason for denial
+    @if (showDenialPopup)
+    {
+        <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Feedback</h5>
+                        <button type="button" class="btn-close" @onclick="CloseDenialPopup"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <!-- Load another page inside the modal -->
+                        <h3>Feedback</h3>
+                        <p>Enter reason for denial</p>
+                        <input type="text" id="reason" class="form-control" @bind="RejectionReason"
+                            placeholder="Enter reason" />
+                    </div>
+                    <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-approve"
+                            @onclick='HandleDenyRequest'>Deny Request</button>
+                        <button type="button" class="btn-deny" @onclick='CloseDenialPopup'>Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
 }
-else if (entries.Count == 0)
+else if (StatusFilter == "activeVendors" || StatusFilter == "userAccounts" || StatusFilter == "bannedAccounts")
 {
-    <p><em>No accounts found with status "@StatusFilter".</em></p>
+    @if (accounts == null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else if (accounts.Count == 0)
+    {
+        <p><em>No accounts found with status "@StatusFilter".</em></p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    @if (StatusFilter == "activeVendors") {
+                        <th>Name</th>
+                        <th>Reviewed By</th>
+                    } else if (StatusFilter == "bannedAccounts") {
+                        <th>Type</th>
+                        <th>Ban Reason</th>
+                    }
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in accounts)
+                {
+                    <tr>
+                    <td>@user.Email</td>
+                    @if (StatusFilter == "activeVendors") {
+                        <td>@user.Name</td>
+                        <td>@user.ReviewedBy</td>
+                    }else if (StatusFilter == "bannedAccounts") {
+                        <td>@user.Type</td>
+                        <td>@user.BanMsg</td>
+                    }
+                        @if (StatusFilter == "activeVendors" || StatusFilter == "userAccounts")
+                        {
+                            <td><button type="button" class="btn-ban" @onclick='async () => { OpenBanPopup(user); }'>Ban</button>
+                            </td>
+                        } else {
+                            <td><button type="button" class="btn-ban" @onclick='async () => { await HandleUnbanUser(user); }'>Unban</button></td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    // Ban Confirmation
+    @if (showBanPopup)
+    {
+        <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirmation</h5>
+                        <button type="button" class="btn-close" @onclick="CloseBanPopup"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <h3>Confirmation</h3>
+                        <p>Are you sure?</p>
+                        <p>Enter reason for ban</p>
+                        <input type="text" id="reason" class="form-control" @bind="RejectionReason"
+                            placeholder="Enter reason" />
+                    </div>
+                    <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-approve"
+                            @onclick='HandleBanUser'>Ban User</button>
+                        <button type="button" class="btn-deny" @onclick='CloseBanPopup'>Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var entry in entries)
-            {
-                <tr>
-                    <td>
-                        @if (StatusFilter == "pendingVendors")
-                        {
-                            <a @onclick="() => OpenModal(entry)">@entry.DisplayName</a>
-                        }
-                        else
-                        {
-                            @entry.DisplayName
-                        }
-                    </td>
-                    <td>@entry.ApprovalStatus</td>
-                    @if (StatusFilter == "activeVendors" || StatusFilter == "userAccount")
-                    {
-                        <td><button type="button" class="btn-ban" @onclick='async () => { OpenConfirmation(entry); }'>Ban</button></td>
-                    }
-                    @* TODO: Add unban (Ensure Customer -> Customer & Vendor -> Vendor)
-                    @if (StatusFilter == "bannedAccounts")
-                    {
-                        <td><button type="button" class="btn-ban" @onclick='async () => { await AccountService.ChangeAccountStatusToActive(entry.UserID); await LoadData(); CloseModal(); }'>Unban</button></td>
-                    }*@
-                </tr>
-            }
-        </tbody>
-    </table>
+    <p><em>No accounts of this category</em></p>
 }
 
-@if (showModal)
-{
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@selectedEntry?.DisplayName Details</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <!-- Load another page inside the modal -->
-                    <iframe src="@selectedPageUrl" width="100%" height="600px" frameborder="0"></iframe>
-                </div>
-                <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-approve" @onclick='async () => { await AccountService.ChangeAccountStatusToActive(selectedEntry.UserID); await LoadData(); CloseModal(); }'>Approve</button>
-                    <button type="button" class="btn-deny" @onclick='async () => { await AccountService.ChangeAccountStatusToDenied(selectedEntry.UserID); await LoadData(); OpenFeedback(selectedEntry); CloseModal();}'>Deny</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
-@if (showConfirmation)
-{
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirmation</h5>
-                    <button type="button" class="btn-close" @onclick="CloseConfirmation"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <!-- Load another page inside the modal -->
-                    <h3>Confirmation</h3>
-                    <p>Are you sure?</p>
-                </div>
-                <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-approve" @onclick='async () => { await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID); await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); await LoadData(); CloseConfirmation(); }'>Approve</button>
-                    <button type="button" class="btn-deny" @onclick='async () => { CloseConfirmation(); }'>Deny</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
-@if (showFeedback)
-{
-    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Feedback</h5>
-                    <button type="button" class="btn-close" @onclick="CloseFeedback"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <!-- Load another page inside the modal -->
-                    <h3>Feedback</h3>
-                    <p>Enter reason for denial</p>
-                    <input type="text" id="reason" class="form-control" @bind="RejectionReason" placeholder="Enter reason" />
-                </div>
-                <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-approve" @onclick='async () => { await AccountService.AddRemovalReason(selectedEntry.UserID, RejectionReason); CloseFeedback(); await LoadData();}'>Send Feedback</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
+
 
 @code {
-    [Parameter] 
+    [Parameter]
     public string StatusFilter { get; set; } = string.Empty;
-    private string RejectionReason;
-    public AccountStatus filter = 0;
-    private List<AccountDTO> entries;
-    private AccountDTO? selectedEntry;
-    private string selectedPageUrl;
+    private List<RequestDTO>? requests;
+    private List<UserDTO>? accounts;
+    private bool showBanPopup;
+    private bool showDenialPopup;
+    private string RejectionReason = string.Empty;
+    private RequestDTO? selectedRequest;
+    private UserDTO? selectedUser;
 
-    private bool showModal;
-    private bool showConfirmation;
-    private bool showFeedback;
+    private void OpenDenialPopup(RequestDTO selected) {
+        selectedRequest = selected;
+        RejectionReason = string.Empty;
+        showDenialPopup = true;
+    }
+
+    private void CloseDenialPopup() {
+        showDenialPopup = false;
+        selectedRequest = null;
+    }
+
+    private void OpenBanPopup(UserDTO selected) {
+        selectedUser = selected;
+        RejectionReason = string.Empty;
+        showBanPopup = true;
+    }
+
+    private void CloseBanPopup() {
+        showBanPopup = false;
+        selectedUser = null;
+    }
+
+    private async Task HandleDenyRequest() {
+        @* await AccountService.AddRemovalReason(selectedEntry.UserID, RejectionReason); *@
+        CloseDenialPopup();
+        await LoadData();
+    }
+
+    private async Task HandleBanUser() {
+        @* await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID);  *@
+        /* await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); */
+        await AccountService.BanAccount(selectedUser.Id, RejectionReason);
+        await LoadData(); 
+        CloseBanPopup();
+    }
+
+    private async Task HandleUnbanUser(UserDTO user) {
+        await AccountService.UnbanAccount(user.Id);
+        await LoadData();
+    }
 
     private string PageTitle =>
-        StatusFilter switch
-        {
-            "pendingVendors" => "Pending Vendor Accounts",
-            "activeVendors" => "Active Vendor Accounts",
-            "userAccounts" => "User Accounts",
-            "bannedAccounts" => "Banned Accounts",
-            _ => "Accounts"
-        };
+    StatusFilter switch
+    {
+        "pendingVendors" => "Pending Vendor Accounts",
+        "activeVendors" => "Active Vendor Accounts",
+        "userAccounts" => "Customer Accounts",
+        "bannedAccounts" => "Banned Accounts",
+        _ => "Accounts"
+    };
 
     protected override async Task OnParametersSetAsync()
     {
@@ -168,66 +212,39 @@ else
 
     private async Task LoadData()
     {
-        entries = null;
+        requests = null;
+        accounts = null;
         try
         {
-            filter = MapStatus(StatusFilter);
-            AccountListResponse result = await AccountService.GetAccountsByStatus(filter);
-            entries = result.Accounts;
-            await InvokeAsync(StateHasChanged);
+            if (StatusFilter == "activeVendors" || StatusFilter == "userAccounts" || StatusFilter == "bannedAccounts") {
+                ListResponse<UserDTO>? result;
+                if (StatusFilter == "activeVendors") {
+                    result = await AccountService.GetVendorAccounts();
+                } else if (StatusFilter == "userAccounts") {
+                    result = await AccountService.GetCustomerAccounts();
+                } else { // if (StatusFilter == "bannedAccounts") {
+                    result = await AccountService.GetBannedAccounts();
+                }
+                if (result is not null && result.Success)
+                {
+                    accounts = result.List;
+                }
+                // Else print error
+                await InvokeAsync(StateHasChanged);
+            } else if (StatusFilter == "pendingVendors") {
+                ListResponse<RequestDTO>? result;
+                result = await AccountService.GetVendorRequests();
+                if (result is not null && result.Success)
+                {
+                    requests = result.List;
+                }
+                // Else print error
+                await InvokeAsync(StateHasChanged);
+            }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error loading Firebase data: {ex.Message}");
-            entries = new();
         }
     }
-
-    private AccountStatus MapStatus(string StatusFilter)
-    {
-        return StatusFilter switch
-        {
-            "pendingVendors" => AccountStatus.PendingVendor,
-            "activeVendors" => AccountStatus.ActiveVendor,
-            "userAccounts" => AccountStatus.Customer,
-            "bannedAccounts" => AccountStatus.Banned,
-            "denied" => AccountStatus.Denied,
-            _ => AccountStatus.Denied
-        };
-    }
-
-    private void OpenModal(AccountDTO entry)
-    {
-        selectedEntry = entry;
-        selectedPageUrl = $"/vendorDetails/{entry.UserID}";
-        showModal = true;
-    }
-
-    private void CloseModal()
-    {
-        showModal = false;
-    }
-
-    private void OpenConfirmation(AccountDTO entry)
-    {
-        selectedEntry = entry;
-        showConfirmation = true;
-    }
-
-    private void CloseConfirmation()
-    {
-        showConfirmation = false;
-    }
-
-    private void OpenFeedback(AccountDTO entry)
-    {
-        selectedEntry = entry;
-        showFeedback = true;
-    }
-
-    private void CloseFeedback()
-    {
-        showFeedback = false;
-    }
 }
-

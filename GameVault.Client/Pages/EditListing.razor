@@ -102,7 +102,7 @@ else
     // Call Firestore
     if (Id is not null)
     {
-      if (AuthService.CurrentUserId is not null && AuthService.CurrentUser!.Role == "Vendor")
+      if (AuthService.CurrentUserId is not null && AuthService.CurrentUser!.Type == AccountType.Vendor)
       {
         ListingResponse result = (await ListingService.GetListingById(Id));
         error = result.Message ?? "";

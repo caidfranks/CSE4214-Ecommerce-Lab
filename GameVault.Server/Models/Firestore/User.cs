@@ -1,4 +1,5 @@
 // TODO: Update this later
+using GameVault.Shared.Models;
 using Google.Cloud.Firestore;
 
 namespace GameVault.Server.Models.Firestore;
@@ -11,10 +12,22 @@ public class FirestoreUser
   // public required string Id { get; set; }
 
   [FirestoreProperty]
-  public required UserRole Type { get; set; }
+  public required AccountType Type { get; set; }
 
   [FirestoreProperty]
   public required string Email { get; set; }
+
+  [FirestoreProperty]
+  public bool? Banned { get; set; }
+
+  [FirestoreProperty]
+  public string? BanMsg { get; set; }
+
+  [FirestoreProperty]
+  public string? Name { get; set; }
+
+  [FirestoreProperty]
+  public string? ReviewedBy { get; set; }
 
   // Password stored via Firebase Auth
 }

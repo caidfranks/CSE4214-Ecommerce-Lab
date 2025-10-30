@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using GameVault.Server.Models;
 using GameVault.Server.Services;
+using GameVault.Server.Models.Firestore;
 
 namespace GameVault.Server.Controllers;
 
@@ -18,9 +19,9 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet("{userId}")]
-    public async Task<ActionResult<User>> GetUser(string userId)
+    public async Task<ActionResult<Models.Firestore.User>> GetUser(string userId)
     {
-        var user = await _firestore.GetDocumentAsync<User>("users", userId);
+        var user = await _firestore.GetDocumentAsync<Models.Firestore.FirestoreUser>("users", userId);
 
         if (user == null)
         {
@@ -33,7 +34,7 @@ public class UsersController : ControllerBase
     [HttpPut("{userId}")]
     public async Task<ActionResult> UpdateUser(string userId, [FromBody] UpdateUserRequest request)
     {
-        var user = await _firestore.GetDocumentAsync<User>("users", userId);
+        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", userId);
 
         if (user == null)
         {
@@ -41,50 +42,38 @@ public class UsersController : ControllerBase
         }
 
         if (!string.IsNullOrEmpty(request.DisplayName))
-            user.DisplayName = request.DisplayName;
+            user.Name = request.DisplayName;
 
         await _firestore.SetDocumentAsync("users", userId, user);
 
         return Ok(new { message = "Profile updated successfully", user });
     }
 
-    [HttpGet("vendors/pending")]
-    public async Task<ActionResult<List<User>>> GetPendingVendors()
-    {
-        var pendingVendors = await _firestore.QueryDocumentsAsync<User>(
-            "users",
-            "ApprovalStatus",
-            nameof(ApprovalStatus.Pending)
-        );
-
-        return Ok(pendingVendors);
-    }
-
     [HttpPost("vendors/approve")]
     public async Task<ActionResult> ApproveVendor([FromBody] VendorApprovalRequest request)
     {
-        var user = await _firestore.GetDocumentAsync<User>("users", request.VendorUserId);
+        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", request.VendorUserId);
 
         if (user == null)
         {
             return NotFound(new { message = "Vendor not found" });
         }
 
-        if (user.Role != nameof(UserRole.Vendor))
+        if (user.Type != Shared.Models.AccountType.Vendor)
         {
             return BadRequest(new { message = "User is not a vendor" });
         }
 
-        if (request.Approved)
-        {
-            user.ApprovalStatus = nameof(ApprovalStatus.Approved);
-            user.RejectionReason = null;
-        }
-        else
-        {
-            user.ApprovalStatus = nameof(ApprovalStatus.Rejected);
-            user.RejectionReason = request.RejectionReason;
-        }
+        // if (request.Approved)
+        // {
+        //     user.ApprovalStatus = nameof(ApprovalStatus.Approved);
+        //     user.RejectionReason = null;
+        // }
+        // else
+        // {
+        //     user.ApprovalStatus = nameof(ApprovalStatus.Rejected);
+        //     user.RejectionReason = request.RejectionReason;
+        // }
 
         await _firestore.SetDocumentAsync("users", request.VendorUserId, user);
 
@@ -98,29 +87,32 @@ public class UsersController : ControllerBase
     [HttpGet("{userId}/vendor-status")]
     public async Task<ActionResult<VendorApplicationResponse>> GetVendorStatus(string userId)
     {
-        var user = await _firestore.GetDocumentAsync<User>("users", userId);
+        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", userId);
 
         if (user == null)
         {
             return NotFound(new { message = "User not found" });
         }
 
-        if (user.Role != nameof(UserRole.Vendor))
+        if (user.Type != Shared.Models.AccountType.Vendor)
         {
             return BadRequest(new { message = "User is not a vendor" });
         }
 
         var response = new VendorApplicationResponse
         {
-            Status = user.ApprovalStatus ?? "Unknown",
-            Message = user.ApprovalStatus switch
-            {
-                nameof(ApprovalStatus.Pending) => "Your application is being reviewed by our team.",
-                nameof(ApprovalStatus.Approved) => "Your vendor account is approved! You can now list games.",
-                nameof(ApprovalStatus.Rejected) => $"Your application was rejected. Reason: {user.RejectionReason}",
-                _ => "Status unknown"
-            },
-            RejectionReason = user.RejectionReason
+            // Status = user.ApprovalStatus ?? "Unknown",
+            // Message = user.ApprovalStatus switch
+            // {
+            //     nameof(ApprovalStatus.Pending) => "Your application is being reviewed by our team.",
+            //     nameof(ApprovalStatus.Approved) => "Your vendor account is approved! You can now list games.",
+            //     nameof(ApprovalStatus.Rejected) => $"Your application was rejected. Reason: {user.RejectionReason}",
+            //     _ => "Status unknown"
+            // },
+            // RejectionReason = user.RejectionReason
+            Status = "Unknownn",
+            Message = "Unknown",
+            RejectionReason = "Unknown"
         };
 
         return Ok(response);
