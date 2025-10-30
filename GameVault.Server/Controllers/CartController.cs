@@ -32,8 +32,6 @@ public class CartController : ControllerBase
         {
             _logger.LogInformation("{UserId} accessed cart", _currentUser.UserId);
 
-            _logger.LogInformation("testUser456 accessed cart");
-
             var dbCart = await _cartService.GetCartAsync(_currentUser.UserId);
 
             List<CartItemDTO> items = [];

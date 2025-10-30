@@ -31,10 +31,10 @@ public class AuthController : ControllerBase
                 Message = "Firebase configuration error"
             });
         }
-        
+
         using var httpClient = new HttpClient();
         var firebaseAuthUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={apiKey}";
-        
+
         string? emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST");
         if (!string.IsNullOrEmpty(emulatorHost))
         {
@@ -60,7 +60,7 @@ public class AuthController : ControllerBase
         }
 
         var firebaseResponse = await response.Content.ReadFromJsonAsync<FirebaseLoginResponse>();
-        
+
         if (firebaseResponse == null || string.IsNullOrEmpty(firebaseResponse.IdToken))
         {
             return BadRequest(new AuthResponse
@@ -98,7 +98,7 @@ public class AuthController : ControllerBase
             }
         });
     }
-    
+
     [HttpPost("register/customer")]
     public async Task<ActionResult<AuthResponse>> RegisterCustomer([FromBody] RegisterCustomerRequest request)
     {
@@ -138,8 +138,9 @@ public class AuthController : ControllerBase
                 Message = ex.Message
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex);
             return StatusCode(500, new AuthResponse
             {
                 Success = false,
@@ -154,7 +155,7 @@ public class AuthController : ControllerBase
         try
         {
             var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
-            
+
             var user = new User
             {
                 UserId = userId!,
@@ -216,7 +217,7 @@ public class AuthController : ControllerBase
                 Message = "Invalid or expired token"
             });
         }
-        
+
         var user = await _firestore.GetDocumentAsync<User>("users", userId);
 
         if (user == null)

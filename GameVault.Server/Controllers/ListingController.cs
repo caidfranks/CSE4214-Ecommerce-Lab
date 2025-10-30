@@ -13,11 +13,13 @@ namespace GameVault.Server.Controllers
     [Route("api/[controller]")]
     public class ListingController : ControllerBase
     {
+        private readonly IFirebaseAuthService _firebaseAuth;
         private readonly IFirestoreService _firestore;
         private readonly IConfiguration _configuration;
 
-        public ListingController(IFirestoreService firestore, IConfiguration configuration)
+        public ListingController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, IConfiguration configuration)
         {
+            _firebaseAuth = firebaseAuth;
             _firestore = firestore;
             _configuration = configuration;
         }
@@ -58,7 +60,7 @@ namespace GameVault.Server.Controllers
         }
 
         [HttpGet("vendor")]
-        public async Task<ActionResult<VendorListingListResponse>> GetVendorListingsByStatus([FromQuery] string v, [FromQuery] ListingStatus s)
+        public async Task<ActionResult<VendorListingListResponse>> GetVendorListingsByStatus([FromQuery] string v, [FromQuery] ListingStatus s, [FromHeader] string Authorization)
         {
             // Console.WriteLine($"Got query for User {v} with status {s}");
             var apiKey = _configuration["Firebase:ApiKey"];
@@ -70,6 +72,9 @@ namespace GameVault.Server.Controllers
                     Message = "Firebase configuration error"
                 });
             }
+
+            string token = Authorization.Split(" ").ToList()[1];
+            var userId = await _firebaseAuth.VerifyTokenAsync(token);
 
             var listings = await _firestore.QueryComplexDocumentsAsyncWithId<Models.Firestore.Listing>("listings",
             [

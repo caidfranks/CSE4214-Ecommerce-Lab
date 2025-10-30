@@ -31,7 +31,7 @@ public class AuthService
 
         var response = await _httpClient.PostAsJsonAsync("api/auth/login", request);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
+
         if (result?.Success == true && result.IdToken != null)
         {
             _currentToken = result.IdToken;
@@ -39,7 +39,7 @@ public class AuthService
             _currentUser = result.User;
 
             _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer ", _currentToken);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
@@ -56,7 +56,7 @@ public class AuthService
 
         var response = await _httpClient.PostAsJsonAsync("api/auth/register/customer", request);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
+
         if (result?.Success == true && result.IdToken != null)
         {
             _currentToken = result.IdToken;
@@ -64,15 +64,15 @@ public class AuthService
             _currentUser = result.User;
 
             _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer ", _currentToken);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
     public async Task<AuthResponse> RegisterVendorAsync(
-        string email, 
-        string password, 
+        string email,
+        string password,
         string displayName,
         string businessName,
         string businessDescription)
@@ -88,7 +88,7 @@ public class AuthService
 
         var response = await _httpClient.PostAsJsonAsync("api/auth/register/vendor", request);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
+
         if (result?.Success == true && result.IdToken != null)
         {
             _currentToken = result.IdToken;
@@ -96,7 +96,7 @@ public class AuthService
             _currentUser = result.User;
 
             _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer ", _currentToken);
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
