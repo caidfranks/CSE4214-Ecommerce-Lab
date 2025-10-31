@@ -16,7 +16,7 @@ public class FirestoreService : IFirestoreService
     {
 
 
-        string emulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
+        string? emulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
         if (string.IsNullOrEmpty(emulatorHost))
         {
             // Handle the case where the emulator variable is not set
@@ -78,6 +78,22 @@ public class FirestoreService : IFirestoreService
         foreach (var document in snapshot.Documents)
         {
             results.Add(document.ConvertTo<T>());
+        }
+
+        return results;
+    }
+
+    public async Task<List<T>> GetCollectionAsyncWithId<T>(string collection) where T : IHasId
+    {
+        var collectionRef = _firestoreDb.Collection(collection);
+        var snapshot = await collectionRef.GetSnapshotAsync();
+
+        var results = new List<T>();
+        foreach (var document in snapshot.Documents)
+        {
+            T newResult = document.ConvertTo<T>();
+            newResult.Id = document.Id;
+            results.Add(newResult);
         }
 
         return results;

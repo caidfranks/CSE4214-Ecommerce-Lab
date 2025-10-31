@@ -1,8 +1,7 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using GameVault.Client.Components;
-using GameVault.Client.Pages;
 using GameVault.Shared.DTOs;
+using GameVault.Shared.Models;
 using Microsoft.AspNetCore.Components;
 
 namespace GameVault.Client.Services;
@@ -18,11 +17,11 @@ public class CartService
         _httpClient = httpClient;
     }
 
-    public async Task<bool> AddToCartAsync(int listingId, EventCallback onCartChanged)
+    public async Task<bool> AddToCartAsync(string listingId, int quantity, EventCallback onCartChanged)
     {
         try
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/cart/item", new { ListingId = listingId, Quantity = 1 });
+            var response = await _httpClient.PostAsJsonAsync("/api/cart/item", new NewCartItemDTO() { ListingId = listingId, Quantity = quantity });
 
             if (response.IsSuccessStatusCode)
             {
@@ -47,7 +46,7 @@ public class CartService
     {
         try
         {
-            var cart = await _httpClient.GetFromJsonAsync<ShoppingCartDto>("/api/cart");
+            var cart = await _httpClient.GetFromJsonAsync<CartDTO>("/api/cart");
             return cart?.TotalItemCount ?? 0;
         }
         catch (Exception ex)
@@ -57,7 +56,7 @@ public class CartService
         }
     }
 
-    public async Task RemoveFromCartAsync(CartItemDto Item, EventCallback OnCartChanged)
+    public async Task RemoveFromCartAsync(CartItemDTO Item, EventCallback OnCartChanged)
     {
         try
         {
@@ -79,7 +78,7 @@ public class CartService
         }
     }
 
-    public async Task UpdateQuantityAsync(int newQuantity, CartItemDto item, EventCallback onCartChanged)
+    public async Task UpdateQuantityAsync(int newQuantity, CartItemDTO item, EventCallback onCartChanged)
     {
         try
         {
@@ -102,11 +101,11 @@ public class CartService
         }
     }
 
-    public async Task<ShoppingCartDto?> LoadCartAsync()
+    public async Task<CartDTO?> LoadCartAsync()
     {
         try
         {
-            var cart = await _httpClient.GetFromJsonAsync<ShoppingCartDto>("/api/cart");
+            var cart = await _httpClient.GetFromJsonAsync<CartDTO>("/api/cart");
             _logger.LogInformation("Cart loaded successfully");
             return cart;
         }

@@ -30,12 +30,24 @@
                 </NavLink>
             </div>
 
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="search">
+                    <span class="bi bi-search" aria-hidden="true"></span> Search
+                </NavLink>
+            </div>
+
             @if (IsVendor)
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="vendor">
                         <span class="bi bi-shop" aria-hidden="true"></span> Vendor Dashboard
                     </NavLink>
+                </div>
+            }
+            else
+            {
+                <div class="nav-item px-3">
+                    <CartButton />
                 </div>
             }
 
@@ -52,9 +64,6 @@
             </NavLink>
         </div>
     </nav>
-    <div class="nav-item px-3">
-        <CartButton />
-    </div>
 
     <div class="nav-auth-section">
         @if (AuthService.IsAuthenticated)
@@ -62,7 +71,7 @@
             <div class="nav-item px-3">
                 <div class="user-info">
                     <i class="bi bi-person-circle me-2"></i>
-                    <span class="user-name">@AuthService.CurrentUser?.DisplayName</span>
+                    <span class="user-name">@AuthService.CurrentUser?.Name</span>
                 </div>
             </div>
             <div class="nav-item px-3">
@@ -79,7 +88,7 @@
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link" href="register-customer">
+                <NavLink class="nav-link" href="register/customer">
                     <span class="bi bi-person-plus" aria-hidden="true"></span> Sign Up
                 </NavLink>
             </div>
@@ -168,7 +177,7 @@
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-    private bool IsVendor => AuthService.CurrentUser?.Role == "Vendor";
+    private bool IsVendor => AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor;
 
     private void ToggleNavMenu()
     {

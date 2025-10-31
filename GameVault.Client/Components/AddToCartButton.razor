@@ -19,9 +19,10 @@
 </button>
 
 @code {
-    [Parameter] public int ListingId { get; set; }
+    [Parameter] public required string ListingId { get; set; }
+    [Parameter] public int Quantity { get; set; } = 1;
     [Parameter] public EventCallback OnCartChanged { get; set; }
-    
+
     private bool _isAdding = false;
     private bool IsInCart = false;
 
@@ -29,8 +30,8 @@
     {
         _isAdding = true;
 
-        var success = await CartService.AddToCartAsync(ListingId, OnCartChanged);
-        
+        var success = await CartService.AddToCartAsync(ListingId, Quantity, OnCartChanged);
+
         if (success)
         {
             IsInCart = true;

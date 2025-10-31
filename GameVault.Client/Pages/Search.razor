@@ -1,6 +1,6 @@
 ﻿@page "/search"
-@using GameVaultWeb.Models
-@using GameVaultWeb.Services
+@using GameVault.Client.Models
+@using GameVault.Client.Services
 @inject ProductService ProductService
 @inject NavigationManager Nav
 
@@ -161,15 +161,15 @@
         var lowerQuery = searchQuery.ToLower();
 
         searchResults = allProducts
-            .Select(p => new
-            {
-                Product = p,
-                Score = CalculateRelevanceScore(p, lowerQuery)
-            })
-            .Where(x => x.Score > 0)
-            .OrderByDescending(x => x.Score)
-            .Select(x => x.Product)
-            .ToList();
+        .Select(p => new
+        {
+            Product = p,
+            Score = CalculateRelevanceScore(p, lowerQuery)
+        })
+        .Where(x => x.Score > 0)
+        .OrderByDescending(x => x.Score)
+        .Select(x => x.Product)
+        .ToList();
 
         // Reset to first page
         currentPage = 1;
@@ -202,9 +202,9 @@
     {
         totalPages = (int)Math.Ceiling(searchResults.Count / (double)pageSize);
         pagedResults = searchResults
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        .Skip((currentPage - 1) * pageSize)
+        .Take(pageSize)
+        .ToList();
     }
 
     private void NextPage()

@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using GameVault.Server.Models;
 using GameVault.Server.Services;
+using GameVault.Shared.Models;
+using GameVault.Shared.DTOs;
+using GameVault.Server.Models.Firestore;
 
 namespace GameVault.Server.Controllers;
 
@@ -31,10 +34,10 @@ public class AuthController : ControllerBase
                 Message = "Firebase configuration error"
             });
         }
-        
+
         using var httpClient = new HttpClient();
         var firebaseAuthUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={apiKey}";
-        
+
         string? emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST");
         if (!string.IsNullOrEmpty(emulatorHost))
         {
@@ -60,7 +63,7 @@ public class AuthController : ControllerBase
         }
 
         var firebaseResponse = await response.Content.ReadFromJsonAsync<FirebaseLoginResponse>();
-        
+
         if (firebaseResponse == null || string.IsNullOrEmpty(firebaseResponse.IdToken))
         {
             return BadRequest(new AuthResponse
@@ -70,7 +73,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var user = await _firestore.GetDocumentAsync<User>("users", firebaseResponse.LocalId);
+        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", firebaseResponse.LocalId);
 
         if (user == null)
         {
@@ -85,20 +88,20 @@ public class AuthController : ControllerBase
         {
             Success = true,
             Message = "Login successful",
-            UserId = firebaseResponse.LocalId,
             IdToken = firebaseResponse.IdToken,
-            User = new UserProfile
+            Data = new UserDTO
             {
-                UserId = user.UserId ?? string.Empty,
-                Email = user.Email ?? string.Empty,
-                DisplayName = user.DisplayName,
-                Role = user.Role ?? string.Empty,
-                ApprovalStatus = user.ApprovalStatus,
-                BusinessName = user.BusinessName
+                Id = firebaseResponse.LocalId,
+                Email = user.Email,
+                Name = user.Name,
+                Type = user.Type,
+                Banned = user.Banned,
+                BanMsg = user.BanMsg,
+                ReviewedBy = user.ReviewedBy,
             }
         });
     }
-    
+
     [HttpPost("register/customer")]
     public async Task<ActionResult<AuthResponse>> RegisterCustomer([FromBody] RegisterCustomerRequest request)
     {
@@ -106,28 +109,30 @@ public class AuthController : ControllerBase
         {
             var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
 
-            var user = new User
+            if (userId is null) throw new Exception("User creation failed");
+
+            var user = new Models.Firestore.User()
             {
-                UserId = userId!,
+                Id = userId,
+                Type = AccountType.Customer,
                 Email = request.Email,
-                DisplayName = request.DisplayName ?? string.Empty,
-                Role = nameof(UserRole.Customer),
+                Banned = false
             };
 
-            await _firestore.SetDocumentAsync("users", userId!, user);
+            await _firestore.SetDocumentAsync("users", userId, user);
 
             return Ok(new AuthResponse
             {
                 Success = true,
                 Message = "Customer account created successfully",
-                UserId = userId,
-                User = new UserProfile
+                Data = new UserDTO
                 {
-                    UserId = user.UserId,
+                    Id = user.Id,
                     Email = user.Email,
-                    DisplayName = user.DisplayName,
-                    Role = user.Role,
+                    Type = user.Type,
+                    Banned = false
                 }
+                // No ID Token because not actually logging in
             });
         }
         catch (InvalidOperationException ex)
@@ -138,8 +143,9 @@ public class AuthController : ControllerBase
                 Message = ex.Message
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex);
             return StatusCode(500, new AuthResponse
             {
                 Success = false,
@@ -149,45 +155,77 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register/vendor")]
-    public async Task<ActionResult<AuthResponse>> RegisterVendor([FromBody] RegisterVendorRequest request)
+    public async Task<ActionResult<DataResponse<string>>> RegisterVendor([FromBody] RegisterVendorRequest request)
     {
         try
         {
-            var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
-            
-            var user = new User
+            var application = new FirestoreRequest
             {
-                UserId = userId!,
                 Email = request.Email,
-                DisplayName = request.DisplayName ?? string.Empty,
-                Role = nameof(UserRole.Vendor),
-                ApprovalStatus = nameof(ApprovalStatus.Pending),
-                BusinessName = request.BusinessName,
-                BusinessDescription = request.BusinessDescription
+                Password = request.Password,
+                Name = request.DisplayName,
+                Reason = request.Reason,
+                Timestamp = DateTime.UtcNow,
+                Archived = false
             };
 
-            await _firestore.SetDocumentAsync("users", userId!, user);
+            var id = await _firestore.AddDocumentAsync("requests", application);
 
-            return Ok(new AuthResponse
+            if (id is not null)
             {
-                Success = true,
-                Message = "Vendor application submitted. Please wait for admin approval.",
-                UserId = userId,
-                User = new UserProfile
+                return new DataResponse<string>
                 {
-                    UserId = user.UserId,
-                    Email = user.Email,
-                    DisplayName = user.DisplayName,
-                    Role = user.Role,
-                    ApprovalStatus = user.ApprovalStatus,
-                    BusinessName = user.BusinessName,
-                    BusinessDescription = user.BusinessDescription
-                }
-            });
+                    Success = true,
+                    Message = "Your application has been submitted",
+                    Data = id.Id
+                };
+            }
+            else
+            {
+                return new DataResponse<string>
+                {
+                    Success = false,
+                    Message = "Failed to submit application. Please try again",
+                };
+            }
+
+
+            // Do all this stuff when approved:
+            // var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
+
+            // var user = new User
+            // {
+            //     UserId = userId!,
+            //     Email = request.Email,
+            //     DisplayName = request.DisplayName ?? string.Empty,
+            //     Role = nameof(AccountType.Vendor),
+            //     ApprovalStatus = nameof(ApprovalStatus.Pending),
+            //     BusinessName = request.BusinessName,
+            //     BusinessDescription = request.BusinessDescription
+            // };
+
+            // await _firestore.SetDocumentAsync("users", userId!, user);
+
+            // return Ok(new AuthResponse
+            // {
+            //     Success = true,
+            //     Message = "Vendor application submitted. Please wait for admin approval.",
+            //     UserId = userId,
+            //     User = new UserProfile
+            //     {
+            //         UserId = user.UserId,
+            //         Email = user.Email,
+            //         DisplayName = user.DisplayName,
+            //         Role = user.Role,
+            //         ApprovalStatus = user.ApprovalStatus,
+            //         BusinessName = user.BusinessName,
+            //         BusinessDescription = user.BusinessDescription
+            //     }
+            // });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new AuthResponse
+            return BadRequest(new DataResponse<string>
             {
                 Success = false,
                 Message = ex.Message
@@ -195,7 +233,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception)
         {
-            return StatusCode(500, new AuthResponse
+            return StatusCode(500, new DataResponse<string>
             {
                 Success = false,
                 Message = "An unexpected error occurred while creating your vendor account. Please try again later."
@@ -216,8 +254,8 @@ public class AuthController : ControllerBase
                 Message = "Invalid or expired token"
             });
         }
-        
-        var user = await _firestore.GetDocumentAsync<User>("users", userId);
+
+        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", userId);
 
         if (user == null)
         {
@@ -231,16 +269,16 @@ public class AuthController : ControllerBase
         return Ok(new AuthResponse
         {
             Success = true,
-            Message = "Token verified",
-            UserId = userId,
-            User = new UserProfile
+            Message = "Login successful",
+            Data = new UserDTO
             {
-                UserId = user.UserId ?? string.Empty,
-                Email = user.Email ?? string.Empty,
-                DisplayName = user.DisplayName ?? string.Empty,
-                Role = user.Role ?? string.Empty,
-                ApprovalStatus = user.ApprovalStatus,
-                BusinessName = user.BusinessName
+                Id = userId,
+                Email = user.Email,
+                Name = user.Name,
+                Type = user.Type,
+                Banned = user.Banned,
+                BanMsg = user.BanMsg,
+                ReviewedBy = user.ReviewedBy,
             }
         });
     }

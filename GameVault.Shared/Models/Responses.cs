@@ -8,6 +8,16 @@ public class BaseResponse
   public string? Message { get; set; }
 }
 
+public class ListResponse<T> : BaseResponse
+{
+  public List<T>? List { get; set; }
+}
+
+public class DataResponse<T> : BaseResponse
+{
+  public T? Data { get; set; }
+}
+
 public class ListingListResponse : BaseResponse
 {
   public List<ListingDTO>? Listings { get; set; }
@@ -26,4 +36,9 @@ public class ListingResponse : BaseResponse
 public class VendorListingListResponse : BaseResponse
 {
   public List<VendorListingDTO>? Listings { get; set; }
+}
+
+public class LogListResponse : BaseResponse
+{
+  public List<LogDTO>? Logs { get; set; }
 }

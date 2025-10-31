@@ -14,20 +14,15 @@
             <div class="user-info">
                 <div class="user-welcome">
                     <i class="bi bi-person-circle me-2"></i>
-                    Welcome back, @AuthService.CurrentUser?.DisplayName!
+                    Welcome back, @AuthService.CurrentUser?.Name!
                 </div>
                 <div class="user-details">
-                    <p><strong>Role:</strong> @AuthService.CurrentUser?.Role</p>
-                    @if (AuthService.CurrentUser?.Role == "Vendor")
-                    {
-                        <p><strong>Business:</strong> @AuthService.CurrentUser?.BusinessName</p>
-                        <p><strong>Status:</strong> @AuthService.CurrentUser?.ApprovalStatus</p>
-                    }
+                    <p><strong>Role:</strong> @AuthService.CurrentUser?.Type</p>
                 </div>
             </div>
 
             <div class="home-buttons">
-                @if (AuthService.CurrentUser?.Role == "Admin")
+                @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
                 {
                     <button class="home-button home-button-secondary" @onclick="GoToAdminDashboard">
                         <i class="bi bi-shop me-2"></i>
@@ -41,7 +36,7 @@
                         Browse Games
                     </button>
 
-                    @if (AuthService.CurrentUser?.Role == "Vendor")
+                    @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor)
                     {
                         <button class="home-button home-button-secondary" @onclick="GoToVendorDashboard">
                             <i class="bi bi-shop me-2"></i>

@@ -1,4 +1,6 @@
-﻿namespace GameVaultWeb.Models
+﻿using GameVault.Shared.DTOs;
+
+namespace GameVault.Client.Models
 {
     public class Product
     {
@@ -10,5 +12,24 @@
         public string Category { get; set; } = "";
         public int Stock { get; set; }
         public string Description { get; set; } = "";
+
+        public static Product FromFullListingDTO(FullListingDTO dto)
+        {
+            return new()
+            {
+                Id = dto.Id,
+                Name = dto.Name,
+                Price = dto.Price / 100M,
+                VendorName = dto.VendorName,
+                ThumbnailUrl = dto.Image,
+                Category = "",
+                Stock = dto.Stock,
+                Description = dto.Description,
+                // Leaving out:
+                // Status
+                // LastModified
+                // OwnerId
+            };
+        }
     }
 }

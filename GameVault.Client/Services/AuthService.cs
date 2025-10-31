@@ -1,5 +1,8 @@
 ﻿using System.Net.Http.Json;
+using System.Security.Principal;
 using System.Text.Json;
+using GameVault.Shared.DTOs;
+using GameVault.Shared.Models;
 
 namespace GameVault.Client.Services;
 
@@ -8,7 +11,7 @@ public class AuthService
     private readonly HttpClient _httpClient;
     private string? _currentUserId;
     private string? _currentToken;
-    private UserProfile? _currentUser;
+    private UserDTO? _currentUser;
 
     public AuthService(HttpClient httpClient)
     {
@@ -17,7 +20,8 @@ public class AuthService
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_currentToken);
     public string? CurrentUserId => _currentUserId;
-    public UserProfile? CurrentUser => _currentUser;
+    public UserDTO? CurrentUser => _currentUser;
+    public string? Token => _currentToken;
 
     public async Task<AuthResponse> LoginAsync(string email, string password)
     {
@@ -29,66 +33,76 @@ public class AuthService
 
         var response = await _httpClient.PostAsJsonAsync("api/auth/login", request);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
+
         if (result?.Success == true && result.IdToken != null)
         {
             _currentToken = result.IdToken;
-            _currentUserId = result.UserId;
-            _currentUser = result.User;
+            _currentUserId = result.Data?.Id;
+            _currentUser = result.Data;
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
-    public async Task<AuthResponse> RegisterCustomerAsync(string email, string password, string? displayName)
+    public async Task<AuthResponse> RegisterCustomerAsync(string email, string password) //, string? displayName)
     {
-        var request = new
+        var request = new RegisterCustomerRequest
         {
             Email = email,
             Password = password,
-            DisplayName = displayName
+            // DisplayName = displayName
         };
 
         var response = await _httpClient.PostAsJsonAsync("api/auth/register/customer", request);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
+
         if (result?.Success == true && result.IdToken != null)
         {
-            _currentToken = result.IdToken;
-            _currentUserId = result.UserId;
-            _currentUser = result.User;
+            // Don't set token because not actually logged in on the server side
+            // _currentToken = result.IdToken;
+            _currentUserId = result.Data?.Id ?? null;
+            _currentUser = result.Data;
+
+            // Not actually logged in on the server side
+            // _httpClient.DefaultRequestHeaders.Authorization =
+            //     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
-    public async Task<AuthResponse> RegisterVendorAsync(
-        string email, 
-        string password, 
+    public async Task<DataResponse<string>> RegisterVendorAsync(
+        string email,
+        string password,
         string displayName,
-        string businessName,
-        string businessDescription)
+        string reason)
     {
-        var request = new
+        var request = new RegisterVendorRequest
         {
             Email = email,
             Password = password,
             DisplayName = displayName,
-            BusinessName = businessName,
-            BusinessDescription = businessDescription
+            Reason = reason
         };
 
         var response = await _httpClient.PostAsJsonAsync("api/auth/register/vendor", request);
-        var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        
-        if (result?.Success == true && result.IdToken != null)
-        {
-            _currentToken = result.IdToken;
-            _currentUserId = result.UserId;
-            _currentUser = result.User;
-        }
+        var result = await response.Content.ReadFromJsonAsync<DataResponse<string>>();
 
-        return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
+        // Don't do any of this because account not really created
+        //      && result.IdToken != null)
+        // {
+        //     _currentToken = result.IdToken;
+        //     _currentUserId = result.UserId;
+        //     _currentUser = result.User;
+
+        //     _httpClient.DefaultRequestHeaders.Authorization =
+        //         new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
+        // }
+
+        return result ?? new DataResponse<string> { Success = false, Message = "Unknown error" };
     }
 
     public void Logout()
@@ -96,25 +110,6 @@ public class AuthService
         _currentToken = null;
         _currentUserId = null;
         _currentUser = null;
+        _httpClient.DefaultRequestHeaders.Authorization = null;
     }
-}
-
-
-public class AuthResponse
-{
-    public bool Success { get; set; }
-    public string? Message { get; set; }
-    public string? UserId { get; set; }
-    public string? IdToken { get; set; }
-    public UserProfile? User { get; set; }
-}
-
-public class UserProfile
-{
-    public string UserId { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string? DisplayName { get; set; }
-    public string Role { get; set; } = string.Empty;
-    public string? ApprovalStatus { get; set; }
-    public string? BusinessName { get; set; }
 }
