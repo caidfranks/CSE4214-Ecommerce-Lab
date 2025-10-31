@@ -494,3 +494,4 @@ gamevault-*-*.json
 
 # VS Code Settings
 .vscode
+/firebase-tools-instant-win.exe

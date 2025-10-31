@@ -19,6 +19,11 @@
 else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer)
 {
     <div class="browse-container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <SearchBar />
+            </div>
+        </div>
         <div class="row">
             <!-- Filter Sidebar (REQ-40, REQ-41) -->
             <div class="col-lg-2 col-md-3">
