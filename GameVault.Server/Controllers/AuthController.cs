@@ -241,6 +241,60 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpPost("register/admin")]
+    public async Task<ActionResult<AuthResponse>> RegisterAdmin([FromBody] RegisterAdminRequest request)
+    {
+        try
+        {
+            var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
+
+            if (userId is null) throw new Exception("User creation failed");
+
+            var user = new Models.Firestore.User()
+            {
+                Id = userId,
+                Type = AccountType.Admin,
+                Email = request.Email,
+                //Name = request.DisplayName,
+                Banned = null
+            };
+
+            await _firestore.SetDocumentAsync("users", userId, user);
+
+            return Ok(new AuthResponse
+            {
+                Success = true,
+                Message = "Customer account created successfully",
+                Data = new UserDTO
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    Type = user.Type,
+                    //Name = request.DisplayName,
+                    Banned = null
+                }
+                // No ID Token because not actually logging in
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return StatusCode(500, new AuthResponse
+            {
+                Success = false,
+                Message = "An unexpected error occurred while creating your account. Please try again later."
+            });
+        }
+    }
+
     [HttpPost("verify")]
     public async Task<ActionResult<AuthResponse>> VerifyToken([FromBody] VerifyTokenRequest request)
     {

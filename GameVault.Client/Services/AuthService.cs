@@ -105,6 +105,32 @@ public class AuthService
         return result ?? new DataResponse<string> { Success = false, Message = "Unknown error" };
     }
 
+    public async Task<AuthResponse> RegisterAdminAsync(string email, string password) //, string? displayName)
+    {
+        var request = new RegisterAdminRequest
+        {
+            Email = email,
+            Password = password,
+            // DisplayName = displayName
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("api/auth/register/admin", request);
+        var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+        if (result?.Success == true && result.IdToken != null)
+        {
+            // Don't set token because not actually logged in on the server side
+            // _currentToken = result.IdToken;
+            _currentUserId = result.Data?.Id ?? null;
+            _currentUser = result.Data;
+
+            // Not actually logged in on the server side
+            // _httpClient.DefaultRequestHeaders.Authorization =
+            //     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
+        }
+
+        return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
+    }
     public void Logout()
     {
         _currentToken = null;
