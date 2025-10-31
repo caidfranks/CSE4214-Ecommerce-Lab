@@ -7,7 +7,7 @@
 
 <PageTitle>@(product?.Name ?? "Product") - GameVault</PageTitle>
 
-@if (AuthService.CurrentUserId is null)
+@if (AuthService.CurrentUserId is null && !IsInModal)
 {
     <div class="container mt-5">
         <div class="alert alert-warning">
@@ -140,13 +140,13 @@ else
                                 </div>
                             </div>
                         }
-                    }
+                    }<!-- TODO: Diagnose cause of modal freezing at loading
                     else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
                     {
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i> Only customers can purchase products.
                         </div>
-                    }
+                    }-->
 
                     <!-- Description (REQ-47) -->
                     <div class="product-description mt-4">
@@ -182,6 +182,9 @@ else
 @code {
     [Parameter]
     public string Id { get; set; } = string.Empty;
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "modal")]
+    public bool IsInModal { get; set; } = false;
 
     private Product? product;
     private List<Product> suggestedProducts = new();

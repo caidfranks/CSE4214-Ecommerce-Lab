@@ -155,7 +155,7 @@ else
     private void OpenModal(VendorListingDTO entry)
     {
         selectedEntry = entry;
-        selectedPageUrl = $"/product/{entry.Id}";
+        selectedPageUrl = $"/product/{entry.Id}?modal=true";
         showModal = true;
     }
 
