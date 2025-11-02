@@ -3,6 +3,7 @@
 @using GameVault.Client.Models
 @inject Services.AuthService AuthService
 @inject ProductService ProductService
+@inject ListingService ListingService
 @inject NavigationManager Nav
 
 <PageTitle>@(product?.Name ?? "Product") - GameVault</PageTitle>
@@ -118,10 +119,12 @@ else
                                     </select>
                                 </div>
                                 <div class="col-md-8 mt-3 mt-md-0">
-                                    @* <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
+                                @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer){
+                                    <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
                                         <i class="bi bi-cart-plus"></i> Add to Cart
-                                    </button> *@
+                                    </button> 
                                     <GameVault.Client.Components.AddToCartButton ListingId="@Id" Quantity="@selectedQuantity" />
+                                }
                                 </div>
                             </div>
                         </div>
@@ -140,7 +143,26 @@ else
                                 </div>
                             </div>
                         }
-                    }<!-- TODO: Diagnose cause of modal freezing at loading
+                    }
+                    else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
+                    {
+                        <button class="btn btn-primary btn-lg w-100" @onclick="() => RemoveListing()">
+                            Remove
+                        </button>
+
+                        @if (showRemovalMessage)
+                        {
+                            <div class="alert alert-success mt-3">
+                                <strong>Removed!</strong>
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-outline-success me-2" @onclick="ContinueShopping">
+                                        Return to Home
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+                    <!-- TODO: Diagnose cause of modal freezing at loading
                     else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
                     {
                         <div class="alert alert-info">
@@ -190,6 +212,7 @@ else
     private List<Product> suggestedProducts = new();
     private int selectedQuantity = 1;
     private bool showAddedMessage = false;
+    private bool showRemovalMessage = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -229,6 +252,12 @@ else
         // REQ-64, REQ-65, REQ-66
         // TODO: Add to cart in database/service
         showAddedMessage = true;
+    }
+
+    private void RemoveListing()
+    {
+        ListingService.ChangeListingStatusToRemoved($"{@Id}");
+        showRemovalMessage = true;
     }
 
     private void ContinueShopping()

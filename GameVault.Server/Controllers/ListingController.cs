@@ -271,6 +271,32 @@ namespace GameVault.Server.Controllers
             });
         }
 
+        [HttpPost("remove")]
+        public async Task<ActionResult<BaseResponse>> ChangeListingStatusToRemoved([FromBody] string id)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // TODO: Make sure owner
+
+            await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Removed);
+
+            // TODO: Handle firestore errors
+
+            return Ok(new BaseResponse
+            {
+                Success = true,
+                Message = "Listing status successfully updated to removed",
+            });
+        }
+
         [HttpGet("id")]
         public async Task<ActionResult<ListingResponse>> GetListingById([FromQuery] string id)
         {
