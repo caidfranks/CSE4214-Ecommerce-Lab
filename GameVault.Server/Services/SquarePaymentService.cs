@@ -77,14 +77,64 @@ public class SquarePaymentService
             }
             else
             {
+                string userFriendlyError = "Payment processing failed";
+                
+                try
+                {
+                    var errorResult = JsonSerializer.Deserialize<JsonElement>(responseBody);
+                    
+                    if (errorResult.TryGetProperty("errors", out var errors) && errors.GetArrayLength() > 0)
+                    {
+                        var firstError = errors[0];
+                        
+                        var code = firstError.TryGetProperty("code", out var codeElement) 
+                            ? codeElement.GetString() ?? "" 
+                            : "";
+                        var category = firstError.TryGetProperty("category", out var categoryElement) 
+                            ? categoryElement.GetString() ?? "" 
+                            : "";
+                        var detail = firstError.TryGetProperty("detail", out var detailElement) 
+                            ? detailElement.GetString() ?? "" 
+                            : "";
+
+                        _logger.LogError("Square payment error - Code: {code}, Category: {category}, Detail: {detail}", 
+                            code, category, detail);
+
+                        if (code == "CARD_DECLINED")
+                            userFriendlyError = "Your card was declined. Please try a different payment method.";
+                        else if (code == "INSUFFICIENT_FUNDS")
+                            userFriendlyError = "Your card has insufficient funds. Please try a different payment method.";
+                        else if (code == "INVALID_CARD")
+                            userFriendlyError = "The card information is invalid. Please check your card details.";
+                        else if (code == "CARD_EXPIRED")
+                            userFriendlyError = "Your card has expired. Please use a different card.";
+                        else if (code == "CVV_FAILURE")
+                            userFriendlyError = "The CVV code is incorrect. Please check your card details.";
+                        else if (code == "ADDRESS_VERIFICATION_FAILURE")
+                            userFriendlyError = "The billing address doesn't match. Please verify your information.";
+                        else if (code == "GENERIC_DECLINE")
+                            userFriendlyError = "Your payment was declined. Please try a different card.";
+                        else if (category == "PAYMENT_METHOD_ERROR")
+                            userFriendlyError = "There was an issue with your payment method. Please try again.";
+                        else if (category == "INVALID_REQUEST_ERROR")
+                            userFriendlyError = "Invalid payment information. Please check your details.";
+                        else if (!string.IsNullOrEmpty(detail))
+                            userFriendlyError = detail;
+                    }
+                }
+                catch (Exception parseEx)
+                {
+                    _logger.LogError(parseEx, "Failed to parse Square error response: {responseBody}", responseBody);
+                }
+
                 _logger.LogError("Square API error: {status} - {body}", response.StatusCode, responseBody);
-                return (false, null, $"Square API error: {response.StatusCode}");
+                return (false, null, userFriendlyError);
             }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Payment processing failed for order {orderId}", orderId);
-            return (false, null, ex.Message);
+            return (false, null, "An unexpected error occurred. Please try again.");
         }
     }
 

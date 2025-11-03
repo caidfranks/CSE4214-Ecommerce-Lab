@@ -1,5 +1,6 @@
 ﻿@page "/"
-@inject Services.AuthService AuthService
+@using System.Threading.Tasks
+@inject AuthService AuthService
 @inject NavigationManager Navigation
 
 <div class="home-container">
@@ -93,8 +94,27 @@
     private void GoToAdminDashboard() => Navigation.NavigateTo("/adminLanding");
     private void GoToProfile() => Navigation.NavigateTo("/profile");
 
-    private void Logout()
+    private async Task Logout()
     {
-        AuthService.Logout();
+        await AuthService.Logout();
+    }
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.IsAuthenticated && AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor)
+        {
+            Navigation.NavigateTo("/vendor", true);
+            return;
+        }
+        else if (AuthService.IsAuthenticated && AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
+        {
+            Navigation.NavigateTo("/adminLanding", true);
+            return;
+        }
+        else if (AuthService.IsAuthenticated && AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer)
+        {
+            Navigation.NavigateTo("/games", replace: true);
+            return;
+        }
     }
 }

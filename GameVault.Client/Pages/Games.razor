@@ -1,9 +1,12 @@
 ﻿@page "/games"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
 @using GameVault.Client.Services
 @using GameVault.Client.Models
 @inject Services.AuthService AuthService
 @inject ProductService ProductService
 @inject NavigationManager Nav
+@inject BreadcrumbService BreadcrumbService
 
 <PageTitle>Browse Products - GameVault</PageTitle>
 
@@ -202,6 +205,10 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        BreadcrumbService.Set(
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Games")
+    );
         await LoadProducts();
         ApplyFilter();
         isLoading = false;

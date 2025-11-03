@@ -277,4 +277,27 @@
             isLoading = false;
         }
     }
+
+    protected override void OnInitialized()
+    {
+        if (AuthService.IsAuthenticated)
+        {
+            if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer)
+            {
+                Navigation.NavigateTo("/games", false, true);
+            }
+            else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor)
+            {
+                Navigation.NavigateTo("/vendor", false, true);
+            }
+            else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
+            {
+                Navigation.NavigateTo("/adminLanding", false, true);
+            }
+            else
+            {
+                Navigation.NavigateTo("/", false, true); // Fallback to home
+            }
+        }
+    }
 }

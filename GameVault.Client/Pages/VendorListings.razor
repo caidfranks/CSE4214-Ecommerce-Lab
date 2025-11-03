@@ -5,6 +5,7 @@
 @inject NavigationManager Nav
 @inject Services.AuthService AuthService
 @inject Services.ListingService ListingService
+@inject BreadcrumbService BreadcrumbService
 
 <PageTitle>@filter Listings</PageTitle>
 
@@ -156,6 +157,11 @@ else if (listings.Count == 0)
 
   protected override async Task OnInitializedAsync()
   {
+    BreadcrumbService.Set(
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+        new BreadcrumbItem($"{filter} Listings")
+    );
     await LoadData();
   }
 }

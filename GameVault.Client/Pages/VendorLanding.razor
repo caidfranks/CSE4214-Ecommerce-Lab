@@ -1,8 +1,12 @@
 @page "/vendor"
+@attribute [Authorize(Roles = "Vendor")]
+@using GameVault.Client.Services
+@using Microsoft.AspNetCore.Authorization
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @inject Services.AuthService AuthService
 @inject HttpClient Http
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Welcome Vendor!</h3>
 
@@ -30,6 +34,10 @@ else
     {
         try
         {
+            BreadcrumbService.Set(
+                new BreadcrumbItem("Home", "/"),
+                new BreadcrumbItem("Vendor Dashboard")
+            );
             var userId = AuthService.CurrentUserId;
             if (!string.IsNullOrEmpty(userId))
             {
