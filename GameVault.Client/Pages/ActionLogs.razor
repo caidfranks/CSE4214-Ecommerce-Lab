@@ -5,6 +5,7 @@
 @inject Services.LogService LogService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Action Logs</h3>
 
@@ -66,6 +67,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Admin Dashboard", "/adminLanding"),
+            new BreadcrumbItem("Action Logs")
+        );
         try
         {
             await LoadData();

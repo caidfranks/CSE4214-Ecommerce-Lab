@@ -1,5 +1,6 @@
 @inject IJSRuntime JS
 @inject ILogger<SquarePaymentForm> Logger
+@implements IDisposable
 
 <div>
     @if (!IsEnabled)
@@ -62,6 +63,11 @@
     private bool hasInitialized = false;
     private bool initializationStarted = false;
     private bool isInitializing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ResetState();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -164,5 +170,54 @@
         errorMessage = error;
         paymentSuccess = false;
         StateHasChanged();
+    }
+
+    private void ResetState()
+    {
+        paymentSuccess = false;
+        errorMessage = null;
+        hasInitialized = false;
+        initializationStarted = false;
+        isInitializing = false;
+        isLoading = false;
+    }
+
+    public async Task ResetForm()
+    {
+        paymentSuccess = false;
+        errorMessage = null;
+        hasInitialized = false;
+        initializationStarted = false;
+        isInitializing = false;
+        isLoading = false;
+        
+        try
+        {
+            await JS.InvokeVoidAsync("eval", @"
+                if (window.squareCard) {
+                    window.squareCard.destroy();
+                    window.squareCard = null;
+                }
+                const container = document.getElementById('card-container');
+                if (container) {
+                    container.innerHTML = '';
+                }
+            ");
+        }
+        catch { }
+        
+        StateHasChanged();
+    }
+
+     public void Dispose()
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("destroySquarePayments");
+            }
+            catch { }
+        });
     }
 }

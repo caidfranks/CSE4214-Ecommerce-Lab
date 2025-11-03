@@ -10,6 +10,7 @@
 @using Google.Rpc
 @inject Services.ListingService ListingService
 @inject ProductService ProductService
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Edit Listing</h3>
 
@@ -72,11 +73,14 @@ else
   [Parameter]
   public string? Id { get; set; }
   public string error = string.Empty;
+
+
   public BaseResponse status = new()
   {
     Success = false,
     Message = string.Empty
   };
+
   private bool wasRemoved = false;
   private EditableListing? model = null;
   @* new()
@@ -157,6 +161,12 @@ else
   protected override async Task OnInitializedAsync()
   {
     await LoadCategories();
+    BreadcrumbService.Set(
+    new BreadcrumbItem("Home", "/"),
+    new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+    new BreadcrumbItem("Vendor Listings", "/vendor/listings"),
+    new BreadcrumbItem("Edit Listing")
+    );
     await LoadData();
   }
 

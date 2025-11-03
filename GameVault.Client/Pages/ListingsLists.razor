@@ -8,6 +8,7 @@
 @using System.Reflection
 @using GameVault.Shared.DTOs
 @using Grpc.Net.Client.Balancer
+@inject BreadcrumbService BreadcrumbService
 
 
 <h3>@PageTitle</h3>
@@ -115,8 +116,14 @@ else
         _ => "Listings"
     };
 
+
     protected override async Task OnParametersSetAsync()
     {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+            new BreadcrumbItem(PageTitle)
+        );
         await LoadData();
     }
 

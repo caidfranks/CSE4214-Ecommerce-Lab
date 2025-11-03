@@ -9,6 +9,7 @@
 @using System.Reflection
 @using GameVault.Shared.DTOs
 @using Grpc.Net.Client.Balancer
+@inject BreadcrumbService BreadcrumbService
 
 <h3>@PageTitle</h3>
 
@@ -158,6 +159,14 @@ else
     private RequestDTO? selectedRequest;
     private UserDTO? selectedUser;
 
+    protected override void OnInitialized()
+        {
+            BreadcrumbService.Set(
+                new BreadcrumbItem("Home", "/"),
+                new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+                new BreadcrumbItem("Orders")
+            );
+        }
     private void OpenDenialPopup(RequestDTO selected) {
         selectedRequest = selected;
         RejectionReason = string.Empty;

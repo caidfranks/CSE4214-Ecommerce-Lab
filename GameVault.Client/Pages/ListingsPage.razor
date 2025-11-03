@@ -1,6 +1,7 @@
 ﻿@page "/viewListings"
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Listings Management</h3>
 
@@ -14,3 +15,14 @@
         </ul>
     </nav>
 </header>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+            new BreadcrumbItem("Listings Management")
+        );
+    }
+}

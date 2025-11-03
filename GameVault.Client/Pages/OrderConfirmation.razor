@@ -3,6 +3,7 @@
 @using GameVault.Shared.DTOs
 @inject CheckoutService CheckoutService
 @inject NavigationManager Navigation
+@inject BreadcrumbService BreadcrumbService
 
 <PageTitle>Order Confirmation - GameVault</PageTitle>
 
@@ -109,6 +110,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Order Confirmation")
+        );
         if (!string.IsNullOrEmpty(OrderId))
         {
             order = await CheckoutService.GetOrderAsync(OrderId);
