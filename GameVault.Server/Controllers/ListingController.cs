@@ -43,11 +43,11 @@ namespace GameVault.Server.Controllers
 
             if (user is null)
             {
-                return Forbid();
+                return Unauthorized();
             }
             else if (user.Type != AccountType.Vendor)
             {
-                return Unauthorized();
+                return Forbid();
             }
 
             FirestoreListing newListingObj = new()
