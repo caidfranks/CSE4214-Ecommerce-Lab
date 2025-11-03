@@ -124,6 +124,11 @@ public class CartController : ControllerBase
 
             var updatedItem = await _cartService.UpdateQuantityAsync(user.Id, listingId, request.Quantity);
 
+            if (updatedItem is null)
+            {
+                return NotFound();
+            }
+
             CartItemDTO fullItem = await _cartService.PopulateCartItem(updatedItem);
 
             return Ok(fullItem);

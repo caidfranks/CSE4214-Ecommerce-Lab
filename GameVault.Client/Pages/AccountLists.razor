@@ -185,7 +185,9 @@ else
     private async Task HandleBanUser() {
         @* await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID);  *@
         /* await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); */
-        await AccountService.BanAccount(selectedUser.Id, RejectionReason);
+        if (selectedUser is not null) {
+            await AccountService.BanAccount(selectedUser.Id, RejectionReason);
+        }
         await LoadData(); 
         CloseBanPopup();
     }

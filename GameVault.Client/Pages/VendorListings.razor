@@ -90,7 +90,7 @@ else if (listings.Count == 0)
                 <button @onclick='UpdateStock'>Save</button>
               </div>
             } else {
-              <button @onclick='async () => await EditStock(listing.Id, listing.Stock)'>Change Stock</button>
+              <button @onclick='async () => EditStock(listing.Id, listing.Stock)'>Change Stock</button>
             }
           }
           @if (filter == ListingStatus.Inactive) {
@@ -118,11 +118,11 @@ else if (listings.Count == 0)
 
   private List<VendorListingDTO>? listings;
 
-  private async Task EditStock(string listingId, int initialStock) {
+  private void EditStock(string listingId, int initialStock) {
     stock = initialStock;
     editingStock = listingId;
   }
-  private async Task CancelStock() {
+  private void CancelStock() {
     editingStock = string.Empty;
     stock = -1;
   }

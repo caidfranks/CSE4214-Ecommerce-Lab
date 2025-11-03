@@ -51,9 +51,12 @@ else
       <label>Category</label>
       <select class="form-select" @bind="model.Category">
         <option value="">Select a category</option>
-        @foreach (CategoryDTO category in categories)
+        @if (categories is not null)
         {
-          <option value="@category.Id">@category.Name</option>
+          @foreach (CategoryDTO category in categories)
+          {
+            <option value="@category.Id">@category.Name</option>
+          }
         }
       </select>
     </div>
@@ -99,7 +102,7 @@ else
       // TODO: Confirm intent to change status back to inactive if editing a removed listing
       @* if (wasRemoved && confirm()) *@
       BaseResponse result = await ListingService.UpdateAsync(Id, model.Name, model.Description, model.Price, model.Stock,
-      model.Category);
+      model?.Category ?? "");
       if (result.Success)
       {
         Console.WriteLine("Update Success!");

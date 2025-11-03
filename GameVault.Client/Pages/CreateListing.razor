@@ -35,9 +35,12 @@
     <label>Category</label>
     <select class="form-select" @bind="model.Category">
       <option value="">Select a category</option>
-      @foreach (CategoryDTO category in categories)
+      @if (categories is not null)
       {
-        <option value="@category.Id">@category.Name</option>
+        @foreach (CategoryDTO category in categories)
+        {
+          <option value="@category.Id">@category.Name</option>
+        }
       }
     </select>
   </div>
@@ -86,7 +89,8 @@
       Image = "" // Add later
     }; *@
 
-    var result = await ListingService.CreateAsync(model.Name, model.Price, model.Description, model.Stock, model.Category);
+    var result = await ListingService.CreateAsync(model.Name, model.Price, model.Description, model.Stock, model?.Category
+    ?? "");
 
     if (result is { Success: true })
     {

@@ -142,7 +142,7 @@ else
                             </div>
                         }
                     }
-                    else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
+                    else if (AuthService.CurrentUser?.Type != Shared.Models.AccountType.Customer)
                     {
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle"></i> Only customers can purchase products.
@@ -241,6 +241,6 @@ else
 
     private void ViewProduct(string productId)
     {
-        Nav.NavigateTo($"/product/{product.Id}");
+        Nav.NavigateTo($"/product/{productId}");
     }
 }
