@@ -157,13 +157,12 @@
             
             if (cart != null && cart.Items != null && cart.Items.Any())
             {
-                decimal subtotalDollars = 0;
+                decimal subtotalInCents = 0;
                 foreach (var item in cart.Items)
                 {
-                    subtotalDollars += item.PriceInCents * item.Quantity;
+                    subtotalInCents += item.PriceInCents * item.Quantity;
                 }
 
-                subtotalInCents = (int)(subtotalDollars);
             }
             else
             {
