@@ -36,4 +36,7 @@ public class FirestoreUser
 public class User : FirestoreUser, IHasId
 {
   public required string Id { get; set; }
+
+  [FirestoreProperty]
+  public int BalanceInCents { get; set; } = 0; 
 }

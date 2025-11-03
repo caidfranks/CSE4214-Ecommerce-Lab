@@ -73,7 +73,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", firebaseResponse.LocalId);
+        var user = await _firestore.GetDocumentAsync<User>("users", firebaseResponse.LocalId);
 
         if (user == null)
         {
@@ -109,6 +109,7 @@ public class AuthController : ControllerBase
                 Banned = user.Banned,
                 BanMsg = user.BanMsg,
                 ReviewedBy = user.ReviewedBy,
+                BalanceInCents = user.BalanceInCents
             }
         });
     }

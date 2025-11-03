@@ -1,24 +1,23 @@
 ﻿using System.Net.Http.Json;
 using GameVault.Shared.DTOs;
 using GameVault.Shared.Models;
-using Microsoft.JSInterop;
 
 namespace GameVault.Client.Services;
 
 public class AuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly IJSRuntime _js;
+    private readonly CookieService _cookies;
     private string? _currentUserId;
     private string? _currentToken;
     private UserDTO? _currentUser;
 
     public event Action? OnAuthStateChanged;
 
-    public AuthService(HttpClient httpClient, IJSRuntime js)
+    public AuthService(HttpClient httpClient, CookieService cookies)
     {
         _httpClient = httpClient;
-        _js = js;
+        _cookies = cookies;
     }
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_currentToken);
@@ -30,9 +29,9 @@ public class AuthService
     {
         try
         {
-            var token = await _js.InvokeAsync<string?>("localStorage.getItem", "authToken");
-            var userId = await _js.InvokeAsync<string?>("localStorage.getItem", "userId");
-            var userJson = await _js.InvokeAsync<string?>("localStorage.getItem", "currentUser");
+            var token = await _cookies.GetCookieAsync("authToken");
+            var userId = await _cookies.GetCookieAsync("userId");
+            var userJson = await _cookies.GetCookieAsync("currentUser");
 
             if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(userId))
             {
@@ -52,7 +51,7 @@ public class AuthService
         }
         catch
         {
-            // Silent fail - user just won't be logged in
+            // Silent fail
         }
     }
 
@@ -76,13 +75,13 @@ public class AuthService
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
 
-            await _js.InvokeVoidAsync("localStorage.setItem", "authToken", _currentToken);
-            await _js.InvokeVoidAsync("localStorage.setItem", "userId", _currentUserId);
+            await _cookies.SetCookieAsync("authToken", _currentToken, 30);
+            await _cookies.SetCookieAsync("userId", _currentUserId ?? "", 30);
             
             if (_currentUser != null)
             {
                 var userJson = System.Text.Json.JsonSerializer.Serialize(_currentUser);
-                await _js.InvokeVoidAsync("localStorage.setItem", "currentUser", userJson);
+                await _cookies.SetCookieAsync("currentUser", userJson, 30);
             }
             
             OnAuthStateChanged?.Invoke();
@@ -138,9 +137,9 @@ public class AuthService
         _currentUser = null;
         _httpClient.DefaultRequestHeaders.Authorization = null;
 
-        await _js.InvokeVoidAsync("localStorage.removeItem", "authToken");
-        await _js.InvokeVoidAsync("localStorage.removeItem", "userId");
-        await _js.InvokeVoidAsync("localStorage.removeItem", "currentUser");
+        await _cookies.DeleteCookieAsync("authToken");
+        await _cookies.DeleteCookieAsync("userId");
+        await _cookies.DeleteCookieAsync("currentUser");
         
         OnAuthStateChanged?.Invoke();
     }

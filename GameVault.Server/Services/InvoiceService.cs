@@ -8,13 +8,16 @@ namespace GameVault.Server.Services;
 public class InvoiceService
 {
     private readonly IFirestoreService _firestore;
+    private readonly ILogger<InvoiceService> _logger;
     private const string InvoicesCollection = "invoices";
     private const string InvoiceItemsCollection = "invoice_items";
     private const string ListingsCollection = "listings";
+    private const string UsersCollection = "users";
 
-    public InvoiceService(IFirestoreService firestore)
+    public InvoiceService(IFirestoreService firestore, ILogger<InvoiceService> logger)
     {
         _firestore = firestore;
+        _logger = logger;
     }
 
     public async Task<Invoice> CreateInvoiceAsync(
@@ -52,6 +55,8 @@ public class InvoiceService
             await CreateInvoiceItemAsync(invoiceId, item);
         }
 
+        await CreditVendorAsync(vendorId, subtotal);
+
         return new Invoice
         {
             Id = invoiceId,
@@ -71,6 +76,34 @@ public class InvoiceService
             PaymentId = paymentId,
             ReturnMsg = string.Empty
         };
+    }
+
+    private async Task CreditVendorAsync(string vendorId, int amountInCents)
+    {
+        try
+        {
+            var vendor = await _firestore.GetDocumentAsync<User>(UsersCollection, vendorId);
+            if (vendor != null && vendor.Type == AccountType.Vendor)
+            {
+                vendor.BalanceInCents += amountInCents;
+                await _firestore.SetDocumentAsync(UsersCollection, vendorId, vendor);
+                
+                _logger.LogInformation(
+                    "Credited vendor {vendorId} with ${amount} (new balance: ${balance})", 
+                    vendorId, 
+                    amountInCents / 100.0,
+                    vendor.BalanceInCents / 100.0
+                );
+            }
+            else
+            {
+                _logger.LogWarning("Vendor {vendorId} not found or not a vendor account", vendorId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to credit vendor {vendorId}", vendorId);
+        }
     }
 
     private async Task CreateInvoiceItemAsync(string invoiceId, CartItemDTO item)
