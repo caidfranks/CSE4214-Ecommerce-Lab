@@ -1,9 +1,20 @@
 ﻿@page "/adminAccounts"
-@inject Services.AuthService AuthService
+@inject AuthService AuthService
 @inject NavigationManager Navigation
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Admin Accounts</h3>
 
 @* TODO: Show all admin accounts here *@
-
 <p><a href="/register/admin">Add Admin Account</a></p>
+<p><a href="/register/admin">Add Admin Account</a></p>
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Admin Dashboard", "/adminLanding"),
+            new BreadcrumbItem("Admin Accounts")
+        );
+    }
+}

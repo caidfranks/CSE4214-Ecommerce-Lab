@@ -44,6 +44,11 @@ public class CartController : ControllerBase
 
             var dbCart = await _cartService.GetCartAsync(user.Id);
 
+            if (dbCart is null)
+            {
+                return NotFound();
+            }
+
             List<CartItemDTO> items = [];
             foreach (Models.Firestore.CartItem item in dbCart.Items)
             {
@@ -123,6 +128,11 @@ public class CartController : ControllerBase
             _logger.LogInformation("{UserId} updating item", user.Id);
 
             var updatedItem = await _cartService.UpdateQuantityAsync(user.Id, listingId, request.Quantity);
+
+            if (updatedItem == null)
+            {
+                return NotFound(new { error = "Item not found in cart" });
+            }
 
             CartItemDTO fullItem = await _cartService.PopulateCartItem(updatedItem);
 

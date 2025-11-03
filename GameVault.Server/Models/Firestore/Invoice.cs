@@ -10,8 +10,9 @@ public class FirestoreInvoice
   // [FirestoreProperty]
   // public required string Id { get; set; }
 
-  [FirestoreProperty]
-  public required int Total { get; set; }
+  // using subtotal as tax is not sent to vendor
+  // [FirestoreProperty]
+  // public required int Total { get; set; }
 
   [FirestoreProperty]
   public required InvoiceStatus Status { get; set; }
@@ -20,31 +21,38 @@ public class FirestoreInvoice
   public required DateTime OrderDate { get; set; }
 
   [FirestoreProperty]
-  public required DateTime ApprovedDate { get; set; }
+  public DateTime? ApprovedDate { get; set; }
 
   [FirestoreProperty]
-  public required DateTime ShippedDate { get; set; }
+  public DateTime? ShippedDate { get; set; }
 
   [FirestoreProperty]
-  public required DateTime CompletedDate { get; set; }
+  public DateTime? CompletedDate { get; set; }
 
   [FirestoreProperty]
-  public required DateTime DeclinedDate { get; set; }
+  public DateTime? DeclinedDate { get; set; }
 
   [FirestoreProperty]
-  public required DateTime CancelledDate { get; set; }
+  public DateTime? CancelledDate { get; set; }
 
   [FirestoreProperty]
-  public required DateTime ReturnRequestDate { get; set; }
+  public DateTime? ReturnRequestDate { get; set; }
 
   [FirestoreProperty]
-  public required DateTime ReturnApprovedDate { get; set; }
+  public DateTime? ReturnApprovedDate { get; set; }
 
-  [FirestoreProperty]
-  public required string CCInfo { get; set; }
+  // we shouldn't be storing CC info in Firestore
+  // [FirestoreProperty]
+  // public required string CCInfo { get; set; }
 
+  //instead we use a token from Square
+  [FirestoreProperty] 
+  public required string PaymentId { get; set; }
   [FirestoreProperty]
-  public required string ShipTo { get; set; }
+  public required int SubtotalInCents { get; set; }
+  
+  [FirestoreProperty]
+  public required Address ShipTo { get; set; }
 
   [FirestoreProperty]
   public required string OrderId { get; set; }

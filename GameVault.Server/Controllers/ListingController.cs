@@ -44,11 +44,11 @@ namespace GameVault.Server.Controllers
 
             if (user is null)
             {
-                return Forbid();
+                return Unauthorized();
             }
             else if (user.Type != AccountType.Vendor)
             {
-                return Unauthorized();
+                return Forbid();
             }
 
             FirestoreListing newListingObj = new()
@@ -60,7 +60,8 @@ namespace GameVault.Server.Controllers
                 Stock = newListing.Stock,
                 Status = newListing.Status,
                 OwnerID = user.Id,
-                LastModified = DateTime.UtcNow
+                LastModified = DateTime.UtcNow,
+                Category = newListing.Category
             };
 
             await _firestore.AddDocumentAsync("listings", newListingObj);
@@ -132,7 +133,8 @@ namespace GameVault.Server.Controllers
                     Status = listing.Status,
                     OwnerID = listing.OwnerID,
                     Image = listing.Image,
-                    LastModified = listing.LastModified
+                    LastModified = listing.LastModified,
+                    Category = listing.Category
                 };
                 listingDTOs.Add(listingDTO);
             }
@@ -182,7 +184,8 @@ namespace GameVault.Server.Controllers
                     Status = listing.Status,
                     OwnerID = listing.OwnerID,
                     Image = listing.Image,
-                    LastModified = listing.LastModified
+                    LastModified = listing.LastModified,
+                    Category = listing.Category
                 };
                 listingDTOs.Add(listingDTO);
             }
@@ -372,6 +375,7 @@ namespace GameVault.Server.Controllers
                             Stock = listing.Stock,
                             Status = listing.Status,
                             Image = listing.Image,
+                            Category = listing.Category
                         }
                     });
                 }

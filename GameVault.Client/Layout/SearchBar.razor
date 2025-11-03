@@ -1,0 +1,278 @@
+@using GameVault.Client.Models
+@using GameVault.Client.Components
+@using GameVault.Client.Services
+@inject ProductService ProductService
+@inject NavigationManager Nav
+
+<div class="search-container">
+  <div class="input-group search-input-group">
+    <span class="input-group-text search-icon">
+      <i class="bi bi-search"></i>
+    </span>
+    <input type="text" class="form-control search-input" placeholder="Search for games, vendors, or categories..."
+      @bind="searchQuery" @bind:event="oninput" @onkeydown="HandleKeyPress" @onfocus="ShowSuggestions"
+      aria-label="Search products" />
+
+    @if (!string.IsNullOrWhiteSpace(searchQuery))
+    {
+      <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    }
+
+    <button class="btn btn-primary search-button" type="button" @onclick="PerformSearch">
+      Search
+    </button>
+  </div>
+
+  <!-- Search Suggestions Dropdown (REQ-59, REQ-60, REQ-61) -->
+  @if (showSuggestions && searchSuggestions.Count > 0)
+  {
+    <div class="search-suggestions-dropdown">
+      <div class="suggestions-header">
+        <small class="text-muted">Suggestions</small>
+      </div>
+
+      @foreach (var suggestion in searchSuggestions.Take(8))
+      {
+        <div class="suggestion-item" @onclick="() => SelectSuggestion(suggestion)">
+          <div class="d-flex align-items-center">
+            <img src="@suggestion.ThumbnailUrl" alt="@suggestion.Name" class="suggestion-thumbnail" />
+            <div class="suggestion-details">
+              <div class="suggestion-name">@HighlightMatch(suggestion.Name)</div>
+              <div class="suggestion-meta">
+                <span class="suggestion-price">$@suggestion.Price.ToString("F2")</span>
+                <span class="suggestion-vendor">by @suggestion.VendorName</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (searchSuggestions.Count > 8)
+      {
+        <div class="suggestion-footer" @onclick="PerformSearch">
+          <small>See all @searchSuggestions.Count results</small>
+        </div>
+      }
+    </div>
+  }
+
+  @if (showSuggestions && !string.IsNullOrWhiteSpace(searchQuery) && searchSuggestions.Count == 0)
+  {
+    <div class="search-suggestions-dropdown">
+      <div class="no-results-message">
+        <i class="bi bi-search"></i>
+        <p>No products found matching "@searchQuery"</p>
+        <small class="text-muted">Try different keywords or check spelling</small>
+      </div>
+    </div>
+  }
+</div>
+
+@code {
+  private string searchQuery_backing = "";
+  private List<Product> searchSuggestions = new();
+  private bool showSuggestions = false;
+  private System.Timers.Timer? debounceTimer;
+
+  private string searchQuery
+  {
+    get => searchQuery_backing;
+    set
+    {
+      searchQuery_backing = value;
+
+      // Debounce search suggestions (REQ-60)
+      debounceTimer?.Stop();
+      if (!string.IsNullOrWhiteSpace(value))
+      {
+        debounceTimer?.Start();
+      }
+      else
+      {
+        searchSuggestions.Clear();
+        showSuggestions = false;
+      }
+    }
+  }
+
+  protected override void OnInitialized()
+  {
+    // Initialize debounce timer for search suggestions
+    debounceTimer = new System.Timers.Timer(300); // 300ms delay
+    debounceTimer.Elapsed += async (sender, e) => await UpdateSuggestions();
+    debounceTimer.AutoReset = false;
+  }
+
+  private async Task UpdateSuggestions()
+  {
+    await InvokeAsync(async () =>
+    {
+      if (!string.IsNullOrWhiteSpace(searchQuery))
+      {
+        searchSuggestions = await SearchProducts(searchQuery);
+        showSuggestions = true;
+        StateHasChanged();
+      }
+    });
+  }
+
+  private void ShowSuggestions()
+  {
+    if (!string.IsNullOrWhiteSpace(searchQuery) && searchSuggestions.Count > 0)
+    {
+      showSuggestions = true;
+    }
+  }
+
+  private void HandleKeyPress(KeyboardEventArgs e)
+  {
+    if (e.Key == "Enter")
+    {
+      PerformSearch();
+    }
+    else if (e.Key == "Escape")
+    {
+      showSuggestions = false;
+    }
+  }
+
+  private async Task<List<Product>> SearchProducts(string query)
+  {
+    // REQ-54: Search by name, vendor, description, and category
+    // REQ-59: Support fuzzy matching and alternate spellings
+
+    if (string.IsNullOrWhiteSpace(query))
+      return new List<Product>();
+
+    var allProducts = await ProductService.GetAllProductsAsync();
+    var lowerQuery = query.ToLower();
+
+    // Score-based ranking for better results
+    var scoredProducts = allProducts.Select(p => new
+    {
+      Product = p,
+      Score = CalculateRelevanceScore(p, lowerQuery)
+    })
+    .Where(x => x.Score > 0)
+    .OrderByDescending(x => x.Score)
+    .Select(x => x.Product)
+    .ToList();
+
+    return scoredProducts;
+  }
+
+  private int CalculateRelevanceScore(Product product, string query)
+  {
+    int score = 0;
+    var productName = product.Name.ToLower();
+    var vendorName = product.VendorName.ToLower();
+    var category = product.CategoryName.ToLower();
+    var description = product.Description.ToLower();
+    var stock = product.Stock;
+
+    // Exact match in name (highest priority)
+    if (productName == query)
+      score += 1000;
+
+    // Name starts with query
+    else if (productName.StartsWith(query))
+      score += 500;
+
+    // Name contains query
+    else if (productName.Contains(query))
+      score += 200;
+
+    // Fuzzy match on name (simple Levenshtein-like)
+    else if (IsFuzzyMatch(productName, query))
+      score += 100;
+
+    // Vendor name matches
+    if (vendorName.Contains(query))
+      score += 150;
+
+    // Category matches
+    if (category == query)
+      score += 100;
+    else if (category.Contains(query))
+      score += 50;
+
+    // Description contains query
+    if (description.Contains(query))
+      score += 30;
+
+    // Out of stock
+    if (stock == 0 && score > 0)
+    {
+      score /= 2;
+      score += 1;
+    }
+
+    return score;
+  }
+
+  private bool IsFuzzyMatch(string text, string query)
+  {
+    // Simple fuzzy matching - allows for minor typos
+    if (text.Length < query.Length - 2 || text.Length > query.Length + 2)
+      return false;
+
+    int differences = 0;
+    int minLength = Math.Min(text.Length, query.Length);
+
+    for (int i = 0; i < minLength; i++)
+    {
+      if (text[i] != query[i])
+        differences++;
+
+      if (differences > 2)
+        return false;
+    }
+
+    return differences <= 2;
+  }
+
+  private MarkupString HighlightMatch(string text)
+  {
+    if (string.IsNullOrWhiteSpace(searchQuery))
+      return new MarkupString(text);
+
+    var highlighted = System.Text.RegularExpressions.Regex.Replace(
+    text,
+    searchQuery,
+    match => $"<mark>{match.Value}</mark>",
+    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+    );
+
+    return new MarkupString(highlighted);
+  }
+
+  private void SelectSuggestion(Product product)
+  {
+    showSuggestions = false;
+    Nav.NavigateTo($"/product/{product.Id}");
+  }
+
+  private void PerformSearch()
+  {
+    if (!string.IsNullOrWhiteSpace(searchQuery))
+    {
+      showSuggestions = false;
+      // Navigate to search results page or home with search parameter
+      Nav.NavigateTo($"/search?q={Uri.EscapeDataString(searchQuery)}");
+    }
+  }
+
+  private void ClearSearch()
+  {
+    searchQuery = "";
+    searchSuggestions.Clear();
+    showSuggestions = false;
+  }
+
+  public void Dispose()
+  {
+    debounceTimer?.Dispose();
+  }
+}

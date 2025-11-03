@@ -1,6 +1,7 @@
 ﻿@using GameVault.Client.Components
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -36,11 +37,58 @@
                 </NavLink>
             </div>
 
+            @if (IsCustomer)
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="orders">
+                        <span class="bi bi-search" aria-hidden="true"></span> Order History
+                    </NavLink>
+                </div>
+            }
+
             @if (IsVendor)
             {
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="vendor">
                         <span class="bi bi-shop" aria-hidden="true"></span> Vendor Dashboard
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="vendor/listings">
+                        <span class="bi bi-shop" aria-hidden="true"></span> View Listings
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="vendor/listings/create">
+                        <span class="bi bi-shop" aria-hidden="true"></span> Create Listing
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="vendor/orders">
+                        <span class="bi bi-shop" aria-hidden="true"></span> Orders & Returns
+                    </NavLink>
+                </div>
+            }
+            else if (IsAdmin)
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="adminLanding">
+                        <span class="bi bi-shop" aria-hidden="true"></span> Admin Dashboard
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="viewListings">
+                        <span class="bi bi-shop" aria-hidden="true"></span> Audit Listings
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="manageAccounts">
+                        <span class="bi bi-shop" aria-hidden="true"></span> Audit Accounts
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="actionLogs">
+                        <span class="bi bi-shop" aria-hidden="true"></span> Action Logs
                     </NavLink>
                 </div>
             }
@@ -57,12 +105,6 @@
                 </NavLink>
             </div>
         }
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="about">
-                <span class="bi bi-info-circle" aria-hidden="true"></span> About
-            </NavLink>
-        </div>
     </nav>
 
     <div class="nav-auth-section">
@@ -177,16 +219,34 @@
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+    private bool IsCustomer => AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer;
+
     private bool IsVendor => AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor;
+    private bool IsAdmin => AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin;
+
+    protected override void OnInitialized()
+    {
+        AuthService.OnAuthStateChanged += HandleAuthStateChanged;
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        StateHasChanged();
+    }
 
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
     }
 
-    private void HandleLogout()
+    private async Task HandleLogout()
     {
-        AuthService.Logout();
+        await AuthService.Logout();
         Navigation.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
     }
 }

@@ -10,6 +10,7 @@ namespace GameVault.Client.Models
         public string VendorName { get; set; } = "";
         public string ThumbnailUrl { get; set; } = "";
         public string Category { get; set; } = "";
+        public string CategoryName { get; set; } = "";
         public int Stock { get; set; }
         public string Description { get; set; } = "";
 
@@ -22,7 +23,8 @@ namespace GameVault.Client.Models
                 Price = dto.Price / 100M,
                 VendorName = dto.VendorName,
                 ThumbnailUrl = dto.Image,
-                Category = "",
+                Category = dto.Category,
+                CategoryName = dto.CategoryName,
                 Stock = dto.Stock,
                 Description = dto.Description,
                 // Leaving out:

@@ -6,6 +6,8 @@ public interface IFirebaseAuthService
     Task<string?> VerifyTokenAsync(string idToken);
     Task<string?> CreateUserAsync(string email, string password);
     Task<FirebaseUserInfo?> GetUserAsync(string email);
+
+    
 }
 
 public class FirebaseUserInfo

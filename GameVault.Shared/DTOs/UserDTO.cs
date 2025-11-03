@@ -11,6 +11,7 @@ public class UserDTO
   public string? BanMsg { get; set; }
   public string? Name { get; set; }
   public string? ReviewedBy { get; set; }
+  public int? BalanceInCents { get; set; }
 }
 
 public class UnbanUserDTO

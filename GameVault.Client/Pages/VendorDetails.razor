@@ -8,6 +8,7 @@
 @using System.Reflection
 @using GameVault.Shared.DTOs
 @using Grpc.Net.Client.Balancer
+@inject BreadcrumbService BreadcrumbService
 
 @if (account is null)
 {
@@ -27,6 +28,10 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Vendor Details")
+        );
         if (UserID is not null)
         {
             var result = await AccountService.GetAccountByIdAsync(UserID);

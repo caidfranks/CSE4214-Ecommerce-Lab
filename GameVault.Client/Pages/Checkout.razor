@@ -1,0 +1,292 @@
+@page "/checkout"
+@attribute [Authorize]
+@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
+@using GameVault.Client.Services
+@using Microsoft.AspNetCore.Authorization
+@inject CheckoutService CheckoutService
+@inject CartService CartService
+@inject NavigationManager Navigation
+@inject ILogger<Checkout> Logger
+@inject BreadcrumbService BreadcrumbService
+@implements IDisposable
+
+<PageTitle>Checkout - GameVault</PageTitle>
+
+<div class="container py-4">
+    <h1 class="mb-4">Checkout</h1>
+
+    @if (isProcessing)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Processing your order...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Error:</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="@(() => errorMessage = null)"></button>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h2 class="card-title h5 mb-3">1. Shipping Address</h2>
+                        <ShipAddressForm 
+                            Address="@shippingAddress" 
+                            OnAddressChanged="@HandleAddressChanged" />
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title h5 mb-3">2. Payment Information</h2>
+                        <SquarePaymentForm 
+                            @ref="paymentFormRef"
+                            OnPaymentMethodCreated="@HandlePaymentMethodCreated"
+                            IsEnabled="@isAddressComplete" />
+                        
+                        @if (!isAddressComplete)
+                        {
+                            <p class="text-muted small mt-2">
+                                Please complete the shipping address first.
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-body">
+                        <h2 class="card-title h5 mb-3">Order Summary</h2>
+                        <OrderSummary 
+                            SubtotalInCents="@subtotalInCents"
+                            TaxInCents="@taxInCents"
+                            TotalInCents="@totalInCents"
+                            State="@shippingAddress.State" />
+                        
+                        <button 
+                            @onclick="ProcessCheckout"
+                            disabled="@(!canCheckout || isProcessing)"
+                            class="btn btn-primary w-100 mt-3">
+                            @if (isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Processing...</span>
+                            }
+                            else
+                            {
+                                <span>Place Order</span>
+                            }
+                        </button>
+
+                        @if (!canCheckout && !isProcessing)
+                        {
+                            <p class="text-danger small text-center mt-2 mb-0">
+                                @if (!isAddressComplete)
+                                {
+                                    <span>Please complete shipping address</span>
+                                }
+                                else if (string.IsNullOrEmpty(paymentMethodId))
+                                {
+                                    <span>Please enter payment information</span>
+                                }
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private SquarePaymentForm? paymentFormRef;
+    
+    private Address shippingAddress = new()
+    {
+        Street = "",
+        City = "",
+        State = "",
+        PostalCode = "",
+        Country = "US"
+    };
+
+    private string? paymentMethodId;
+    private int subtotalInCents = 0;
+    private int taxInCents = 0;
+    private int totalInCents = 0;
+    private bool isProcessing = false;
+    private string? errorMessage;
+    
+    private bool isAddressComplete => 
+        !string.IsNullOrWhiteSpace(shippingAddress.Street) &&
+        !string.IsNullOrWhiteSpace(shippingAddress.City) &&
+        !string.IsNullOrWhiteSpace(shippingAddress.State) &&
+        !string.IsNullOrWhiteSpace(shippingAddress.PostalCode);
+    
+    private bool canCheckout => isAddressComplete && !isProcessing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        paymentMethodId = null;
+        errorMessage = null;
+        isProcessing = false;
+
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Shopping Cart", "/cart"),
+            new BreadcrumbItem("Checkout")
+        );
+        await CalculateTotal();
+    }
+
+    private async Task CalculateTotal()
+    {
+        try
+        {
+            var cart = await CartService.LoadCartAsync();
+            
+            if (cart != null && cart.Items != null && cart.Items.Any())
+            {
+                decimal subtotalInCents = 0;
+                foreach (var item in cart.Items)
+                {
+                    subtotalInCents += item.PriceInCents * item.Quantity;
+                }
+
+            }
+            else
+            {
+                subtotalInCents = 0;
+            }
+            
+
+            if (!string.IsNullOrEmpty(shippingAddress.State))
+            {
+                await EstimateTax();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error calculating total");
+            subtotalInCents = 0;
+        }
+    }
+
+    private async void HandleAddressChanged(Address address)
+    {
+        shippingAddress = address;
+
+        if (!string.IsNullOrEmpty(address.State))
+        {
+            await EstimateTax();
+        }
+        
+        StateHasChanged();
+    }
+
+    private void HandlePaymentMethodCreated(string methodId)
+    {
+        paymentMethodId = methodId;
+        errorMessage = null;
+        StateHasChanged();
+    }
+
+    private async Task EstimateTax()
+    {
+        if (string.IsNullOrEmpty(shippingAddress.State) || subtotalInCents <= 0)
+        {
+            return;
+        }
+
+        var taxEstimate = await CheckoutService.EstimateTaxAsync(subtotalInCents, shippingAddress.State);
+        if (taxEstimate != null)
+        {
+            taxInCents = taxEstimate.TaxInCents;
+            totalInCents = taxEstimate.TotalInCents;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ProcessCheckout()
+    {
+        if (!canCheckout) return;
+
+        isProcessing = true;
+        errorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            if (!string.IsNullOrEmpty(paymentMethodId))
+            {
+                paymentMethodId = null;
+                errorMessage = "Please enter your payment information";
+                isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
+            if (paymentFormRef != null)
+            {
+                await paymentFormRef.TokenizeCardAsync();
+                await Task.Delay(500);
+            }
+
+            if (string.IsNullOrEmpty(paymentMethodId))
+            {
+                errorMessage = "Please enter valid payment information";
+                isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
+            var request = new CheckoutRequestDTO
+            {
+                PaymentMethodId = paymentMethodId!,
+                ShipTo = shippingAddress
+            };
+
+            var response = await CheckoutService.ProcessCheckoutAsync(request);
+
+            if (response.Success)
+            {
+                paymentMethodId = null;
+                if (paymentFormRef != null)
+                {
+                await paymentFormRef.ResetForm();
+                }
+                Navigation.NavigateTo($"/order-confirmation/{response.OrderId}");
+            }
+            else
+            {
+                errorMessage = response.ErrorMessage ?? "Checkout failed. Please try again.";
+                paymentMethodId = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Unexpected error during checkout");
+            errorMessage = "An unexpected error occurred. Please try again.";
+        }
+        finally
+        {
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        paymentMethodId = null;
+    }
+}

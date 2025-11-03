@@ -10,7 +10,7 @@ public class FirebaseAuthService : IFirebaseAuthService
 
     public FirebaseAuthService(IConfiguration configuration)
     {
-        string emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST");
+        string emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST") ?? "";
         if (!string.IsNullOrEmpty(emulatorHost))
         {
 

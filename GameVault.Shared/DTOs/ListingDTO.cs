@@ -11,6 +11,7 @@ public class NewListingDTO
   public string Description { get; set; } = string.Empty;
   public required int Stock { get; set; }
   public required ListingStatus Status { get; set; }
+  public required string Category { get; set; }
   public string Image { get; set; } = string.Empty;
 }
 public class ListingDTO : NewListingDTO
@@ -23,6 +24,7 @@ public class ListingDTO : NewListingDTO
 public class FullListingDTO : ListingDTO
 {
   public required string VendorName { get; set; }
+  public required string CategoryName { get; set; }
 }
 
 public class VendorListingDTO : ListingDTO
