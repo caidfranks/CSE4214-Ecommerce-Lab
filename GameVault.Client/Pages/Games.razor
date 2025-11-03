@@ -1,4 +1,6 @@
 ﻿@page "/games"
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
 @using GameVault.Client.Services
 @using GameVault.Client.Models
 @inject Services.AuthService AuthService

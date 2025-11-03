@@ -1,11 +1,15 @@
 @page "/checkout"
+@attribute [Authorize]
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @using GameVault.Client.Services
+@using Microsoft.AspNetCore.Authorization
 @inject CheckoutService CheckoutService
+@inject CartService CartService
 @inject NavigationManager Navigation
 @inject ILogger<Checkout> Logger
 @inject BreadcrumbService BreadcrumbService
+@implements IDisposable
 
 <PageTitle>Checkout - GameVault</PageTitle>
 
@@ -133,13 +137,50 @@
 
     protected override async Task OnInitializedAsync()
     {
+        paymentMethodId = null;
+        errorMessage = null;
+        isProcessing = false;
+
         BreadcrumbService.Set(
             new BreadcrumbItem("Home", "/"),
             new BreadcrumbItem("Shopping Cart", "/cart"),
             new BreadcrumbItem("Checkout")
         );
-        subtotalInCents = 2000;
-        await EstimateTax();
+        await CalculateTotal();
+    }
+
+    private async Task CalculateTotal()
+    {
+        try
+        {
+            var cart = await CartService.LoadCartAsync();
+            
+            if (cart != null && cart.Items != null && cart.Items.Any())
+            {
+                decimal subtotalDollars = 0;
+                foreach (var item in cart.Items)
+                {
+                    subtotalDollars += item.PriceInCents * item.Quantity;
+                }
+
+                subtotalInCents = (int)(subtotalDollars);
+            }
+            else
+            {
+                subtotalInCents = 0;
+            }
+            
+
+            if (!string.IsNullOrEmpty(shippingAddress.State))
+            {
+                await EstimateTax();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error calculating total");
+            subtotalInCents = 0;
+        }
     }
 
     private async void HandleAddressChanged(Address address)
@@ -187,6 +228,15 @@
 
         try
         {
+            if (!string.IsNullOrEmpty(paymentMethodId))
+            {
+                paymentMethodId = null;
+                errorMessage = "Please enter your payment information";
+                isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
             if (paymentFormRef != null)
             {
                 await paymentFormRef.TokenizeCardAsync();
@@ -211,11 +261,17 @@
 
             if (response.Success)
             {
+                paymentMethodId = null;
+                if (paymentFormRef != null)
+                {
+                await paymentFormRef.ResetForm();
+                }
                 Navigation.NavigateTo($"/order-confirmation/{response.OrderId}");
             }
             else
             {
                 errorMessage = response.ErrorMessage ?? "Checkout failed. Please try again.";
+                paymentMethodId = null;
             }
         }
         catch (Exception ex)
@@ -228,5 +284,10 @@
             isProcessing = false;
             StateHasChanged();
         }
+    }
+
+    public void Dispose()
+    {
+        paymentMethodId = null;
     }
 }

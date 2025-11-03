@@ -1,4 +1,7 @@
 @page "/vendor"
+@attribute [Authorize(Roles = "Vendor")]
+@using GameVault.Client.Services
+@using Microsoft.AspNetCore.Authorization
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @inject Services.AuthService AuthService

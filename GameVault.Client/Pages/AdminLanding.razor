@@ -1,4 +1,7 @@
 ﻿@page "/adminLanding"
+@attribute [Authorize(Roles = "Admin")]
+@using GameVault.Client.Services
+@using Microsoft.AspNetCore.Authorization
 @inject AuthService AuthService
 @inject NavigationManager Navigation
 @inject BreadcrumbService BreadcrumbService

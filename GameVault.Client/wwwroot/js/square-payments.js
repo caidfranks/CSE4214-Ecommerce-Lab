@@ -1,6 +1,7 @@
 let payments;
 let card;
 let isInitialized = false;
+window.squareCard = null;
 
 window.initializeSquarePayments = async function (dotNetHelperRef) {
     if (isInitialized) {
