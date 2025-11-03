@@ -1,4 +1,5 @@
 @page "/vendor/orders"
+@attribute [Authorize]
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @using Grpc.Net.Client.Balancer
@@ -6,6 +7,7 @@
 @inject NavigationManager Nav
 @inject Services.AuthService AuthService
 @inject Services.InvoiceService InvoiceService
+@inject BreadcrumbService BreadcrumbService
 
 <PageTitle>@filter Orders</PageTitle>
 
@@ -209,6 +211,11 @@ else if (invoices.Count == 0)
   protected override async Task OnInitializedAsync()
   {
     await LoadData();
+    BreadcrumbService.Set(
+    new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+        new BreadcrumbItem($"{filter} Orders")
+    );
   }
 
   private void OpenPrompt(PromptType type, string orderId, Func<Task> onSuccess) {

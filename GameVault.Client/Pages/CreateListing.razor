@@ -49,15 +49,6 @@
 </EditForm>
 
 @code {
-  protected override async Task OnInitializedAsync()
-  {
-    BreadcrumbService.Set(
-    new BreadcrumbItem("Home", "/"),
-    new BreadcrumbItem("Vendor Dashboard", "/vendor"),
-    new BreadcrumbItem("Create Listing")
-    );
-  }
-
   private EditableListing model = new()
   {
     Name = "",
@@ -72,6 +63,11 @@
   protected override async Task OnInitializedAsync()
   {
     await LoadCategories();
+    BreadcrumbService.Set(
+    new BreadcrumbItem("Home", "/"),
+    new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+    new BreadcrumbItem("Create Listing")
+    );
   }
 
   private async Task LoadCategories()
