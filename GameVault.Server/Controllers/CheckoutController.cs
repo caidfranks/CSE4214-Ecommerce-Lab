@@ -24,7 +24,7 @@ public class CheckoutController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> ProcessCheckout(
+    public async Task<ActionResult<CheckoutResponseDTO>> ProcessCheckout(
         [FromBody] CheckoutRequestDTO request,
         [FromHeader] string? Authorization)
     {
@@ -90,7 +90,7 @@ public class CheckoutController : ControllerBase
     }
 
     [HttpPost("estimate-tax")]
-    public IActionResult EstimateTax([FromBody] EstimateTaxRequestDTO request)
+    public ActionResult<object> EstimateTax([FromBody] EstimateTaxRequestDTO request)
     {
         try
         {

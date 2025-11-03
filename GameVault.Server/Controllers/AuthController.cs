@@ -91,7 +91,7 @@ public class AuthController : ControllerBase
                 Success = false,
                 Message = string.IsNullOrEmpty(user.BanMsg) 
                     ? "Your account has been banned. Please contact support for more information."
-                    : user.BanMsg
+                    : $"Your account has been banned. {user.BanMsg}"
             });
         }
 

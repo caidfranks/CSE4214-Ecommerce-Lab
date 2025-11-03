@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using GameVault.Server.Services;
 using GameVault.Shared.Models;
+using GameVault.Server.Models.Firestore;
 
 namespace GameVault.Server.Controllers;
 
@@ -26,7 +27,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetMyOrders([FromHeader] string? Authorization)
+    public async Task<ActionResult<List<Order>>> GetMyOrders([FromHeader] string? Authorization)
     {
         try
         {
@@ -53,7 +54,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetOrderById(string id, [FromHeader] string? Authorization)
+    public async Task<ActionResult<Order>> GetOrderById(string id, [FromHeader] string? Authorization)
     {
         try
         {
@@ -85,7 +86,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("{id}/invoices")]
-    public async Task<IActionResult> GetOrderInvoices(string id, [FromHeader] string? Authorization)
+    public async Task<ActionResult<List<Invoice>>> GetOrderInvoices(string id, [FromHeader] string? Authorization)
     {
         try
         {

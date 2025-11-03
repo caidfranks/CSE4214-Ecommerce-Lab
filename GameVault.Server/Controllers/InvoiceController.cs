@@ -30,7 +30,7 @@ public class InvoiceController : ControllerBase
     
     [HttpPost]
     public async Task<ActionResult<Invoice>> CreateInvoice(
-        [FromBody] CreateInvoiceRequest request,
+        [FromBody] CreateInvoiceRequestDTO request,
         [FromHeader] string? Authorization)
     {
         try
@@ -189,7 +189,7 @@ public class InvoiceController : ControllerBase
     [HttpPut("{invoiceId}/status")]
     public async Task<ActionResult> UpdateInvoiceStatus(
         string invoiceId,
-        [FromBody] UpdateStatusRequest request,
+        [FromBody] UpdateStatusRequestDTO request,
         [FromHeader] string? Authorization)
     {
         try
@@ -225,18 +225,4 @@ public class InvoiceController : ControllerBase
             return StatusCode(500, new { error = ex.Message });
         }
     }
-}
-
-public class CreateInvoiceRequest
-{
-    public required string OrderId { get; set; }
-    public required string VendorId { get; set; }
-    public required List<CartItemDTO> VendorItems { get; set; }
-    public required Address ShipTo { get; set; }
-    public required string PaymentId { get; set; }
-}
-
-public class UpdateStatusRequest
-{
-    public required InvoiceStatus Status { get; set; }
 }

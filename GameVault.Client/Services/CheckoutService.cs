@@ -53,11 +53,11 @@ public class CheckoutService
         }
     }
 
-    public async Task<EstimateTaxResponse?> EstimateTaxAsync(int subtotalInCents, string state)
+    public async Task<EstimateTaxResponseDTO?> EstimateTaxAsync(int subtotalInCents, string state)
     {
         try
         {
-            var request = new EstimateTaxRequest
+            var request = new EstimateTaxRequestDTO
             {
                 SubtotalInCents = subtotalInCents,
                 State = state
@@ -67,7 +67,7 @@ public class CheckoutService
             
             if (response.IsSuccessStatusCode)
             {
-                return await response.Content.ReadFromJsonAsync<EstimateTaxResponse>();
+                return await response.Content.ReadFromJsonAsync<EstimateTaxResponseDTO>();
             }
 
             return null;
@@ -79,11 +79,11 @@ public class CheckoutService
         }
     }
 
-    public async Task<Order?> GetOrderAsync(string orderId)
+    public async Task<OrderDTO?> GetOrderAsync(string orderId)
     {
         try
         {
-            return await _http.GetFromJsonAsync<Order>($"/api/orders/{orderId}");
+            return await _http.GetFromJsonAsync<OrderDTO>($"/api/orders/{orderId}");
         }
         catch (Exception ex)
         {
@@ -92,17 +92,17 @@ public class CheckoutService
         }
     }
 
-    public async Task<List<Order>> GetMyOrdersAsync()
+    public async Task<List<OrderDTO>> GetMyOrdersAsync()
     {
         try
         {
-            var orders = await _http.GetFromJsonAsync<List<Order>>("/api/orders");
-            return orders ?? new List<Order>();
+            var orders = await _http.GetFromJsonAsync<List<OrderDTO>>("/api/orders");
+            return orders ?? new List<OrderDTO>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting orders");
-            return new List<Order>();
+            return new List<OrderDTO>();
         }
     }
 
@@ -119,28 +119,4 @@ public class CheckoutService
             return false;
         }
     }
-}
-
-public class EstimateTaxRequest
-{
-    public required int SubtotalInCents { get; set; }
-    public required string State { get; set; }
-}
-
-public class EstimateTaxResponse
-{
-    public int SubtotalInCents { get; set; }
-    public int TaxInCents { get; set; }
-    public int TotalInCents { get; set; }
-    public decimal TaxRate { get; set; }
-}
-
-public class Order
-{
-    public string Id { get; set; } = string.Empty;
-    public string CustomerId { get; set; } = string.Empty;
-    public DateTime OrderDate { get; set; }
-    public int SubtotalInCents { get; set; }
-    public int TaxInCents { get; set; }
-    public int TotalInCents { get; set; }
 }
