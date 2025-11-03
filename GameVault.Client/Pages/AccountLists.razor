@@ -3,6 +3,7 @@
 @inject Services.AccountService AccountService
 @inject Services.ListingService ListingService
 @inject Services.AuthService AuthService
+@inject Services.LogService LogService
 @using GameVault.Client.Services
 @using System.Runtime.CompilerServices
 @using GameVault.Shared.Models
@@ -28,34 +29,121 @@
 
 @if (StatusFilter == "pendingVendors")
 {
-
-    // Reason for denial
-    @if (showDenialPopup)
+    @if (requests == null)
     {
-        <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Feedback</h5>
-                        <button type="button" class="btn-close" @onclick="CloseDenialPopup"></button>
-                    </div>
-                    <div class="modal-body p-0">
-                        <!-- Load another page inside the modal -->
-                        <h3>Feedback</h3>
-                        <p>Enter reason for denial</p>
-                        <input type="text" id="reason" class="form-control" @bind="RejectionReason"
-                            placeholder="Enter reason" />
-                    </div>
-                    <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
-                        <button type="button" class="btn-approve"
-                            @onclick='HandleDenyRequest'>Deny Request</button>
-                        <button type="button" class="btn-deny" @onclick='CloseDenialPopup'>Cancel</button>
+        <p><em>Loading...</em></p>
+    }
+    else if (requests.Count == 0)
+    {
+        <p><em>No accounts found with status "@StatusFilter".</em></p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var request in requests)
+                {
+                    @if (request.Archived == false)
+                    {
+                        <tr>
+                            <td>@request.Email</td>
+                            <td>@request.Name</td>
+                     
+                            <td>
+                                <button type="button" class="btn-ban" @onclick='async () => { OpenRequestPopup(request); }'>View Vendor Request</button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        @if (showRequestPopup)
+        {
+            <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">@selectedRequest?.Name Details</h5>
+                            <button type="button" class="btn-close" @onclick="CloseRequestPopup"></button>
+                        </div>
+                        @*<div class="modal-body p-0">
+                            <!-- Load another page inside the modal -->
+                            <iframe src="@selectedPageUrl" width="100%" height="600px" frameborder="0"></iframe>
+                        </div>*@
+                        <div class="modal-body">
+                            @* Display vendor request details here *@
+                            @if (selectedRequest != null)
+                            {
+                                <div class="container-fluid">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <strong>Email:</strong> @selectedRequest.Email
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Name:</strong> @selectedRequest.Name
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <strong>Description:</strong> @selectedRequest.Reason
+                                        </div>
+                                        @* Add more fields from RequestDTO as needed *@
+                                    </div>
+                                    @* Add any other relevant fields from your RequestDTO *@
+                                </div>
+                            }
+                        </div>
+
+                        <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn-approve" @onclick="() => HandleApproveRequest(selectedRequest)">
+                                Approve
+                            </button>
+                            <button type="button" class="btn-deny"
+                                    @onclick='async () => { OpenDenialPopup(selectedRequest); await LoadData(); CloseRequestPopup(); }'>
+                                Deny
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    }
+        }
 
+
+    // Reason for denial
+        @if (showDenialPopup)
+        {
+            <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Feedback</h5>
+                            <button type="button" class="btn-close" @onclick="CloseDenialPopup"></button>
+                        </div>
+                        <div class="modal-body p-0">
+                            <!-- Load another page inside the modal -->
+                            <h3>Feedback</h3>
+                            <p>Enter reason for denial</p>
+                            <input type="text" id="reason" class="form-control" @bind="RejectionReason"
+                                placeholder="Enter reason" />
+                        </div>
+                        <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
+                            <button type="button" class="btn-approve"
+                                @onclick='HandleDenyRequest'>Deny Request</button>
+                            <button type="button" class="btn-deny" @onclick='CloseDenialPopup'>Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
 }
 else if (StatusFilter == "activeVendors" || StatusFilter == "userAccounts" || StatusFilter == "bannedAccounts")
 {
@@ -155,9 +243,25 @@ else
     private List<UserDTO>? accounts;
     private bool showBanPopup;
     private bool showDenialPopup;
+    private bool showRequestPopup;
     private string RejectionReason = string.Empty;
     private RequestDTO? selectedRequest;
     private UserDTO? selectedUser;
+    private string selectedPageUrl;
+
+    private void OpenRequestPopup(RequestDTO request)
+    {
+        //selectedUser = user;
+        //selectedPageUrl = $"/vendorDetails/{user.Id}";
+        selectedRequest = request;
+        showRequestPopup = true;
+    }
+
+    private void CloseRequestPopup()
+    {
+        showRequestPopup = false;
+        selectedUser = null;
+    }
 
     protected override void OnInitialized()
         {
@@ -189,8 +293,21 @@ else
         selectedUser = null;
     }
 
+    private async Task HandleApproveRequest(RequestDTO request)
+    {
+        await AuthService.CreateVendorAsync(request);
+        await AccountService.ArchiveRequest(request.Id);
+        await LogService.LogVendorApprovalAsync(request.Id, request.Email, VendorApproval.Approved);
+        CloseRequestPopup();
+        await LoadData();
+    }
+
     private async Task HandleDenyRequest() {
         @* await AccountService.AddRemovalReason(selectedEntry.UserID, RejectionReason); *@
+        await AuthService.CreateVendorAsync(selectedRequest);
+        await AccountService.BanAccount(selectedRequest.Id, RejectionReason);
+        await AccountService.ArchiveRequest(selectedRequest.Id);
+        await LogService.LogVendorApprovalAsync(selectedRequest.Id, selectedRequest.Email, VendorApproval.Denied);
         CloseDenialPopup();
         await LoadData();
     }
@@ -198,9 +315,15 @@ else
     private async Task HandleBanUser() {
         @* await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID);  *@
         /* await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); */
-        if (selectedUser is not null) {
-            await AccountService.BanAccount(selectedUser.Id, RejectionReason);
-        }
+        await AccountService.BanAccount(selectedUser.Id, RejectionReason);
+        await ListingService.DeactivateAllUserListingsAsync(selectedUser.Id);
+
+        await LogService.LogAccountBanAsync(
+            selectedUser.Id,
+            selectedUser.Email,
+            RejectionReason
+        );
+
         await LoadData(); 
         CloseBanPopup();
     }
@@ -252,6 +375,7 @@ else
                 if (result is not null && result.Success)
                 {
                     requests = result.List;
+                    
                 }
                 // Else print error
                 await InvokeAsync(StateHasChanged);

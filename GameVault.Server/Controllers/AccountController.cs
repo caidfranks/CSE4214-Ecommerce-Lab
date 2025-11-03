@@ -7,6 +7,7 @@ using Google.Cloud.Firestore.V1;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using static Google.Rpc.Context.AttributeContext.Types;
 
 namespace GameVault.Server.Controllers
 {
@@ -28,57 +29,32 @@ namespace GameVault.Server.Controllers
             _currentUser = currentUser;
         }
 
-        // [HttpPost("approve")]
-        // public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToActive([FromBody] string id)
-        // {
-        //     var apiKey = _configuration["Firebase:ApiKey"];
-        //     if (string.IsNullOrEmpty(apiKey))
-        //     {
-        //         return StatusCode(500, new BaseResponse
-        //         {
-        //             Success = false,
-        //             Message = "Firebase configuration error"
-        //         });
-        //     }
+        [HttpPost("archive")]
+        public async Task<ActionResult<BaseResponse>> ArchiveRequest([FromBody] string id)
+        {
+            
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
 
-        //     // TODO: Make sure owner
+            // TODO: Make sure owner
 
-        //     await _firestore.SetDocumentFieldAsync("users", id, "ApprovalStatus", (int)AccountStatus.ActiveVendor);
+            await _firestore.SetDocumentFieldAsync("requests", id, "Archived", true);
 
-        //     // TODO: Handle firestore errors
+            // TODO: Handle firestore errors
 
-        //     return Ok(new BaseResponse
-        //     {
-        //         Success = true,
-        //         Message = "Listing status successfully updated to pending",
-        //     });
-        // }
-
-        // [HttpPost("deny")]
-        // public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToDenied([FromBody] string id)
-        // {
-        //     var apiKey = _configuration["Firebase:ApiKey"];
-        //     if (string.IsNullOrEmpty(apiKey))
-        //     {
-        //         return StatusCode(500, new BaseResponse
-        //         {
-        //             Success = false,
-        //             Message = "Firebase configuration error"
-        //         });
-        //     }
-
-        //     // TODO: Make sure owner
-
-        //     await _firestore.SetDocumentFieldAsync("users", id, "ApprovalStatus", (int)AccountStatus.Denied);
-
-        //     // TODO: Handle firestore errors
-
-        //     return Ok(new BaseResponse
-        //     {
-        //         Success = true,
-        //         Message = "Listing status successfully updated to pending",
-        //     });
-        // }
+            return Ok(new BaseResponse
+            {
+                Success = true,
+                Message = "Listing status successfully updated to pending",
+            });
+        }
 
         [HttpPost("ban")]
         public async Task<ActionResult<BaseResponse>> ChangeAccountStatusToBanned([FromBody] BanUserDTO dto, [FromHeader] string? Authorization)
@@ -459,5 +435,59 @@ namespace GameVault.Server.Controllers
                 List = accountDTOs
             };
         }
+
+        [HttpGet("requests")]
+        public async Task<ActionResult<ListResponse<RequestDTO>>> GetVendorRequests()
+        {
+            try
+            {
+                Console.WriteLine("Fetching vendor requests");
+
+
+                var requests = await _firestore.GetCollectionAsync<Models.Firestore.Request>("requests");
+                Console.WriteLine($"Received request: {System.Text.Json.JsonSerializer.Serialize(requests)}");
+                if (requests == null || !requests.Any())
+                {
+                    return Ok(new ListResponse<RequestDTO>
+                    {
+                        Success = true,
+                        Message = "No vendor requests found",
+                        List = new List<RequestDTO>()
+                    });
+                }
+
+                // Map to DTOs without exposing sensitive data
+                var requestDTOs = requests.Select(request => new RequestDTO
+                {
+                    Id = request.Id,
+                    Email = request.Email,
+                    Name = request.Name,
+                    Password = request.Password,
+                    Reason = request.Reason,
+                    Timestamp = request.Timestamp,
+                    Archived = request.Archived
+                }).ToList();
+
+                return Ok(new ListResponse<RequestDTO>
+                {
+                    Success = true,
+                    Message = $"Retrieved {requestDTOs.Count} vendor request(s) successfully.",
+                    List = requestDTOs
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching vendor requests: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+
+                return StatusCode(500, new ListResponse<RequestDTO>
+                {
+                    Success = false,
+                    Message = "An error occurred while retrieving vendor requests.",
+                    List = new List<RequestDTO>()
+                });
+            }
+        }
+
     }
 }

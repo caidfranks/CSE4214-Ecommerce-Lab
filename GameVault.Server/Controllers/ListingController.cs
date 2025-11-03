@@ -7,6 +7,7 @@ using Google.Cloud.Firestore.V1;
 using GameVault.Server.Models.Firestore;
 using System.Runtime.InteropServices;
 
+
 namespace GameVault.Server.Controllers
 {
     [ApiController]
@@ -248,6 +249,45 @@ namespace GameVault.Server.Controllers
             });
         }
 
+        [HttpPost("deactivate")]
+        public async Task<ActionResult<BaseResponse>> DeactivateAllUserListingsAsync([FromBody] string userId)
+        {
+            try
+            {
+                // Get all listings owned by the specified user
+                var listings = await _firestore.QueryDocumentsAsyncWithId<Listing>("listings", "OwnerID", userId);
+
+                if (listings == null || listings.Count == 0)
+                {
+                    return new BaseResponse
+                    {
+                        Success = false,
+                        Message = "No listings found for this user."
+                    };
+                }
+
+                // Set each listing to inactive
+                foreach (var listing in listings)
+                {
+                    await _firestore.SetDocumentFieldAsync("listings", listing.Id, "Status", (int)ListingStatus.Inactive);
+                }
+
+                return new BaseResponse
+                {
+                    Success = true,
+                    Message = $"All {listings.Count} listings for user {userId} have been set to inactive."
+                };
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = $"Error deactivating listings: {ex.Message}"
+                });
+            }
+        }
+
         [HttpPost("approve")]
         public async Task<ActionResult<BaseResponse>> ChangeListingStatusToPublished([FromBody] string id)
         {
@@ -271,6 +311,32 @@ namespace GameVault.Server.Controllers
             {
                 Success = true,
                 Message = "Listing status successfully updated to pending",
+            });
+        }
+
+        [HttpPost("remove")]
+        public async Task<ActionResult<BaseResponse>> ChangeListingStatusToRemoved([FromBody] string id)
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // TODO: Make sure owner
+
+            await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Removed);
+
+            // TODO: Handle firestore errors
+
+            return Ok(new BaseResponse
+            {
+                Success = true,
+                Message = "Listing status successfully updated to removed",
             });
         }
 

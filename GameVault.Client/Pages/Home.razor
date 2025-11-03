@@ -23,27 +23,25 @@
             </div>
 
             <div class="home-buttons">
+                <button class="home-button home-button-primary" @onclick="GoToGames">
+                    <i class="bi bi-controller me-2"></i>
+                    Browse Games
+                </button>
+
+                @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor)
+                {
+                    <button class="home-button home-button-secondary" @onclick="GoToVendorDashboard">
+                        <i class="bi bi-shop me-2"></i>
+                        Vendor Dashboard
+                    </button>
+                }
+
                 @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
                 {
                     <button class="home-button home-button-secondary" @onclick="GoToAdminDashboard">
                         <i class="bi bi-shop me-2"></i>
                         Admin Dashboard
                     </button>
-                }
-                else
-                {
-                    <button class="home-button home-button-primary" @onclick="GoToGames">
-                        <i class="bi bi-controller me-2"></i>
-                        Browse Games
-                    </button>
-
-                    @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor)
-                    {
-                        <button class="home-button home-button-secondary" @onclick="GoToVendorDashboard">
-                            <i class="bi bi-shop me-2"></i>
-                            Vendor Dashboard
-                        </button>
-                    }
                 }
 
                 <button class="home-button home-button-outline" @onclick="GoToProfile">

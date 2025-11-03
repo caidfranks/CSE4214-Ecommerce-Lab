@@ -63,6 +63,16 @@ public class AccountService
         var result = await response.Content.ReadFromJsonAsync<ListResponse<RequestDTO>>();
         return result ?? new ListResponse<RequestDTO> { Success = false, Message = "Unknown error" };
     }
+
+    public async Task<BaseResponse> ArchiveRequest(string id)
+    {
+        Console.WriteLine($"Posting ArchiveRequest with id: {id}");
+        var response = await _httpClient.PostAsJsonAsync("api/account/archive", id);
+        var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+        return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+    }
+
     public async Task<DataResponse<UserDTO>> GetAccountByIdAsync(string id)
     {
         try
