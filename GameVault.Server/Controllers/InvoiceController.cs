@@ -27,7 +27,7 @@ public class InvoiceController : ControllerBase
         _firestore = firestore;
         _logger = logger;
     }
-    
+
     [HttpPost]
     public async Task<ActionResult<Invoice>> CreateInvoice(
         [FromBody] CreateInvoiceRequestDTO request,
@@ -152,6 +152,37 @@ public class InvoiceController : ControllerBase
         }
     }
 
+    [HttpGet("vendor")]
+    public async Task<ActionResult<ListResponse<InvoiceDTO>>> GetVendorInvoicesByStatus([FromQuery] string v, [FromQuery] InvoiceStatus s, [FromHeader] string? Authorization)
+    {
+        try
+        {
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.Type != AccountType.Vendor || (user.Type == AccountType.Vendor && user.Id != v))
+            {
+                return Forbid();
+            }
+
+            var invoices = await _invoiceService.GetVendorInvoicesByStatusAsync(v, s);
+
+            return Ok(new ListResponse<InvoiceDTO>()
+            {
+                Success = true,
+                List = invoices
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting invoices by vendor");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
     [HttpGet("{invoiceId}/items")]
     public async Task<ActionResult<List<InvoiceItem>>> GetInvoiceItems(
         string invoiceId,
@@ -216,7 +247,7 @@ public class InvoiceController : ControllerBase
                 return StatusCode(403, new { error = "Access denied" });
             }
 
-            await _invoiceService.UpdateInvoiceStatusAsync(invoiceId, request.Status);
+            await _invoiceService.UpdateInvoiceStatusAsync(invoiceId, request.Status, null);
             return Ok();
         }
         catch (Exception ex)
@@ -224,5 +255,46 @@ public class InvoiceController : ControllerBase
             _logger.LogError(ex, "Error updating invoice status");
             return StatusCode(500, new { error = ex.Message });
         }
+    }
+
+    [HttpPost("update-status")]
+    public async Task<ActionResult<BaseResponse>> UpdateInvoiceStatusWithMessage([FromBody] InvoiceUpdateStatusDTO dTO, [FromHeader] string? Authorization)
+    {
+        var user = await _userService.GetUserFromHeader(Authorization);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        var invoice = await _invoiceService.GetInvoiceByIdAsync(dTO.Id);
+        if (invoice == null)
+        {
+            return NotFound();
+        }
+
+        // 2 Success Cases:
+        // 1) Is vendor and owner of invoice
+        if (user.Type == AccountType.Vendor && invoice.VendorId == user.Id)
+        {
+            // Can change most statuses
+
+        }
+        // 2) Is customer and recipient of invoice
+        else if (user.Type == AccountType.Customer)
+        {
+            // Look up order
+            // Confirm customerId == user.Id
+            // Can set status to pendingReturn from completed
+            // Order cancellation done from OrderController
+
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        await _invoiceService.UpdateInvoiceStatusAsync(dTO.Id, dTO.Status, dTO.Message);
+
+        return Ok();
     }
 }

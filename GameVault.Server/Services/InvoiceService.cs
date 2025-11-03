@@ -87,10 +87,10 @@ public class InvoiceService
             {
                 vendor.BalanceInCents += amountInCents;
                 await _firestore.SetDocumentAsync(UsersCollection, vendorId, vendor);
-                
+
                 _logger.LogInformation(
-                    "Credited vendor {vendorId} with ${amount} (new balance: ${balance})", 
-                    vendorId, 
+                    "Credited vendor {vendorId} with ${amount} (new balance: ${balance})",
+                    vendorId,
                     amountInCents / 100.0,
                     vendor.BalanceInCents / 100.0
                 );
@@ -126,7 +126,7 @@ public class InvoiceService
     public async Task<Invoice?> GetInvoiceByIdAsync(string invoiceId)
     {
         var firestoreInvoice = await _firestore.GetDocumentAsync<FirestoreInvoice>(InvoicesCollection, invoiceId);
-        
+
         if (firestoreInvoice == null)
         {
             return null;
@@ -165,6 +165,47 @@ public class InvoiceService
         return allInvoices.Where(i => i.VendorId == vendorId).ToList();
     }
 
+    public async Task<List<InvoiceDTO>> GetVendorInvoicesByStatusAsync(string vendorId, InvoiceStatus status)
+    {
+        var invoices = await _firestore.QueryComplexDocumentsAsyncWithId<Invoice>("invoices", [
+            new() {
+                fieldName = "VendorId",
+                value = vendorId
+            },
+            new() {
+                fieldName = "Status",
+                value = (int)status
+            }
+        ]);
+
+        List<InvoiceDTO> dTOs = [];
+
+        foreach (var invoice in invoices)
+        {
+            InvoiceDTO dTO = new()
+            {
+                Id = invoice.Id,
+                Status = invoice.Status,
+                OrderDate = invoice.OrderDate,
+                ApprovedDate = invoice.ApprovedDate,
+                ShippedDate = invoice.ShippedDate,
+                CompletedDate = invoice.CompletedDate,
+                DeclinedDate = invoice.DeclinedDate,
+                CancelledDate = invoice.CancelledDate,
+                ReturnRequestDate = invoice.ReturnRequestDate,
+                ReturnApprovedDate = invoice.ReturnApprovedDate,
+                // PaymentId = invoice.PaymentId,
+                Subtotal = invoice.SubtotalInCents / 100M,
+                ShipTo = invoice.ShipTo,
+                // OrderId = invoice.OrderId,
+                // VendorId = invoice.VendorId,
+                ReturnMsg = invoice.ReturnMsg
+            };
+            dTOs.Add(dTO);
+        }
+        return dTOs;
+    }
+
     public async Task<List<InvoiceItem>> GetInvoiceItemsAsync(string invoiceId)
     {
         var allItems = await _firestore.GetCollectionAsync<InvoiceItem>(InvoiceItemsCollection);
@@ -172,8 +213,9 @@ public class InvoiceService
     }
 
     public async Task UpdateInvoiceStatusAsync(
-        string invoiceId, 
-        InvoiceStatus newStatus)
+        string invoiceId,
+        InvoiceStatus newStatus,
+        string? message)
     {
         var invoice = await GetInvoiceByIdAsync(invoiceId);
         if (invoice == null)
@@ -230,7 +272,7 @@ public class InvoiceService
             ReturnApprovedDate = invoice.ReturnApprovedDate,
             ShipTo = invoice.ShipTo,
             PaymentId = invoice.PaymentId,
-            ReturnMsg = invoice.ReturnMsg
+            ReturnMsg = message ?? invoice.ReturnMsg
         };
 
         await _firestore.SetDocumentAsync(InvoicesCollection, invoiceId, firestoreInvoice);
