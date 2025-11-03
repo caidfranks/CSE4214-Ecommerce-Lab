@@ -1,27 +1,60 @@
 ﻿using System.Net.Http.Json;
 using GameVault.Shared.DTOs;
 using GameVault.Shared.Models;
+using Microsoft.JSInterop;
 
 namespace GameVault.Client.Services;
 
 public class AuthService
 {
     private readonly HttpClient _httpClient;
+    private readonly IJSRuntime _js;
     private string? _currentUserId;
     private string? _currentToken;
     private UserDTO? _currentUser;
 
     public event Action? OnAuthStateChanged;
 
-    public AuthService(HttpClient httpClient)
+    public AuthService(HttpClient httpClient, IJSRuntime js)
     {
         _httpClient = httpClient;
+        _js = js;
     }
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_currentToken);
     public string? CurrentUserId => _currentUserId;
     public UserDTO? CurrentUser => _currentUser;
     public string? Token => _currentToken;
+
+    public async Task InitializeAsync()
+    {
+        try
+        {
+            var token = await _js.InvokeAsync<string?>("localStorage.getItem", "authToken");
+            var userId = await _js.InvokeAsync<string?>("localStorage.getItem", "userId");
+            var userJson = await _js.InvokeAsync<string?>("localStorage.getItem", "currentUser");
+
+            if (!string.IsNullOrEmpty(token) && !string.IsNullOrEmpty(userId))
+            {
+                _currentToken = token;
+                _currentUserId = userId;
+                
+                if (!string.IsNullOrEmpty(userJson))
+                {
+                    _currentUser = System.Text.Json.JsonSerializer.Deserialize<UserDTO>(userJson);
+                }
+
+                _httpClient.DefaultRequestHeaders.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
+
+                OnAuthStateChanged?.Invoke();
+            }
+        }
+        catch
+        {
+            // Silent fail - user just won't be logged in
+        }
+    }
 
     public async Task<AuthResponse> LoginAsync(string email, string password)
     {
@@ -42,6 +75,15 @@ public class AuthService
 
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
+
+            await _js.InvokeVoidAsync("localStorage.setItem", "authToken", _currentToken);
+            await _js.InvokeVoidAsync("localStorage.setItem", "userId", _currentUserId);
+            
+            if (_currentUser != null)
+            {
+                var userJson = System.Text.Json.JsonSerializer.Serialize(_currentUser);
+                await _js.InvokeVoidAsync("localStorage.setItem", "currentUser", userJson);
+            }
             
             OnAuthStateChanged?.Invoke();
         }
@@ -89,12 +131,16 @@ public class AuthService
         return result ?? new DataResponse<string> { Success = false, Message = "Unknown error" };
     }
 
-    public void Logout()
+    public async Task Logout()
     {
         _currentToken = null;
         _currentUserId = null;
         _currentUser = null;
         _httpClient.DefaultRequestHeaders.Authorization = null;
+
+        await _js.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        await _js.InvokeVoidAsync("localStorage.removeItem", "userId");
+        await _js.InvokeVoidAsync("localStorage.removeItem", "currentUser");
         
         OnAuthStateChanged?.Invoke();
     }
