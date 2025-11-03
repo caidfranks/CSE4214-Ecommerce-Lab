@@ -75,6 +75,7 @@ public class AuthService
     }
 
     public async Task<DataResponse<string>> RegisterVendorAsync(
+        string Id,
         string email,
         string password,
         string displayName,
@@ -82,6 +83,7 @@ public class AuthService
     {
         var request = new RegisterVendorRequest
         {
+            Id = Id,
             Email = email,
             Password = password,
             DisplayName = displayName,
@@ -103,6 +105,34 @@ public class AuthService
         // }
 
         return result ?? new DataResponse<string> { Success = false, Message = "Unknown error" };
+    }
+
+    public async Task<AuthResponse> CreateVendorAsync(RequestDTO request)
+    {
+        var vendorRequest = new RegisterVendorRequest
+        {
+            Id = request.Id,
+            Email = request.Email,
+            Password = request.Password,
+            DisplayName = request.Name,
+            Reason = request.Reason
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("api/auth/create/vendor", vendorRequest);
+        var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+        // Don't do any of this because account not really created
+         if (result.IdToken != null){ 
+       
+             _currentToken = result.IdToken;
+            _currentUserId = result.Data?.Id ?? null;
+             _currentUser = result.Data;
+
+             _httpClient.DefaultRequestHeaders.Authorization =
+                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
+         }
+
+        return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
     public async Task<AuthResponse> RegisterAdminAsync(string email, string password) //, string? displayName)
