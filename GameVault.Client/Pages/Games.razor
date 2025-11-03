@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using GameVault.Client.Services
 @using GameVault.Client.Models
+@using GameVault.Shared.DTOs
 @inject Services.AuthService AuthService
 @inject ProductService ProductService
 @inject NavigationManager Nav
@@ -22,49 +23,33 @@
 else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer)
 {
     <div class="browse-container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <SearchBar />
+            </div>
+        </div>
         <div class="row">
             <!-- Filter Sidebar (REQ-40, REQ-41) -->
             <div class="col-lg-2 col-md-3">
                 <div class="filter-section">
                     <h5>Filter by Genre</h5>
                     <div class="filter-options">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="actionFilter"
-                                checked="@selectedFilters.Contains("Action")" @onchange="@(e => ToggleFilter("Action"))">
-                            <label class="form-check-label" for="actionFilter">Action</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="rpgFilter"
-                                checked="@selectedFilters.Contains("RPG")" @onchange="@(e => ToggleFilter("RPG"))">
-                            <label class="form-check-label" for="rpgFilter">RPG</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="adventureFilter"
-                                checked="@selectedFilters.Contains("Adventure")"
-                                @onchange="@(e => ToggleFilter("Adventure"))">
-                            <label class="form-check-label" for="adventureFilter">Adventure</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="strategyFilter"
-                                checked="@selectedFilters.Contains("Strategy")"
-                                @onchange="@(e => ToggleFilter("Strategy"))">
-                            <label class="form-check-label" for="strategyFilter">Strategy</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="sportsFilter"
-                                checked="@selectedFilters.Contains("Sports")" @onchange="@(e => ToggleFilter("Sports"))">
-                            <label class="form-check-label" for="sportsFilter">Sports</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="puzzleFilter"
-                                checked="@selectedFilters.Contains("Puzzle")" @onchange="@(e => ToggleFilter("Puzzle"))">
-                            <label class="form-check-label" for="puzzleFilter">Puzzle</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="horrorFilter"
-                                checked="@selectedFilters.Contains("Horror")" @onchange="@(e => ToggleFilter("Horror"))">
-                            <label class="form-check-label" for="horrorFilter">Horror</label>
-                        </div>
+                        @if (categories is null || (categories.Count == 0))
+                        {
+                            <p>No Categories</p>
+                        }
+                        else
+                        {
+                            @foreach (CategoryDTO category in categories)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="(@category.Id)Filter"
+                                        checked="@selectedFilters.Contains(category.Id)"
+                                        @onchange="@(e => ToggleFilter(category.Id))" />
+                                    <label class="form-check-label" for="(@category.Id)Filter">@category.Name</label>
+                                </div>
+                            }
+                        }
                     </div>
                     <button class="btn btn-primary w-100 mt-3" @onclick="ApplyFilter">Apply Filter</button>
 
@@ -91,7 +76,7 @@ else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer)
                         @foreach (var filter in selectedFilters)
                         {
                             <span class="badge bg-primary me-2">
-                                @filter
+                                @(categories?.Find(e => e.Id == filter)?.Name ?? "Unknown")
                                 <button type="button" class="btn-close btn-close-white ms-1" style="font-size: 0.6rem;"
                                     @onclick="() => RemoveFilter(filter)"></button>
                             </span>
@@ -138,7 +123,7 @@ else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer)
                                     <h5 class="product-name" title="@product.Name">@product.Name</h5>
 
                                     <!-- Genre Badge -->
-                                    <span class="badge bg-secondary mb-2">@product.Category</span>
+                                    <span class="badge bg-secondary mb-2">@product.CategoryName</span>
 
                                     <!-- Price (REQ-37) -->
                                     <p class="product-price">$@product.Price.ToString("F2")</p>
@@ -197,6 +182,7 @@ else
     private List<Product> allProducts = new();
     private List<Product> filteredProducts = new();
     private HashSet<string> selectedFilters = new();
+    private List<CategoryDTO>? categories = [];
     private bool isLoading = true;
     private int currentPage = 1;
     private int pageSize = 12; // REQ-49: TBD listings per page
@@ -210,8 +196,15 @@ else
         new BreadcrumbItem("Games")
     );
         await LoadProducts();
+        await LoadCategories();
         ApplyFilter();
         isLoading = false;
+    }
+
+    private async Task LoadCategories()
+    {
+        // Load categories from ProductService
+        categories = await ProductService.GetCategoriesAsync();
     }
 
     private async Task LoadProducts()

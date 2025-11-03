@@ -104,6 +104,34 @@ namespace GameVault.Client.Services
             }
         }
 
+        public async Task<List<CategoryDTO>?> GetCategoriesAsync()
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"api/product/categories");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"Error fetching categories: {response.StatusCode}");
+                    return [];
+                }
+
+                var result = await response.Content.ReadFromJsonAsync<ListResponse<CategoryDTO>>();
+
+                if (result is null || !result.Success)
+                {
+                    return [];
+                }
+
+                return result.List;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching categories: {ex.Message}");
+                return [];
+            }
+        }
+
         public async Task<List<Product>> SearchProductsAsync(string query)
         {
             try

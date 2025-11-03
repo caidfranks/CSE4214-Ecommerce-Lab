@@ -27,7 +27,7 @@ public class InvoiceController : ControllerBase
         _firestore = firestore;
         _logger = logger;
     }
-    
+
     [HttpPost]
     public async Task<ActionResult<Invoice>> CreateInvoice(
         [FromBody] CreateInvoiceRequestDTO request,
@@ -97,7 +97,7 @@ public class InvoiceController : ControllerBase
     }
 
     [HttpGet("order/{orderId}")]
-    public async Task<ActionResult<List<Invoice>>> GetInvoicesByOrder(
+    public async Task<ActionResult<List<InvoiceDTO>>> GetInvoicesByOrder(
         string orderId,
         [FromHeader] string? Authorization)
     {
@@ -111,16 +111,48 @@ public class InvoiceController : ControllerBase
 
             if (user.Type != AccountType.Customer)
             {
-                return Unauthorized();
+                return Forbid();
             }
 
             var invoices = await _invoiceService.GetInvoicesByOrderIdAsync(orderId);
-            return Ok(invoices);
+
+
+            List<InvoiceDTO> dTOs = [];
+
+            foreach (var invoice in invoices)
+            {
+                InvoiceDTO dTO = new()
+                {
+                    Id = invoice.Id,
+                    Status = invoice.Status,
+                    OrderDate = invoice.OrderDate,
+                    ApprovedDate = invoice.ApprovedDate,
+                    ShippedDate = invoice.ShippedDate,
+                    CompletedDate = invoice.CompletedDate,
+                    DeclinedDate = invoice.DeclinedDate,
+                    CancelledDate = invoice.CancelledDate,
+                    ReturnRequestDate = invoice.ReturnRequestDate,
+                    ReturnApprovedDate = invoice.ReturnApprovedDate,
+                    // PaymentId = invoice.PaymentId,
+                    Subtotal = invoice.SubtotalInCents / 100M,
+                    ShipTo = invoice.ShipTo,
+                    // OrderId = invoice.OrderId,
+                    // VendorId = invoice.VendorId,
+                    ReturnMsg = invoice.ReturnMsg
+                };
+                dTOs.Add(dTO);
+            }
+
+            return Ok(new ListResponse<InvoiceDTO>()
+            {
+                Success = true,
+                List = dTOs
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting invoices by order");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500); //, new { error = ex.Message });
         }
     }
 
@@ -144,6 +176,37 @@ public class InvoiceController : ControllerBase
 
             var invoices = await _invoiceService.GetInvoicesByVendorIdAsync(vendorId);
             return Ok(invoices);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting invoices by vendor");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("vendor")]
+    public async Task<ActionResult<ListResponse<InvoiceDTO>>> GetVendorInvoicesByStatus([FromQuery] string v, [FromQuery] InvoiceStatus s, [FromHeader] string? Authorization)
+    {
+        try
+        {
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.Type != AccountType.Vendor || (user.Type == AccountType.Vendor && user.Id != v))
+            {
+                return Forbid();
+            }
+
+            var invoices = await _invoiceService.GetVendorInvoicesByStatusAsync(v, s);
+
+            return Ok(new ListResponse<InvoiceDTO>()
+            {
+                Success = true,
+                List = invoices
+            });
         }
         catch (Exception ex)
         {
@@ -216,7 +279,7 @@ public class InvoiceController : ControllerBase
                 return StatusCode(403, new { error = "Access denied" });
             }
 
-            await _invoiceService.UpdateInvoiceStatusAsync(invoiceId, request.Status);
+            await _invoiceService.UpdateInvoiceStatusAsync(invoiceId, request.Status, null);
             return Ok();
         }
         catch (Exception ex)
@@ -224,5 +287,46 @@ public class InvoiceController : ControllerBase
             _logger.LogError(ex, "Error updating invoice status");
             return StatusCode(500, new { error = ex.Message });
         }
+    }
+
+    [HttpPost("update-status")]
+    public async Task<ActionResult<BaseResponse>> UpdateInvoiceStatusWithMessage([FromBody] InvoiceUpdateStatusDTO dTO, [FromHeader] string? Authorization)
+    {
+        var user = await _userService.GetUserFromHeader(Authorization);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        var invoice = await _invoiceService.GetInvoiceByIdAsync(dTO.Id);
+        if (invoice == null)
+        {
+            return NotFound();
+        }
+
+        // 2 Success Cases:
+        // 1) Is vendor and owner of invoice
+        if (user.Type == AccountType.Vendor && invoice.VendorId == user.Id)
+        {
+            // Can change most statuses
+
+        }
+        // 2) Is customer and recipient of invoice
+        else if (user.Type == AccountType.Customer)
+        {
+            // Look up order
+            // Confirm customerId == user.Id
+            // Can set status to pendingReturn from completed
+            // Order cancellation done from OrderController
+
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        await _invoiceService.UpdateInvoiceStatusAsync(dTO.Id, dTO.Status, dTO.Message);
+
+        return Ok();
     }
 }

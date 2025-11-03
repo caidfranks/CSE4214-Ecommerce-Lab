@@ -44,6 +44,11 @@ public class CartController : ControllerBase
 
             var dbCart = await _cartService.GetCartAsync(user.Id);
 
+            if (dbCart is null)
+            {
+                return NotFound();
+            }
+
             List<CartItemDTO> items = [];
             foreach (Models.Firestore.CartItem item in dbCart.Items)
             {

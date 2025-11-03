@@ -17,7 +17,7 @@ public class ListingService
     _httpClient = httpClient;
   }
 
-  public async Task<BaseResponse> CreateAsync(string name, decimal price, string description, int stock)
+  public async Task<BaseResponse> CreateAsync(string name, decimal price, string description, int stock, string category)
   {
     NewListingDTO newListing = new()
     {
@@ -26,6 +26,7 @@ public class ListingService
       Description = description,
       Stock = stock,
       Status = ListingStatus.Inactive,
+      Category = category,
       // Image = "" // Add later
     };
     var response = await _httpClient.PostAsJsonAsync("api/listing/create", newListing);
@@ -70,7 +71,7 @@ public class ListingService
     return result ?? new ListingResponse { Success = false, Message = "Unknown error" };
   }
 
-  public async Task<BaseResponse> UpdateAsync(string id, string name, string desc, decimal price, int stock)
+  public async Task<BaseResponse> UpdateAsync(string id, string name, string desc, decimal price, int stock, string category)
   {
     ListingDTO newListing = new()
     {
@@ -82,6 +83,7 @@ public class ListingService
       Description = desc,
       Stock = stock,
       Status = ListingStatus.Inactive,
+      Category = category
       // Image = "" // Add later
     };
     var response = await _httpClient.PostAsJsonAsync("api/listing/update", newListing);

@@ -16,7 +16,8 @@ public class EditableListing
       Name = dto.Name,
       Description = dto.Description,
       Price = dto.Price / 100M,
-      Stock = dto.Stock
+      Stock = dto.Stock,
+      Category = dto.Category
     };
   }
 }

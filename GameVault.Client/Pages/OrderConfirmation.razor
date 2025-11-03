@@ -17,7 +17,7 @@
             <p class="text-muted mt-3">Loading order details...</p>
         </div>
     }
-    else if (order == null)
+    else if (order is null)
     {
         <div class="alert alert-danger">
             <h4 class="alert-heading">Order not found</h4>
@@ -37,27 +37,28 @@
         <div class="card mb-4">
             <div class="card-body">
                 <h2 class="card-title h5 mb-3">Order Details</h2>
-                
+
                 <div class="row border-bottom py-2">
                     <div class="col-6 text-muted">Order Number:</div>
                     <div class="col-6 text-end"><code>@order.Id</code></div>
                 </div>
-                
+
                 <div class="row border-bottom py-2">
                     <div class="col-6 text-muted">Order Date:</div>
-                    <div class="col-6 text-end fw-medium">@order.OrderDate.ToLocalTime().ToString("MMMM dd, yyyy h:mm tt")</div>
+                    <div class="col-6 text-end fw-medium">@order.OrderDate.ToLocalTime().ToString("MMMM dd, yyyy h:mm tt")
+                    </div>
                 </div>
-                
+
                 <div class="row border-bottom py-2">
                     <div class="col-6 text-muted">Subtotal:</div>
                     <div class="col-6 text-end fw-medium">@FormatPrice(order.SubtotalInCents)</div>
                 </div>
-                
+
                 <div class="row border-bottom py-2">
                     <div class="col-6 text-muted">Tax:</div>
                     <div class="col-6 text-end fw-medium">@FormatPrice(order.TaxInCents)</div>
                 </div>
-                
+
                 <div class="row py-3">
                     <div class="col-6 fs-5 fw-bold">Total:</div>
                     <div class="col-6 text-end fs-5 fw-bold">@FormatPrice(order.TotalInCents)</div>
@@ -87,16 +88,12 @@
 
         <div class="row g-3">
             <div class="col-md-6">
-                <button 
-                    @onclick="ViewOrderHistory"
-                    class="btn btn-primary w-100">
+                <button @onclick="ViewOrderHistory" class="btn btn-primary w-100">
                     View Order History
                 </button>
             </div>
             <div class="col-md-6">
-                <button 
-                    @onclick="ContinueShopping"
-                    class="btn btn-outline-secondary w-100">
+                <button @onclick="ContinueShopping" class="btn btn-outline-secondary w-100">
                     Continue Shopping
                 </button>
             </div>
@@ -121,7 +118,7 @@
         {
             order = await CheckoutService.GetOrderAsync(OrderId);
         }
-        
+
         isLoading = false;
     }
 

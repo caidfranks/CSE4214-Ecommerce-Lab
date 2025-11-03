@@ -76,8 +76,10 @@ else if (StatusFilter == "activeVendors" || StatusFilter == "userAccounts" || St
                     @if (StatusFilter == "activeVendors") {
                         <th>Name</th>
                         <th>Reviewed By</th>
+                        <th>Balance</th>
                     } else if (StatusFilter == "bannedAccounts") {
                         <th>Type</th>
+                        <th>Balance</th>
                         <th>Ban Reason</th>
                     }
                     <th>Actions</th>
@@ -91,8 +93,10 @@ else if (StatusFilter == "activeVendors" || StatusFilter == "userAccounts" || St
                     @if (StatusFilter == "activeVendors") {
                         <td>@user.Name</td>
                         <td>@user.ReviewedBy</td>
+                        <td>@(((user.BalanceInCents / 100M) ?? 0M).ToString("C2"))</td>
                     }else if (StatusFilter == "bannedAccounts") {
-                        <td>@user.Type</td>
+                            <td>@user.Type</td>
+                            <td>@(user.Type == AccountType.Vendor ? (((user.BalanceInCents / 100M) ?? 0M).ToString("C2")) : "N/A")</td>
                         <td>@user.BanMsg</td>
                     }
                         @if (StatusFilter == "activeVendors" || StatusFilter == "userAccounts")
@@ -194,7 +198,9 @@ else
     private async Task HandleBanUser() {
         @* await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID);  *@
         /* await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); */
-        await AccountService.BanAccount(selectedUser.Id, RejectionReason);
+        if (selectedUser is not null) {
+            await AccountService.BanAccount(selectedUser.Id, RejectionReason);
+        }
         await LoadData(); 
         CloseBanPopup();
     }

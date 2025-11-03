@@ -12,10 +12,13 @@ public class ShoppingCart
 
     public ShoppingCart()
     {
+        CartId = "";
+        UserId = "";
     }
 
     public ShoppingCart(string userId)
     {
         UserId = userId;
+        CartId = "";
     }
 }

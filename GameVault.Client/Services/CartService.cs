@@ -25,13 +25,13 @@ public class CartService
 
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("added to cart", listingId);
+                _logger.LogInformation("added to cart {listingId}", listingId);
                 await onCartChanged.InvokeAsync();
                 return true;
             }
             else
             {
-                _logger.LogError("failed to add item to cart", listingId);
+                _logger.LogError("failed to add item to cart {listingId}", listingId);
                 return false;
             }
         }
@@ -69,7 +69,7 @@ public class CartService
             }
             else
             {
-                _logger.LogError("removal failed", Item.ListingId);
+                _logger.LogError("removal failed {Item.ListingId}", Item.ListingId);
             }
         }
         catch (Exception ex)
@@ -86,13 +86,13 @@ public class CartService
 
             if (response.IsSuccessStatusCode)
             {
-                _logger.LogInformation("qty updated", item.ListingId);
+                _logger.LogInformation("qty updated {item.ListingId}", item.ListingId);
                 item.Quantity = newQuantity;
                 await onCartChanged.InvokeAsync();
             }
             else
             {
-                _logger.LogError("qty update failed", item.ListingId);
+                _logger.LogError("qty update failed {item.ListingId}", item.ListingId);
             }
         }
         catch (Exception ex)

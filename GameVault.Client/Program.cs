@@ -17,7 +17,9 @@ builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => 
     provider.GetRequiredService<CustomAuthenticationStateProvider>());
 builder.Services.AddScoped<ListingService>();
+builder.Services.AddScoped<InvoiceService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<LogService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<AccountService>();

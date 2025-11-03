@@ -88,21 +88,24 @@ public class CartService
         var cart = await GetCartAsync(userId);
         var cartItem = cart.Items.FirstOrDefault(item => item.ListingId == ListingId);
 
-        if (newQuantity <= 0)
+        if (cartItem is not null)
         {
-            cart.Items.Remove(cartItem);
+            if (newQuantity <= 0)
+            {
+                cart.Items.Remove(cartItem);
+                await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
+                {
+                    Items = cart.Items
+                });
+                return cartItem;
+            }
+
+            cartItem.Quantity = newQuantity;
             await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
             {
                 Items = cart.Items
             });
-            return cartItem;
         }
-
-        cartItem.Quantity = newQuantity;
-        await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
-        {
-            Items = cart.Items
-        });
 
         return cartItem;
     }
@@ -110,13 +113,19 @@ public class CartService
     public async Task RemoveFromCartAsync(string userId, string listingId)
     {
         var cart = await GetCartAsync(userId);
-        var cartItem = cart.Items.FirstOrDefault(item => item.ListingId == listingId);
-
-        cart.Items.Remove(cartItem);
-        await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
+        if (cart.Items.Count > 0)
         {
-            Items = cart.Items
-        });
+            var cartItem = cart.Items.FirstOrDefault(item => item.ListingId == listingId);
+
+            if (cartItem is not null)
+            {
+                cart.Items.Remove(cartItem);
+                await _firestore.SetDocumentAsync(CartsCollection, userId, new FirestoreCart()
+                {
+                    Items = cart.Items
+                });
+            }
+        }
     }
 
     public async Task ClearCartAsync(string userId)

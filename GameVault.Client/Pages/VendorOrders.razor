@@ -1,0 +1,267 @@
+@page "/vendor/orders"
+@attribute [Authorize]
+@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
+@using Grpc.Net.Client.Balancer
+@using System.Security.Cryptography.X509Certificates
+@inject NavigationManager Nav
+@inject Services.AuthService AuthService
+@inject Services.InvoiceService InvoiceService
+@inject BreadcrumbService BreadcrumbService
+
+<PageTitle>@filter Orders</PageTitle>
+
+<h3>View Orders</h3>
+
+@* TODO: Tab bar styling *@
+@foreach (var invoiceStatus in Enum.GetValues<InvoiceStatus>())
+{
+  <button @onclick="() => {
+    filter = invoiceStatus;
+    return LoadData();
+  }" class="btn mb-2 @(invoiceStatus == filter ? "btn-primary" : "btn-secondary")">@invoiceStatus</button>
+}
+
+@if (invoices == null)
+{
+  @if (error == string.Empty) {
+    <p><em>Loading...</em></p>
+  } else {
+    <p class="alert alert-danger mt-2"><em>@error</em></p>
+  }
+}
+else if (invoices.Count == 0)
+{
+  <p><em>No invoices found with status "@filter"</em></p>
+} else {
+  <table class="table">
+  <thead>
+    <tr>
+      @switch (filter) {
+        case InvoiceStatus.Pending:
+          <th>Ordered</th>
+        break;
+        case InvoiceStatus.AwaitingShipment:
+          <th>Approved</th>
+        break;
+        case InvoiceStatus.Shipped:
+          <th>Shipped</th>
+        break;
+        case InvoiceStatus.Completed:
+          <th>Completed</th>
+        break;
+        case InvoiceStatus.Declined:
+          <th>Declined</th>
+        break;
+        case InvoiceStatus.Cancelled:
+          <th>Cancelled</th>
+        break;
+        case InvoiceStatus.PendingReturn:
+          <th>Return Requested</th>
+        break;
+        case InvoiceStatus.AwaitingReturn:
+          <th>Return Approved</th>
+        break;
+      }
+      <th>Id</th>
+      <th>Subtotal</th>
+      @if (filter == InvoiceStatus.PendingReturn || filter == InvoiceStatus.AwaitingReturn || filter == InvoiceStatus.Declined || filter == InvoiceStatus.Completed) {
+        <th>Return Message</th>
+      }
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    @foreach (var invoice in invoices)
+    {
+      <tr>
+        @switch (filter) {
+          case InvoiceStatus.Pending:
+            <td>@invoice.OrderDate.ToLocalTime().ToString()</td>
+          break;
+          case InvoiceStatus.AwaitingShipment:
+            <td>@(invoice.ApprovedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+          break;
+          case InvoiceStatus.Shipped:
+            <td>@(invoice.ShippedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+          break;
+          case InvoiceStatus.Completed:
+            <td>@(invoice.CompletedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+          break;
+          case InvoiceStatus.Declined:
+            <td>@(invoice.DeclinedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+          break;
+          case InvoiceStatus.Cancelled:
+            <td>@(invoice.CancelledDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+          break;
+          case InvoiceStatus.PendingReturn:
+            <td>@(invoice.ReturnRequestDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+          break;
+          case InvoiceStatus.AwaitingReturn:
+            <td>@(invoice.ReturnApprovedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+          break;
+        }
+        <td>@invoice.Id</td>
+        <td>@(invoice.Subtotal.ToString("C2"))</td>
+        @if (filter == InvoiceStatus.Completed || filter == InvoiceStatus.Declined || filter == InvoiceStatus.PendingReturn || filter == InvoiceStatus.AwaitingReturn) {
+          <td>@invoice.ReturnMsg</td>
+        }
+        @* TODO: Add option to view details and invoice items *@
+        <td>
+          @switch (filter) {
+            case InvoiceStatus.Pending:
+              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.AwaitingShipment); }">Accept</button>
+              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrder); }">Decline</button> @* With Message *@
+            break;
+            case InvoiceStatus.AwaitingShipment:
+              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.Shipped); }">Shipped</button>
+              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrder); }">Decline</button> @* With Message *@
+            break;
+            case InvoiceStatus.Shipped:
+              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.Completed); }">Arrived</button>
+              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.AwaitingShipment); }">Failed</button>
+            break;
+            case InvoiceStatus.Completed:
+            break;
+            case InvoiceStatus.Declined:
+            break;
+            case InvoiceStatus.Cancelled:
+            break;
+            case InvoiceStatus.PendingReturn:
+              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.AwaitingReturn); }">Accept</button>
+              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrder); }">Decline</button> @* With Message *@
+            break;
+            case InvoiceStatus.AwaitingReturn:
+              <button @onclick='async () => { await SetOrderStatusWithMessage(invoice.Id, InvoiceStatus.Completed, "Return Completed!"); }'>Received</button>
+              <button @onclick="() => { OpenPrompt(PromptType.Fail, invoice.Id, FailOrder); }">Failed</button> @* With Message *@
+            break;
+          }
+        </td>
+      </tr>
+      
+    }
+  </tbody>
+  </table>
+  // Reason for denial
+    @if (showPrompt)
+    {
+        <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(promptType == PromptType.Decline ? "Decline" : "Failed")</h5>
+                        <button type="button" class="btn-close" @onclick="ClosePrompt"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <h3>Feedback</h3>
+                        <p>@(promptType == PromptType.Decline ? "Enter reason for denial" : "Enter details about failure")</p>
+                        <input type="text" id="reason" class="form-control" @bind="message"
+                            placeholder="Enter reason" />
+                    </div>
+                    <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-approve"
+                            @onclick='AcceptPrompt'>@(promptType == PromptType.Decline ? "Decline" : "Fail")</button>
+                        <button type="button" class="btn-deny" @onclick='ClosePrompt'>Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+  public InvoiceStatus filter = 0;
+  public string error = string.Empty;
+  private List<InvoiceDTO>? invoices;
+  public bool showPrompt = false;
+  private string message = string.Empty;
+  public PromptType promptType = PromptType.Decline;
+  public Func<Task>? onPromptClose;
+  public string? selectedOrder;
+
+  public enum PromptType {
+    Decline,
+    Fail
+  }
+
+  private async Task LoadData()
+  {
+    invoices = null;
+    @* loading = true; *@
+    @* Console.WriteLine("Set loading to true"); *@
+
+    // Call Firestore
+    if (AuthService.CurrentUserId is not null) {
+      ListResponse<InvoiceDTO> result = (await InvoiceService.GetVendorInvoicesByStatus(AuthService.CurrentUserId, filter));
+      if (result.Success) {
+      invoices = result.List;
+      @* Console.WriteLine($"Client got {invoices?.Count} invoices"); *@
+      } else {
+      error = result.Message ?? "";
+      }
+      await InvokeAsync(StateHasChanged);
+    } else {
+      Console.WriteLine("Not logged in");
+      error = "Not logged in";
+    }
+    @* loading = false; *@
+    @* Console.WriteLine("Set loading to false"); *@
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadData();
+    BreadcrumbService.Set(
+    new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+        new BreadcrumbItem($"{filter} Orders")
+    );
+  }
+
+  private void OpenPrompt(PromptType type, string orderId, Func<Task> onSuccess) {
+    promptType = type;
+    selectedOrder = orderId;
+    onPromptClose = onSuccess;
+    showPrompt = true;
+  }
+
+  private async Task AcceptPrompt()
+  {
+    if (onPromptClose is not null) {
+      await onPromptClose();
+    }
+    ClosePrompt();
+  }
+
+  private void ClosePrompt()
+  {
+    showPrompt = false;
+    selectedOrder = null;
+    onPromptClose = null;
+  }
+
+  private async Task DeclineOrder() {
+    await SetOrderStatusWithMessage(selectedOrder, InvoiceStatus.Declined, message);
+    @* Console.WriteLine($"Would have declined {selectedOrder} with message {message}"); *@
+  }
+  private async Task FailOrder() {
+    await SetOrderStatusWithMessage(selectedOrder, InvoiceStatus.PendingReturn, message);
+    @* Console.WriteLine($"Would have failed {selectedOrder} with message {message}"); *@
+  }
+  private async Task SetOrderStatus(string id, InvoiceStatus newStatus) {
+    var response = await InvoiceService.SetOrderStatus(id, newStatus);
+    if (!response.Success) {
+      // Set error
+      Console.Write($"Set order status failed: {response.Message}");
+    }
+    await LoadData();
+  }
+  private async Task SetOrderStatusWithMessage(string id, InvoiceStatus newStatus, string newMessage) {
+    var response = await InvoiceService.SetOrderStatusWithMessage(id, newStatus, newMessage);
+    if (!response.Success) {
+      // Set error
+      Console.Write($"Set order status with message failed: {response.Message}");
+    }
+    await LoadData();
+  }
+}

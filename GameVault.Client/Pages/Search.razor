@@ -1,6 +1,7 @@
 ﻿@page "/search"
 @using GameVault.Client.Models
 @using GameVault.Client.Services
+@using GameVault.Shared.DTOs
 @inject ProductService ProductService
 @inject NavigationManager Nav
 @inject BreadcrumbService BreadcrumbService
@@ -47,13 +48,18 @@
                 <h3>No products matching '@searchQuery' found</h3>
                 <p class="text-muted">Try adjusting your search or browse our categories:</p>
                 <div class="suggested-categories mt-4">
-                    <a href="/?category=Action" class="btn btn-outline-primary m-1">Action</a>
-                    <a href="/?category=RPG" class="btn btn-outline-primary m-1">RPG</a>
-                    <a href="/?category=Adventure" class="btn btn-outline-primary m-1">Adventure</a>
-                    <a href="/?category=Strategy" class="btn btn-outline-primary m-1">Strategy</a>
-                    <a href="/?category=Sports" class="btn btn-outline-primary m-1">Sports</a>
-                    <a href="/?category=Puzzle" class="btn btn-outline-primary m-1">Puzzle</a>
-                    <a href="/?category=Horror" class="btn btn-outline-primary m-1">Horror</a>
+                    @if (categories is null || (categories.Count == 0))
+                    {
+                        <p>No Categories</p>
+                    }
+                    else
+                    {
+                        @foreach (CategoryDTO category in categories)
+                        {
+                            @* TODO: These links are broken *@
+                            <a href="/?category=@category.Id" class="btn btn-outline-primary m-1">@category.Name</a>
+                        }
+                    }
                 </div>
                 <div class="mt-4">
                     <a href="/" class="btn btn-primary">Browse All Products</a>
@@ -79,7 +85,7 @@
                             </div>
                             <div class="product-info">
                                 <h5 class="product-name" title="@product.Name">@product.Name</h5>
-                                <span class="badge bg-secondary mb-2">@product.Category</span>
+                                <span class="badge bg-secondary mb-2">@product.CategoryName</span>
                                 <p class="product-price">$@product.Price.ToString("F2")</p>
                                 <p class="product-vendor">
                                     <i class="bi bi-shop"></i> @product.VendorName
@@ -127,9 +133,9 @@
 @code {
     [SupplyParameterFromQuery(Name = "q")]
     public string? searchQuery { get; set; }
-
     private List<Product> searchResults = new();
     private List<Product> pagedResults = new();
+    private List<CategoryDTO>? categories = [];
     private bool isLoading = false;
     private int currentPage = 1;
     private int pageSize = 12;
@@ -142,11 +148,17 @@
             new BreadcrumbItem("Search Results")
         );
         await PerformSearch();
+        await LoadCategories();
     }
 
     protected override async Task OnParametersSetAsync()
     {
         await PerformSearch();
+    }
+    private async Task LoadCategories()
+    {
+        // Load categories from ProductService
+        categories = await ProductService.GetCategoriesAsync();
     }
 
     private async Task PerformSearch()
@@ -188,7 +200,7 @@
         int score = 0;
         var productName = product.Name.ToLower();
         var vendorName = product.VendorName.ToLower();
-        var category = product.Category.ToLower();
+        var category = product.CategoryName.ToLower();
         var description = product.Description.ToLower();
 
         if (productName == query) score += 1000;
