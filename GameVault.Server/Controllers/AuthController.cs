@@ -4,6 +4,8 @@ using GameVault.Server.Services;
 using GameVault.Shared.Models;
 using GameVault.Shared.DTOs;
 using GameVault.Server.Models.Firestore;
+using Microsoft.AspNetCore.Identity;
+using System.Data;
 
 namespace GameVault.Server.Controllers;
 
@@ -249,6 +251,116 @@ public class AuthController : ControllerBase
             {
                 Success = false,
                 Message = "An unexpected error occurred while creating your vendor account. Please try again later."
+            });
+        }
+    }
+
+    [HttpPost("create/vendor")]
+    public async Task<ActionResult<AuthResponse>> CreateVendor([FromBody] RegisterVendorRequest request)
+    {
+        Console.WriteLine($"Received request: {System.Text.Json.JsonSerializer.Serialize(request)}");
+        try
+        {
+            //var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
+            var userId = request.Id;
+
+            var user = new User
+            {
+                 Id = userId!,
+                 BanMsg = null,
+                 Banned = false,
+                 Email = request.Email,
+                 Name = request.DisplayName ?? string.Empty,
+                 Type = AccountType.Vendor,
+                 //ReviewedBy = 
+            };
+
+             await _firestore.SetDocumentAsync("users", userId!, user);
+
+             return Ok(new AuthResponse
+            {
+                 Success = true,
+                 Message = "Vendor account successfully created.",
+                 Data = new UserDTO
+                 {
+                     Id = userId,
+                     Email = user.Email,
+                     Name = user.Name,
+                     Type = user.Type,
+                     Banned = user.Banned,
+                     BanMsg = user.BanMsg,
+                     ReviewedBy = user.ReviewedBy
+                 }
+             });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new DataResponse<string>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new DataResponse<string>
+            {
+                Success = false,
+                Message = "An unexpected error occurred while creating your vendor account. Please try again later."
+            });
+        }
+    }
+
+    [HttpPost("register/admin")]
+    public async Task<ActionResult<AuthResponse>> RegisterAdmin([FromBody] RegisterAdminRequest request)
+    {
+        try
+        {
+            var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
+
+            if (userId is null) throw new Exception("User creation failed");
+
+            var user = new Models.Firestore.User()
+            {
+                Id = userId,
+                Type = AccountType.Admin,
+                Email = request.Email,
+                //Name = request.DisplayName,
+                Banned = null
+            };
+
+            await _firestore.SetDocumentAsync("users", userId, user);
+
+            return Ok(new AuthResponse
+            {
+                Success = true,
+                Message = "Customer account created successfully",
+                Data = new UserDTO
+                {
+                    Id = user.Id,
+                    Email = user.Email,
+                    Type = user.Type,
+                    //Name = request.DisplayName,
+                    Banned = null
+                }
+                // No ID Token because not actually logging in
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new AuthResponse
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return StatusCode(500, new AuthResponse
+            {
+                Success = false,
+                Message = "An unexpected error occurred while creating your account. Please try again later."
             });
         }
     }

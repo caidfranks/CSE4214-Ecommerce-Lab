@@ -1,6 +1,7 @@
 ﻿@page "/register/vendor"
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
+@inject Services.LogService LogService
 
 <div class="auth-container">
     <div class="auth-card">
@@ -153,6 +154,7 @@
 </div>
 
 @code {
+    private string Id = "";
     private string email = "";
     private string password = "";
     private string displayName = "";
@@ -256,11 +258,13 @@
         try
         {
             var result = await AuthService.RegisterVendorAsync(
-                email, password, displayName, reason);
+                Id, email, password, displayName, reason);
             
             if (result?.Success == true)
             {
                 Console.WriteLine($"Registration successful! Reference ID: {result.Data}");
+                await LogService.LogAccountCreationAsync(result.Data, email);
+                await LogService.LogVendorAccountRequestAsync(result.Data, email);
                 Navigation.NavigateTo("/");
             }
             else

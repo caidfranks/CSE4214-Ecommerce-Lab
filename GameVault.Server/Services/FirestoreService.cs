@@ -77,7 +77,15 @@ public class FirestoreService : IFirestoreService
         var results = new List<T>();
         foreach (var document in snapshot.Documents)
         {
-            results.Add(document.ConvertTo<T>());
+            var obj = document.ConvertTo<T>();
+
+            // If the object implements IHasId, populate the document ID
+            if (obj is IHasId hasId)
+            {
+                hasId.Id = document.Id;
+            }
+
+            results.Add(obj);
         }
 
         return results;

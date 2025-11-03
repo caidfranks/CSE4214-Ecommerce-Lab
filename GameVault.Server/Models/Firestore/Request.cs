@@ -1,4 +1,5 @@
 using Google.Cloud.Firestore;
+using GameVault.Shared.Models;
 
 namespace GameVault.Server.Models.Firestore;
 

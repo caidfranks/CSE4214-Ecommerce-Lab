@@ -23,3 +23,18 @@ public class BanUserDTO : UnbanUserDTO
 {
   public required string BanMsg { get; set; }
 }
+
+public class ApproveUserDTO { 
+    public required string Id { get; set; }
+}
+
+public class ArchiveDTO
+{
+    public required string Email { get; set; }
+}
+
+public class DenyUserDTO : ApproveUserDTO
+{
+    public required string Reason { get; set; }
+}
+
