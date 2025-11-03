@@ -1,0 +1,58 @@
+<div class="d-flex justify-content-between mb-2">
+    <span class="text-muted">Subtotal:</span>
+    <span class="fw-medium">@FormatPrice(SubtotalInCents)</span>
+</div>
+
+@if (!string.IsNullOrEmpty(State))
+{
+    <div class="d-flex justify-content-between mb-2">
+        <span class="text-muted">Tax (@State):</span>
+        <span class="fw-medium">@FormatPrice(TaxInCents)</span>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between mb-2 text-muted small">
+        <span>Tax:</span>
+        <span class="fst-italic">Enter state to calculate</span>
+    </div>
+}
+
+<hr />
+
+<div class="d-flex justify-content-between fs-5 fw-bold">
+    <span>Total:</span>
+    <span>@FormatPrice(TotalInCents)</span>
+</div>
+
+@if (ShowItemCount)
+{
+    <div class="text-center text-muted small mt-2">
+        @ItemCount @(ItemCount == 1 ? "item" : "items") in cart
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int SubtotalInCents { get; set; }
+
+    [Parameter]
+    public int TaxInCents { get; set; }
+
+    [Parameter]
+    public int TotalInCents { get; set; }
+
+    [Parameter]
+    public string State { get; set; } = string.Empty;
+
+    [Parameter]
+    public int ItemCount { get; set; } = 0;
+
+    [Parameter]
+    public bool ShowItemCount { get; set; } = false;
+
+    private string FormatPrice(int cents)
+    {
+        return $"${cents / 100.0:F2}";
+    }
+}

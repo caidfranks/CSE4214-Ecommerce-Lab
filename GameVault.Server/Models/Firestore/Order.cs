@@ -1,4 +1,5 @@
 using Google.Cloud.Firestore;
+using GameVault.Shared.Models;
 
 namespace GameVault.Server.Models.Firestore;
 
@@ -9,11 +10,14 @@ public class FirestoreOrder
   // [FirestoreProperty]
   // public required string Id { get; set; }
 
-  [FirestoreProperty]
-  public required DateTime OrderDate { get; set; }
+  [FirestoreProperty] public required DateTime OrderDate { get; set; }
 
-  [FirestoreProperty]
-  public required string CustomerId { get; set; }
+  [FirestoreProperty] public required string CustomerId { get; set; }
+  [FirestoreProperty] public required int SubtotalInCents { get; set; }
+  [FirestoreProperty] public required int TaxInCents { get; set; }
+  [FirestoreProperty] public required int TotalInCents { get; set; }
+
+  [FirestoreProperty] public required Address ShipTo { get; set; }
 }
 
 [FirestoreData]
