@@ -84,6 +84,17 @@ public class AuthController : ControllerBase
             });
         }
 
+        if ( user.Banned == true)
+        {
+            return StatusCode(403, new AuthResponse
+            {
+                Success = false,
+                Message = string.IsNullOrEmpty(user.BanMsg) 
+                    ? "Your account has been banned. Please contact support for more information."
+                    : user.BanMsg
+            });
+        }
+
         return Ok(new AuthResponse
         {
             Success = true,
