@@ -97,7 +97,7 @@ public class InvoiceController : ControllerBase
     }
 
     [HttpGet("order/{orderId}")]
-    public async Task<ActionResult<List<Invoice>>> GetInvoicesByOrder(
+    public async Task<ActionResult<List<InvoiceDTO>>> GetInvoicesByOrder(
         string orderId,
         [FromHeader] string? Authorization)
     {
@@ -111,16 +111,48 @@ public class InvoiceController : ControllerBase
 
             if (user.Type != AccountType.Customer)
             {
-                return Unauthorized();
+                return Forbid();
             }
 
             var invoices = await _invoiceService.GetInvoicesByOrderIdAsync(orderId);
-            return Ok(invoices);
+
+
+            List<InvoiceDTO> dTOs = [];
+
+            foreach (var invoice in invoices)
+            {
+                InvoiceDTO dTO = new()
+                {
+                    Id = invoice.Id,
+                    Status = invoice.Status,
+                    OrderDate = invoice.OrderDate,
+                    ApprovedDate = invoice.ApprovedDate,
+                    ShippedDate = invoice.ShippedDate,
+                    CompletedDate = invoice.CompletedDate,
+                    DeclinedDate = invoice.DeclinedDate,
+                    CancelledDate = invoice.CancelledDate,
+                    ReturnRequestDate = invoice.ReturnRequestDate,
+                    ReturnApprovedDate = invoice.ReturnApprovedDate,
+                    // PaymentId = invoice.PaymentId,
+                    Subtotal = invoice.SubtotalInCents / 100M,
+                    ShipTo = invoice.ShipTo,
+                    // OrderId = invoice.OrderId,
+                    // VendorId = invoice.VendorId,
+                    ReturnMsg = invoice.ReturnMsg
+                };
+                dTOs.Add(dTO);
+            }
+
+            return Ok(new ListResponse<InvoiceDTO>()
+            {
+                Success = true,
+                List = dTOs
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting invoices by order");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500); //, new { error = ex.Message });
         }
     }
 

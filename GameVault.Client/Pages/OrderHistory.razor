@@ -2,6 +2,7 @@
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @inject Services.AuthService AuthService
+@inject Services.InvoiceService InvoiceService
 @inject Services.OrderService OrderService
 
 <PageTitle>Order History</PageTitle>
@@ -40,7 +41,7 @@ else
           <td>@order.Id</td>
           <td>@((order.TotalInCents / 100M).ToString("C2"))</td>
           <td>
-            <button>Details</button>
+            <button @onclick="() => { ShowDetails(order); }">Details</button>
           </td>
         </tr>
       }
@@ -48,9 +49,202 @@ else
   </table>
 }
 
+@if (showDetails && (selectedOrder is not null))
+{
+  <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Order @selectedOrder.Id Details</h5>
+          <button type="button" class="btn-close" @onclick="CloseDetails"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Subtotal:</span>
+            <span class="fw-medium">@((selectedOrder.SubtotalInCents / 100M).ToString("C2"))</span>
+          </div>
+
+          <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Tax:</span>
+            <span class="fw-medium">@((selectedOrder.TaxInCents / 100M).ToString("C2"))</span>
+          </div>
+
+          <hr />
+
+          <div class="d-flex justify-content-between fs-5 fw-bold">
+            <span>Total:</span>
+            <span>@((selectedOrder.TotalInCents / 100M).ToString("C2"))</span>
+          </div>
+          @if (invoices is null)
+          {
+            <p><em>Loading...</em></p>
+          }
+          else if (invoices.Count == 0)
+          {
+            <p><em>No contents</em></p>
+          }
+          else
+          {
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Status</th>
+                  <th>Last Updated</th>
+                  <th>Id</th>
+                  <th>Subtotal</th>
+                  <th>Message</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                @foreach (var invoice in invoices)
+                {
+                  <tr>
+                    <td>@(invoice.Status == InvoiceStatus.Completed && invoice.ReturnMsg != string.Empty ? "Returned" :
+                                      invoice.Status)</td>
+                    @switch (invoice.Status)
+                    {
+                      case InvoiceStatus.Pending:
+                        <td>@invoice.OrderDate.ToLocalTime().ToString()</td>
+                        break;
+                      case InvoiceStatus.AwaitingShipment:
+                        <td>@(invoice.ApprovedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+                        break;
+                      case InvoiceStatus.Shipped:
+                        <td>@(invoice.ShippedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+                        break;
+                      case InvoiceStatus.Completed:
+                        <td>@(invoice.CompletedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+                        break;
+                      case InvoiceStatus.Declined:
+                        <td>@(invoice.DeclinedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+                        break;
+                      case InvoiceStatus.Cancelled:
+                        <td>@(invoice.CancelledDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+                        break;
+                      case InvoiceStatus.PendingReturn:
+                        <td>@(invoice.ReturnRequestDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+                        break;
+                      case InvoiceStatus.AwaitingReturn:
+                        <td>@(invoice.ReturnApprovedDate?.ToLocalTime().ToString() ?? "Unknown")</td>
+                        break;
+                    }
+                    <td>@invoice.Id</td>
+                    <td>@(invoice.Subtotal.ToString("C2"))</td>
+                    <td>@(invoice.ReturnMsg ?? "")</td>
+                    @* TODO: Add option to view details and invoice items *@
+                    <td>
+                      @switch (invoice.Status)
+                      {
+                        case InvoiceStatus.Pending:
+                          <button
+                            @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.Cancelled); await LoadInvoices(); }">Cancel</button>
+                          break;
+                        case InvoiceStatus.AwaitingShipment:
+                          <button
+                            @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.Cancelled); await LoadInvoices(); }">Cancel</button>
+                          break;
+                        case InvoiceStatus.Shipped:
+                          break;
+                        case InvoiceStatus.Completed:
+                          if (invoice.ReturnMsg == string.Empty)
+                          {
+                            <button @onclick="() => { OpenPrompt(invoice.Id); }">Start Return</button>
+                          }
+                          break;
+                        case InvoiceStatus.Declined:
+                          break;
+                        case InvoiceStatus.Cancelled:
+                          break;
+                        case InvoiceStatus.PendingReturn:
+                          <button
+                            @onclick="async () => { await SetOrderStatusWithMessage(invoice.Id, InvoiceStatus.Completed, string.Empty); await LoadInvoices(); }">Cancel</button>
+                          break;
+                        case InvoiceStatus.AwaitingReturn:
+                          <button
+                            @onclick="async () => { await SetOrderStatusWithMessage(invoice.Id, InvoiceStatus.Completed, string.Empty); await LoadInvoices(); }">Cancel</button>
+                          break;
+                      }
+                    </td>
+                  </tr>
+
+                }
+              </tbody>
+            </table>
+            @if (showPrompt)
+            {
+              <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-xl">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">Return</h5>
+                      <button type="button" class="btn-close" @onclick="ClosePrompt"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                      <h3>Feedback</h3>
+                      <p>Why are you returning this product?</p>
+                      <input type="text" id="reason" class="form-control" @bind="message" placeholder="Enter reason" />
+                    </div>
+                    <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
+                      <button type="button" class="btn-approve" @onclick='AcceptPrompt'>Start Return</button>
+                      <button type="button" class="btn-deny" @onclick='ClosePrompt'>Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 @code {
   public string error = string.Empty;
   public List<OrderDTO>? orders;
+  public OrderDTO? selectedOrder;
+  public List<InvoiceDTO>? invoices;
+  public bool showDetails;
+  public bool showPrompt = false;
+  private string message = string.Empty;
+  public string? selectedInvoice;
+
+  private void OpenPrompt(string id)
+  {
+    selectedInvoice = id;
+    showPrompt = true;
+  }
+
+  private async Task AcceptPrompt()
+  {
+    if (selectedInvoice is not null)
+    {
+      await InvoiceService.SetOrderStatusWithMessage(selectedInvoice, InvoiceStatus.PendingReturn, message);
+    }
+    await LoadInvoices();
+    ClosePrompt();
+  }
+
+  private void ClosePrompt()
+  {
+    showPrompt = false;
+    selectedInvoice = null;
+  }
+
+  private void ShowDetails(OrderDTO order)
+  {
+    selectedOrder = order;
+    showDetails = true;
+    InvokeAsync(LoadInvoices);
+  }
+
+  private void CloseDetails()
+  {
+    showDetails = false;
+    selectedOrder = null;
+    invoices = null;
+  }
 
   private async Task LoadData()
   {
@@ -76,8 +270,59 @@ else
     }
   }
 
+  private async Task LoadInvoices()
+  {
+    invoices = null;
+
+    // Call Firestore
+    if (AuthService.CurrentUserId is not null)
+    {
+      if (selectedOrder is null)
+      {
+        Console.WriteLine("No order selected!");
+        return;
+      }
+      ListResponse<InvoiceDTO> result = (await InvoiceService.GetInvoicesByOrder(selectedOrder.Id));
+      if (result.Success)
+      {
+        invoices = result.List;
+      }
+      else
+      {
+        error = result.Message ?? "";
+      }
+      await InvokeAsync(StateHasChanged);
+    }
+    else
+    {
+      Console.WriteLine("Not logged in");
+      error = "Not logged in";
+    }
+  }
+
   protected override async Task OnInitializedAsync()
   {
+    await LoadData();
+  }
+
+  private async Task SetOrderStatus(string id, InvoiceStatus newStatus)
+  {
+    var response = await InvoiceService.SetOrderStatus(id, newStatus);
+    if (!response.Success)
+    {
+      // Set error
+      Console.Write($"Set order status failed: {response.Message}");
+    }
+    await LoadData();
+  }
+  private async Task SetOrderStatusWithMessage(string id, InvoiceStatus newStatus, string newMessage)
+  {
+    var response = await InvoiceService.SetOrderStatusWithMessage(id, newStatus, newMessage);
+    if (!response.Success)
+    {
+      // Set error
+      Console.Write($"Set order status with message failed: {response.Message}");
+    }
     await LoadData();
   }
 }

@@ -86,4 +86,30 @@ public class InvoiceService
       return new BaseResponse { Success = false, Message = "Unknown error" };
     }
   }
+
+  public async Task<ListResponse<InvoiceDTO>> GetInvoicesByOrder(string orderId)
+  {
+    System.Net.HttpStatusCode? statusCode = null;
+    try
+    {
+      var response = await _httpClient.GetAsync($"api/invoice/order/{Uri.EscapeDataString(orderId)}");
+      statusCode = response.StatusCode;
+      var result = await response.Content.ReadFromJsonAsync<ListResponse<InvoiceDTO>>();
+      return result ?? new ListResponse<InvoiceDTO> { Success = false, Message = "Unknown error" };
+    }
+    catch (Exception ex)
+    {
+      if (statusCode is not null)
+      {
+        Console.Write($"Get invoices for order failed with status: {statusCode}");
+        // TODO: Could narrow down errors from status code
+      }
+      else
+      {
+        Console.Write("Unexpected error getting invoices for order:");
+        Console.Write(ex);
+      }
+      return new ListResponse<InvoiceDTO> { Success = false, Message = "Unknown error" };
+    }
+  }
 }
