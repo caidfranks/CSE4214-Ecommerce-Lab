@@ -11,14 +11,17 @@ public class SquarePaymentService
     private readonly ILogger<SquarePaymentService> _logger;
     private readonly HttpClient _httpClient;
     private readonly string _accessToken;
+    private readonly string _locationId;
 
     public SquarePaymentService(IConfiguration configuration, ILogger<SquarePaymentService> logger, IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient();
 
-        _accessToken = configuration["Square:AccessToken"] 
+        _accessToken = configuration["Square:AccessToken"]
             ?? throw new InvalidOperationException("Square:AccessToken not configured");
+        _locationId = configuration["Square:LocationId"]
+            ?? throw new InvalidOperationException("Square:LocationId not configured");
 
         _httpClient.BaseAddress = new Uri("https://connect.squareupsandbox.com/v2/");
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
@@ -44,7 +47,7 @@ public class SquarePaymentService
                     amount = amountInCents,
                     currency = "USD"
                 },
-                location_id = "L3VRG5E7HM55C",
+                location_id = _locationId,
                 reference_id = orderId,
                 note = $"GameVault Order {orderId}"
             };
