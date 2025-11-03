@@ -1,0 +1,125 @@
+@inject IJSRuntime JS
+@inject ILogger<SquarePaymentForm> Logger
+
+<div>
+    @if (!IsEnabled)
+    {
+        <div class="alert alert-secondary text-center">
+            <i class="bi bi-lock fs-3 d-block mb-2"></i>
+            <p class="mb-0">Payment form will be enabled after completing shipping address</p>
+        </div>
+    }
+    else if (isLoading)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="text-muted mt-2">Loading payment form...</p>
+        </div>
+    }
+    else
+    {
+        <div id="card-container" class="mb-3"></div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger py-2">
+                @errorMessage
+            </div>
+        }
+
+        @if (paymentSuccess)
+        {
+            <div class="alert alert-success py-2 d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span>Payment method ready</span>
+            </div>
+        }
+        <div class="alert alert-info py-2">
+            <p class="fw-semibold mb-1 small">Test Cards (Sandbox):</p>
+            <ul class="mb-0 small">
+                <li>✓ Success: 4111 1111 1111 1111</li>
+                <li>✗ Decline: 4000 0000 0000 0002</li>
+                <li>CVV: Any 3 digits | Exp: Any future date | ZIP: Any 5 digits</li>
+            </ul>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnPaymentMethodCreated { get; set; }
+
+    [Parameter]
+    public bool IsEnabled { get; set; } = true;
+
+    private bool isLoading = true;
+    private bool paymentSuccess = false;
+    private string? errorMessage;
+    private DotNetObjectReference<SquarePaymentForm>? dotNetRef;
+    private bool hasInitialized = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsEnabled && !hasInitialized)
+        {
+            await InitializeSquarePayments();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (!IsEnabled)
+        {
+            hasInitialized = false;
+            isLoading = true;
+        }
+    }
+
+    private async Task InitializeSquarePayments()
+    {
+        try
+        {
+            await Task.Delay(100);
+            
+            dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("initializeSquarePayments", dotNetRef);
+            
+            hasInitialized = true;
+            isLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error initializing Square payments");
+            errorMessage = "Failed to load payment form. Please refresh the page.";
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task HandlePaymentMethodCreated(string token)
+    {
+        Logger.LogInformation("Payment method created: {token}", token);
+        paymentSuccess = true;
+        errorMessage = null;
+        await OnPaymentMethodCreated.InvokeAsync(token);
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void HandlePaymentError(string error)
+    {
+        Logger.LogError("Payment error: {error}", error);
+        errorMessage = error;
+        paymentSuccess = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        dotNetRef?.Dispose();
+    }
+}
