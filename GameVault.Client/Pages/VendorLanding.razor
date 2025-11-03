@@ -1,8 +1,60 @@
 @page "/vendor"
+@attribute [Authorize(Roles = "Vendor")]
+@using GameVault.Client.Services
+@using Microsoft.AspNetCore.Authorization
+@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
+@inject Services.AuthService AuthService
+@inject HttpClient Http
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Welcome Vendor!</h3>
+
+@if (isLoading)
+{
+    <p>Loading balance...</p>
+}
+else
+{
+    <div class="alert alert-success mb-3">
+        <strong>Account Balance:</strong> $@((balance / 100.0).ToString("F2"))
+    </div>
+}
+
 <p><a href="/vendor/listings">View Listings</a></p>
 <p><a href="/vendor/listings/create">Create Listing</a></p>
 <p><a href="/vendor/orders">View Orders</a></p>
-<p><a href="/vendor/orders/returns">View Returns</a></p>
-@* <p><a href="/accountInfo">Edit Account</a></p> *@
+@* <p><a href="/vendor/orders/returns">View Returns</a></p> *@
+
+@code {
+    private int balance = 0;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            BreadcrumbService.Set(
+                new BreadcrumbItem("Home", "/"),
+                new BreadcrumbItem("Vendor Dashboard")
+            );
+            var userId = AuthService.CurrentUserId;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var user = await Http.GetFromJsonAsync<UserDTO>($"api/users/{userId}");
+                if (user != null)
+                {
+                    balance = user.BalanceInCents ?? 0;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading balance: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

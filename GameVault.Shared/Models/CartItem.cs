@@ -10,6 +10,8 @@ public class CartItem
 
     public CartItem()
     {
+        ListingId = "";
+        Quantity = -1;
     }
 
     public CartItem(string listingId, int quantity)

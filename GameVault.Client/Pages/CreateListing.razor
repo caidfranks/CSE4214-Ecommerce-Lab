@@ -4,9 +4,12 @@
 @using GameVault.Client.Models
 @using GameVault.Client.Services
 @using System.Runtime.CompilerServices
+@using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @using System.Reflection
 @inject Services.ListingService ListingService
+@inject ProductService ProductService
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Create Listing</h3>
 
@@ -29,6 +32,19 @@
     <label>Stock</label><br />
     <InputNumber @bind-Value="model.Stock" />
   </div>
+  <div style="margin-bottom:8px;">
+    <label>Category</label>
+    <select class="form-select" @bind="model.Category">
+      <option value="">Select a category</option>
+      @if (categories is not null)
+      {
+        @foreach (CategoryDTO category in categories)
+        {
+          <option value="@category.Id">@category.Name</option>
+        }
+      }
+    </select>
+  </div>
   <button type="submit">Create Listing</button>
 </EditForm>
 
@@ -39,7 +55,26 @@
     Description = "",
     Price = 0.0M,
     Stock = 0,
+    Category = ""
   };
+
+  private List<CategoryDTO>? categories = [];
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadCategories();
+    BreadcrumbService.Set(
+    new BreadcrumbItem("Home", "/"),
+    new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+    new BreadcrumbItem("Create Listing")
+    );
+  }
+
+  private async Task LoadCategories()
+  {
+    // Load categories from ProductService
+    categories = await ProductService.GetCategoriesAsync();
+  }
 
   private async Task HandleCreate()
   {
@@ -60,7 +95,8 @@
       Image = "" // Add later
     }; *@
 
-    var result = await ListingService.CreateAsync(model.Name, model.Price, model.Description, model.Stock);
+    var result = await ListingService.CreateAsync(model.Name, model.Price, model.Description, model.Stock, model?.Category
+    ?? "");
 
     if (result is { Success: true })
     {

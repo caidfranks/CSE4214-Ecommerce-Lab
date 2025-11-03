@@ -28,6 +28,8 @@ public class FirestoreUser
 
   [FirestoreProperty]
   public string? ReviewedBy { get; set; }
+  [FirestoreProperty]
+  public int BalanceInCents { get; set; } = 0; 
 
 }
 

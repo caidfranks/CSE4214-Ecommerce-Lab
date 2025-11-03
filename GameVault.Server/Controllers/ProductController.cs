@@ -32,6 +32,7 @@ public class ProductController : ControllerBase
             List<FullListingDTO> dTOs = [];
 
             List<CachedVendor> vendorCache = [];
+            List<Category> catCache = [];
             foreach (Models.Firestore.Listing product in products)
             {
                 if (product.Status == ListingStatus.Published)
@@ -59,6 +60,39 @@ public class ProductController : ControllerBase
                         });
                     }
 
+                    // Lookup category
+                    string catName;
+
+                    if (product.Category is null || product.Category == "")
+                    {
+                        catName = "Other";
+                    }
+                    else
+                    {
+
+                        List<Category> thisCat = catCache.Where(c => c.Id == product.Category).ToList();
+
+                        if (thisCat.Count > 0)
+                        {
+                            catName = thisCat[0].Name;
+                        }
+                        else
+                        {
+                            // Look up category in database
+                            FirestoreCategory? category = null;
+                            if (product.Category is not null && product.Category != "")
+                            {
+                                category = await _firestore.GetDocumentAsync<FirestoreCategory>("categories", product.Category);
+                            }
+                            catName = category?.Name ?? "Other";
+                            catCache.Add(new()
+                            {
+                                Id = product.Category!,
+                                Name = catName
+                            });
+                        }
+                    }
+
                     dTOs.Add(new FullListingDTO()
                     {
                         Name = product.Name,
@@ -70,7 +104,9 @@ public class ProductController : ControllerBase
                         Id = product.Id,
                         OwnerID = product.OwnerID,
                         LastModified = product.LastModified,
-                        VendorName = vendorName
+                        VendorName = vendorName,
+                        Category = product?.Category ?? "",
+                        CategoryName = catName
                     });
                 }
             }
@@ -97,7 +133,7 @@ public class ProductController : ControllerBase
         try
         {
             Console.WriteLine($"Fetching product with ID: {id}");
-            var product = await _firestore.GetDocumentAsync<Models.Firestore.Listing>("listings", id);
+            var product = await _firestore.GetDocumentAsync<FirestoreListing>("listings", id);
 
             if (product == null)
             {
@@ -112,8 +148,16 @@ public class ProductController : ControllerBase
             // Check for if published or not
 
             // Look up vendor in database
-            var vendor = await _firestore.GetDocumentAsync<Models.Firestore.FirestoreUser>("users", product.OwnerID);
+            var vendor = await _firestore.GetDocumentAsync<FirestoreUser>("users", product.OwnerID);
             string vendorName = vendor?.Name ?? "Unknown Vendor";
+
+            // Look up category in database
+            FirestoreCategory? category = null;
+            if (product.Category is not null && product.Category != "")
+            {
+                category = await _firestore.GetDocumentAsync<FirestoreCategory>("categories", product.Category);
+            }
+            string categoryName = category?.Name ?? "Other";
 
             Console.WriteLine($"Product found: {product.Name}");
             return Ok(new DataResponse<FullListingDTO>()
@@ -127,10 +171,12 @@ public class ProductController : ControllerBase
                     Stock = product.Stock,
                     Status = product.Status,
                     Image = product.Image,
-                    Id = product.Id,
+                    Id = id,
                     OwnerID = product.OwnerID,
                     LastModified = product.LastModified,
-                    VendorName = vendorName
+                    VendorName = vendorName,
+                    Category = product?.Category ?? "",
+                    CategoryName = categoryName
                 }
             });
         }
@@ -152,6 +198,14 @@ public class ProductController : ControllerBase
         {
             var products = await _firestore.QueryDocumentsAsyncWithId<Models.Firestore.Listing>("listings", "category", category);
             List<FullListingDTO> dTOs = [];
+
+            // Look up category in database
+            FirestoreCategory? cat = null;
+            if (category != "")
+            {
+                cat = await _firestore.GetDocumentAsync<FirestoreCategory>("categories", category);
+            }
+            string categoryName = cat?.Name ?? "Other";
 
             List<CachedVendor> vendorCache = [];
             foreach (Models.Firestore.Listing product in products)
@@ -192,7 +246,9 @@ public class ProductController : ControllerBase
                         Id = product.Id,
                         OwnerID = product.OwnerID,
                         LastModified = product.LastModified,
-                        VendorName = vendorName
+                        VendorName = vendorName,
+                        Category = category,
+                        CategoryName = categoryName
                     });
                 }
             }
@@ -237,6 +293,7 @@ public class ProductController : ControllerBase
             List<FullListingDTO> dTOs = [];
 
             List<CachedVendor> vendorCache = [];
+            List<Category> catCache = [];
             foreach (Models.Firestore.Listing product in filteredProducts)
             {
                 if (product.Status == ListingStatus.Published)
@@ -264,6 +321,39 @@ public class ProductController : ControllerBase
                         });
                     }
 
+                    // Lookup category
+                    string catName;
+
+                    if (product.Category is null || product.Category == "")
+                    {
+                        catName = "Other";
+                    }
+                    else
+                    {
+
+                        List<Category> thisCat = catCache.Where(c => c.Id == product.Category).ToList();
+
+                        if (thisCat.Count > 0)
+                        {
+                            catName = thisCat[0].Name;
+                        }
+                        else
+                        {
+                            // Look up category in database
+                            FirestoreCategory? category = null;
+                            if (product.Category is not null && product.Category != "")
+                            {
+                                category = await _firestore.GetDocumentAsync<FirestoreCategory>("categories", product.Category);
+                            }
+                            catName = category?.Name ?? "Other";
+                            catCache.Add(new()
+                            {
+                                Id = product.Category!,
+                                Name = catName
+                            });
+                        }
+                    }
+
                     dTOs.Add(new FullListingDTO()
                     {
                         Name = product.Name,
@@ -275,7 +365,9 @@ public class ProductController : ControllerBase
                         Id = product.Id,
                         OwnerID = product.OwnerID,
                         LastModified = product.LastModified,
-                        VendorName = vendorName
+                        VendorName = vendorName,
+                        Category = product?.Category ?? "",
+                        CategoryName = catName
                     });
                 }
             }
@@ -294,6 +386,26 @@ public class ProductController : ControllerBase
                 Message = ex.Message
             });
         }
+    }
+
+    [HttpGet("categories")]
+    public async Task<ActionResult<ListResponse<CategoryDTO>>> GetCategories()
+    {
+        var categories = await _firestore.GetCollectionAsyncWithId<Category>("categories");
+        List<CategoryDTO> dTOs = [];
+        foreach (Category category in categories)
+        {
+            dTOs.Add(new()
+            {
+                Id = category.Id,
+                Name = category.Name,
+            });
+        }
+        return new ListResponse<CategoryDTO>()
+        {
+            Success = true,
+            List = dTOs
+        };
     }
 }
 

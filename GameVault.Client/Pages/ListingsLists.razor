@@ -8,6 +8,7 @@
 @using System.Reflection
 @using GameVault.Shared.DTOs
 @using Grpc.Net.Client.Balancer
+@inject BreadcrumbService BreadcrumbService
 
 
 <h3>@PageTitle</h3>
@@ -85,9 +86,9 @@ else
                 </div>
                 <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
                     <button type="button" class="btn-approve"
-                        @onclick='async () => { await ListingService.ChangeListingStatusToPublished(selectedEntry.Id); await LoadData(); CloseModal(); }'>Approve</button>
+                        @onclick='async () => { if (selectedEntry is not null) { await ListingService.ChangeListingStatusToPublished(selectedEntry.Id); } await LoadData(); CloseModal(); }'>Approve</button>
                     <button type="button" class="btn-deny"
-                        @onclick='async () => { await ListingService.ChangeListingStatusToInactive(selectedEntry.Id); await LoadData(); CloseModal(); }'>Deny</button>
+                        @onclick='async () => { if (selectedEntry is not null) { await ListingService.ChangeListingStatusToInactive(selectedEntry.Id); } await LoadData(); CloseModal(); }'>Deny</button>
                 </div>
             </div>
         </div>
@@ -98,9 +99,9 @@ else
 @code {
     [Parameter] public string StatusFilter { get; set; } = string.Empty;
     public ListingStatus filter = 0;
-    private List<VendorListingDTO> entries;
+    private List<VendorListingDTO>? entries;
     private VendorListingDTO? selectedEntry;
-    private string selectedPageUrl;
+    private string? selectedPageUrl;
 
     private bool showModal;
 
@@ -115,8 +116,14 @@ else
         _ => "Listings"
     };
 
+
     protected override async Task OnParametersSetAsync()
     {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+            new BreadcrumbItem(PageTitle)
+        );
         await LoadData();
     }
 
