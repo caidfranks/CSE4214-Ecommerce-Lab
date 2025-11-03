@@ -1,5 +1,6 @@
 ﻿@page "/manageAccounts"
 @inject NavigationManager Nav
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Manage Account Page</h3>
 
@@ -17,3 +18,14 @@
 </header>
 
 <p>Select a category above to view account entries.</p>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Admin Dashboard", "/admin"),
+            new BreadcrumbItem("Manage Accounts")
+        );
+    }
+}

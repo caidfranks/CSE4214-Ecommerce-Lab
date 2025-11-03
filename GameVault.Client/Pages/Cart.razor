@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 @inject CartService CartService
 @inject AuthService AuthService
+@inject BreadcrumbService BreadcrumbService
 
 <h1>Shopping Cart</h1>
 
@@ -47,6 +48,10 @@ else if (!AuthService.IsAuthenticated)
 
     protected override async Task OnInitializedAsync()
     {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Shopping Cart")
+        );
         await LoadCartAsync();
     }
 

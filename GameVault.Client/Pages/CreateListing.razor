@@ -7,6 +7,7 @@
 @using GameVault.Shared.Models
 @using System.Reflection
 @inject Services.ListingService ListingService
+@inject BreadcrumbService BreadcrumbService
 
 <h3>Create Listing</h3>
 
@@ -33,6 +34,15 @@
 </EditForm>
 
 @code {
+  protected override async Task OnInitializedAsync()
+  {
+    BreadcrumbService.Set(
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+        new BreadcrumbItem("Create Listing")
+    );
+  }
+
   private EditableListing model = new()
   {
     Name = "",

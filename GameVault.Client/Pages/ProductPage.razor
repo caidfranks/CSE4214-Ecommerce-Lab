@@ -4,6 +4,7 @@
 @inject Services.AuthService AuthService
 @inject ProductService ProductService
 @inject NavigationManager Nav
+@inject BreadcrumbService BreadcrumbService
 
 <PageTitle>@(product?.Name ?? "Product") - GameVault</PageTitle>
 
@@ -190,6 +191,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Browse", "/"),
+            new BreadcrumbItem(product?.Name ?? "Product")
+        );
         await LoadProduct();
         await LoadSuggestedProducts();
     }

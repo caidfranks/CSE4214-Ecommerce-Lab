@@ -18,6 +18,7 @@ builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<AccountService>();
 builder.Services.AddScoped<CheckoutService>();
 builder.Services.AddScoped<CookieService>();
+builder.Services.AddScoped<BreadcrumbService>();
 builder.Services.AddScoped<AuthService>();
 
 var app = builder.Build();

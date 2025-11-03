@@ -5,6 +5,7 @@
 @inject CheckoutService CheckoutService
 @inject NavigationManager Navigation
 @inject ILogger<Checkout> Logger
+@inject BreadcrumbService BreadcrumbService
 
 <PageTitle>Checkout - GameVault</PageTitle>
 
@@ -132,6 +133,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Shopping Cart", "/cart"),
+            new BreadcrumbItem("Checkout")
+        );
         subtotalInCents = 2000;
         await EstimateTax();
     }

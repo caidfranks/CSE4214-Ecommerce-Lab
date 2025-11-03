@@ -1,9 +1,20 @@
 ﻿@page "/adminLanding"
-@inject Services.AuthService AuthService
+@inject AuthService AuthService
 @inject NavigationManager Navigation
+@inject BreadcrumbService BreadcrumbService
 
 
 <h3>Admin Page</h3>
 <p><a href="/viewListings">Listings</a></p>
 <p><a href="/manageAccounts">Accounts</a></p>
 <p><a href="/actionLogs">View Action Logs</a></p>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Admin Dashboard")
+        );
+    }
+}
