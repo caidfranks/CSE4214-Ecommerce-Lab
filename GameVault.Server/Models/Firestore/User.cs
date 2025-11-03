@@ -29,7 +29,12 @@ public class FirestoreUser
   [FirestoreProperty]
   public string? ReviewedBy { get; set; }
 
-  // Password stored via Firebase Auth
+    // Password stored via Firebase Auth
+    [FirestoreProperty]
+    public string SquareCustomerId { get; set; } = string.Empty;
+
+    [FirestoreProperty]
+    public string SquareCardId { get; set; } = string.Empty;
 }
 
 [FirestoreData]

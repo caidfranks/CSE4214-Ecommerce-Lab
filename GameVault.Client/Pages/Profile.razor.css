@@ -1,0 +1,285 @@
+﻿.profile-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.loading-container {
+    text-align: center;
+    padding: 4rem 0;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.profile-avatar {
+    font-size: 5rem;
+    color: var(--bs-primary);
+}
+
+.profile-header-info h2 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+}
+
+.profile-email {
+    color: #64748b;
+    margin: 0 0 0.75rem 0;
+}
+
+.profile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.profile-badge-customer {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.profile-badge-vendor {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.profile-badge-admin {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.profile-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+    .profile-section-header h3 {
+        margin: 0;
+        color: #1e293b;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+    }
+
+.profile-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.profile-info-item label {
+    display: block;
+    font-weight: 600;
+    color: #64748b;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.profile-info-item p {
+    margin: 0;
+    color: #1e293b;
+    font-size: 1rem;
+}
+
+.profile-edit-form, .payment-edit-form {
+    max-width: 600px;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+    }
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.payment-info-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.payment-card-display {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+.payment-card-icon {
+    font-size: 3rem;
+}
+
+.payment-card-details p {
+    margin: 0.25rem 0;
+}
+
+.payment-card-type {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.payment-card-number {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+}
+
+.payment-card-expiry {
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+.profile-section-danger {
+    border: 2px solid #fee;
+}
+
+    .profile-section-danger .profile-section-header {
+        border-bottom-color: #fee;
+    }
+
+    .profile-section-danger h3 {
+        color: #dc2626;
+    }
+
+.danger-zone-content p {
+    color: #64748b;
+    margin-bottom: 1rem;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+    .modal-header h4 {
+        margin: 0;
+    }
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .btn-close::before {
+        content: "×";
+    }
+
+#card-container {
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .profile-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+        .form-actions button {
+            width: 100%;
+        }
+}
