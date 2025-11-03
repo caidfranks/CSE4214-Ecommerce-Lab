@@ -103,6 +103,7 @@ else if (listings.Count == 0)
             <button @onclick='async () => {await ListingService.ChangeListingStatusToInactive(listing.Id); await LoadData();}'>Unpublish</button>
           }
         </td>
+        @* TODO: Add category column *@
       </tr>
     }
   </tbody>

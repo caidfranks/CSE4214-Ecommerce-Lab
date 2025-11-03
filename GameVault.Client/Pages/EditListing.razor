@@ -9,6 +9,7 @@
 @using System.Reflection
 @using Google.Rpc
 @inject Services.ListingService ListingService
+@inject ProductService ProductService
 
 <h3>Edit Listing</h3>
 
@@ -46,6 +47,16 @@ else
       <label>Stock</label><br />
       <InputNumber @bind-Value="model.Stock" />
     </div>
+    <div style="margin-bottom:8px;">
+      <label>Category</label>
+      <select class="form-select" @bind="model.Category">
+        <option value="">Select a category</option>
+        @foreach (CategoryDTO category in categories)
+        {
+          <option value="@category.Id">@category.Name</option>
+        }
+      </select>
+    </div>
     <button type="submit">Update Listing</button>
     @if (status.Message != string.Empty)
     {
@@ -73,13 +84,22 @@ else
     Stock = 0,
   }; *@
 
+  private List<CategoryDTO>? categories = [];
+
+  private async Task LoadCategories()
+  {
+    // Load categories from ProductService
+    categories = await ProductService.GetCategoriesAsync();
+  }
+
   private async Task HandleUpdate()
   {
     if (model is not null && Id is not null)
     {
       // TODO: Confirm intent to change status back to inactive if editing a removed listing
       @* if (wasRemoved && confirm()) *@
-      BaseResponse result = await ListingService.UpdateAsync(Id, model.Name, model.Description, model.Price, model.Stock);
+      BaseResponse result = await ListingService.UpdateAsync(Id, model.Name, model.Description, model.Price, model.Stock,
+      model.Category);
       if (result.Success)
       {
         Console.WriteLine("Update Success!");
@@ -111,6 +131,7 @@ else
           if (result.Listing!.OwnerID == AuthService.CurrentUserId)
           {
             model = EditableListing.FromListingDTO(result.Listing!);
+            Console.WriteLine(model.Category);
             wasRemoved = result.Listing.Status == ListingStatus.Removed;
           }
           else
@@ -132,6 +153,7 @@ else
   }
   protected override async Task OnInitializedAsync()
   {
+    await LoadCategories();
     await LoadData();
   }
 
