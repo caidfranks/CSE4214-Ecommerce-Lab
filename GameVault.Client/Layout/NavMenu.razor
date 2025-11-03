@@ -1,6 +1,7 @@
 ﻿@using GameVault.Client.Components
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -41,6 +42,14 @@
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="vendor">
                         <span class="bi bi-shop" aria-hidden="true"></span> Vendor Dashboard
+                    </NavLink>
+                </div>
+            }
+            else if (IsAdmin)
+            {
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin">
+                        <span class="bi bi-shop" aria-hidden="true"></span> Admin Dashboard
                     </NavLink>
                 </div>
             }
@@ -178,6 +187,17 @@
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
     private bool IsVendor => AuthService.CurrentUser?.Type == Shared.Models.AccountType.Vendor;
+    private bool IsAdmin => AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin;
+
+    protected override void OnInitialized()
+    {
+        AuthService.OnAuthStateChanged += HandleAuthStateChanged;
+    }
+
+    private void HandleAuthStateChanged()
+    {
+        StateHasChanged();
+    }
 
     private void ToggleNavMenu()
     {
@@ -188,5 +208,10 @@
     {
         AuthService.Logout();
         Navigation.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
     }
 }

@@ -2,6 +2,7 @@
 using GameVault.Server.Models;
 using GameVault.Server.Services;
 using GameVault.Server.Models.Firestore;
+using GameVault.Shared.DTOs;
 
 namespace GameVault.Server.Controllers;
 
@@ -11,24 +12,34 @@ public class UsersController : ControllerBase
 {
     private readonly IFirestoreService _firestore;
     private readonly IFirebaseAuthService _firebaseAuth;
+    private readonly UserService _userService;
 
-    public UsersController(IFirestoreService firestore, IFirebaseAuthService firebaseAuth)
+    public UsersController(IFirestoreService firestore, IFirebaseAuthService firebaseAuth, UserService userService)
     {
         _firestore = firestore;
         _firebaseAuth = firebaseAuth;
+        _userService = userService;
     }
 
     [HttpGet("{userId}")]
-    public async Task<ActionResult<Models.Firestore.User>> GetUser(string userId)
+    public async Task<ActionResult<UserDTO>> GetUser(string userId, [FromHeader] string? Authorization)
     {
-        var user = await _firestore.GetDocumentAsync<Models.Firestore.FirestoreUser>("users", userId);
+        var user = await _userService.GetUserFromHeader(Authorization);
+        if (user == null) return Unauthorized();
+        if (user.Id != userId) return Forbid();
 
-        if (user == null)
+        var firestoreUser = await _firestore.GetDocumentAsync<User>("users", userId);
+        if (firestoreUser == null) return NotFound();
+
+        return Ok(new UserDTO
         {
-            return NotFound(new { message = "User not found" });
-        }
-
-        return Ok(user);
+            Id = firestoreUser.Id,
+            Email = firestoreUser.Email,
+            Name = firestoreUser.Name,
+            Type = firestoreUser.Type,
+            Banned = firestoreUser.Banned,
+            BalanceInCents = firestoreUser.BalanceInCents
+        });
     }
 
     [HttpPut("{userId}")]

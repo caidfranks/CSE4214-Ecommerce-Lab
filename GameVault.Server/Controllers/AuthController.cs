@@ -73,7 +73,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", firebaseResponse.LocalId);
+        var user = await _firestore.GetDocumentAsync<User>("users", firebaseResponse.LocalId);
 
         if (user == null)
         {
@@ -81,6 +81,17 @@ public class AuthController : ControllerBase
             {
                 Success = false,
                 Message = "User profile not found"
+            });
+        }
+
+        if ( user.Banned == true)
+        {
+            return StatusCode(403, new AuthResponse
+            {
+                Success = false,
+                Message = string.IsNullOrEmpty(user.BanMsg) 
+                    ? "Your account has been banned. Please contact support for more information."
+                    : $"Your account has been banned. {user.BanMsg}"
             });
         }
 
@@ -98,6 +109,7 @@ public class AuthController : ControllerBase
                 Banned = user.Banned,
                 BanMsg = user.BanMsg,
                 ReviewedBy = user.ReviewedBy,
+                BalanceInCents = user.BalanceInCents
             }
         });
     }

@@ -1,0 +1,228 @@
+using GameVault.Server.Services;
+using GameVault.Server.Models;
+using GameVault.Server.Models.Firestore;
+using GameVault.Shared.DTOs;
+using GameVault.Shared.Models;
+using Microsoft.AspNetCore.Mvc;
+
+namespace GameVault.Server.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class InvoiceController : ControllerBase
+{
+    private readonly InvoiceService _invoiceService;
+    private readonly UserService _userService;
+    private readonly IFirestoreService _firestore;
+    private readonly ILogger<InvoiceController> _logger;
+
+    public InvoiceController(
+        InvoiceService invoiceService,
+        UserService userService,
+        IFirestoreService firestore,
+        ILogger<InvoiceController> logger)
+    {
+        _invoiceService = invoiceService;
+        _userService = userService;
+        _firestore = firestore;
+        _logger = logger;
+    }
+    
+    [HttpPost]
+    public async Task<ActionResult<Invoice>> CreateInvoice(
+        [FromBody] CreateInvoiceRequestDTO request,
+        [FromHeader] string? Authorization)
+    {
+        try
+        {
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.Type != AccountType.Customer)
+            {
+                return Unauthorized();
+            }
+
+            var invoice = await _invoiceService.CreateInvoiceAsync(
+                request.OrderId,
+                request.VendorId,
+                request.VendorItems,
+                request.ShipTo,
+                request.PaymentId
+            );
+
+            return Ok(invoice);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating invoice");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{invoiceId}")]
+    public async Task<ActionResult<Invoice>> GetInvoice(
+        string invoiceId,
+        [FromHeader] string? Authorization)
+    {
+        try
+        {
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            var invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId);
+            if (invoice == null)
+            {
+                return NotFound();
+            }
+
+            if (user.Type == AccountType.Vendor && invoice.VendorId != user.Id)
+            {
+                return StatusCode(403, new { error = "Access denied" });
+            }
+
+            return Ok(invoice);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting invoice");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("order/{orderId}")]
+    public async Task<ActionResult<List<Invoice>>> GetInvoicesByOrder(
+        string orderId,
+        [FromHeader] string? Authorization)
+    {
+        try
+        {
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.Type != AccountType.Customer)
+            {
+                return Unauthorized();
+            }
+
+            var invoices = await _invoiceService.GetInvoicesByOrderIdAsync(orderId);
+            return Ok(invoices);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting invoices by order");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("vendor/{vendorId}")]
+    public async Task<ActionResult<List<Invoice>>> GetInvoicesByVendor(
+        string vendorId,
+        [FromHeader] string? Authorization)
+    {
+        try
+        {
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.Type == AccountType.Vendor && user.Id != vendorId)
+            {
+                return StatusCode(403, new { error = "Access denied" });
+            }
+
+            var invoices = await _invoiceService.GetInvoicesByVendorIdAsync(vendorId);
+            return Ok(invoices);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting invoices by vendor");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    [HttpGet("{invoiceId}/items")]
+    public async Task<ActionResult<List<InvoiceItem>>> GetInvoiceItems(
+        string invoiceId,
+        [FromHeader] string? Authorization)
+    {
+        try
+        {
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            var invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId);
+            if (invoice == null)
+            {
+                return NotFound();
+            }
+
+            if (user.Type == AccountType.Vendor && invoice.VendorId != user.Id)
+            {
+                return StatusCode(403, new { error = "Access denied" });
+            }
+
+            var items = await _invoiceService.GetInvoiceItemsAsync(invoiceId);
+            return Ok(items);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting invoice items");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    [HttpPut("{invoiceId}/status")]
+    public async Task<ActionResult> UpdateInvoiceStatus(
+        string invoiceId,
+        [FromBody] UpdateStatusRequestDTO request,
+        [FromHeader] string? Authorization)
+    {
+        try
+        {
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.Type != AccountType.Vendor)
+            {
+                return Unauthorized();
+            }
+
+            var invoice = await _invoiceService.GetInvoiceByIdAsync(invoiceId);
+            if (invoice == null)
+            {
+                return NotFound();
+            }
+
+            if (invoice.VendorId != user.Id)
+            {
+                return StatusCode(403, new { error = "Access denied" });
+            }
+
+            await _invoiceService.UpdateInvoiceStatusAsync(invoiceId, request.Status);
+            return Ok();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating invoice status");
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+}

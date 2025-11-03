@@ -1,0 +1,139 @@
+@using GameVault.Shared.Models
+
+<div class="mb-3">
+    <label for="street" class="form-label">
+        Street Address <span class="text-danger">*</span>
+    </label>
+    <input 
+        id="street"
+        type="text" 
+        class="form-control"
+        value="@Address.Street"
+        @oninput="@(async (e) => { Address.Street = e.Value?.ToString() ?? ""; await NotifyChange(); })"
+        placeholder="123 Main St"
+        required />
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-6">
+        <label for="city" class="form-label">
+            City <span class="text-danger">*</span>
+        </label>
+        <input 
+            id="city"
+            type="text" 
+            class="form-control"
+            value="@Address.City"
+            @oninput="@(async (e) => { Address.City = e.Value?.ToString() ?? ""; await NotifyChange(); })"
+            placeholder="Memphis"
+            required />
+    </div>
+
+    <div class="col-md-6">
+        <label for="state" class="form-label">
+            State <span class="text-danger">*</span>
+        </label>
+        <select 
+            id="state"
+            class="form-select"
+            value="@Address.State"
+            @onchange="@(async (e) => { Address.State = e.Value?.ToString() ?? ""; await NotifyChange(); })"
+            required>
+            <option value="">Select State</option>
+            <option value="AL">Alabama</option>
+            <option value="AK">Alaska</option>
+            <option value="AZ">Arizona</option>
+            <option value="AR">Arkansas</option>
+            <option value="CA">California</option>
+            <option value="CO">Colorado</option>
+            <option value="CT">Connecticut</option>
+            <option value="DE">Delaware</option>
+            <option value="FL">Florida</option>
+            <option value="GA">Georgia</option>
+            <option value="HI">Hawaii</option>
+            <option value="ID">Idaho</option>
+            <option value="IL">Illinois</option>
+            <option value="IN">Indiana</option>
+            <option value="IA">Iowa</option>
+            <option value="KS">Kansas</option>
+            <option value="KY">Kentucky</option>
+            <option value="LA">Louisiana</option>
+            <option value="ME">Maine</option>
+            <option value="MD">Maryland</option>
+            <option value="MA">Massachusetts</option>
+            <option value="MI">Michigan</option>
+            <option value="MN">Minnesota</option>
+            <option value="MS">Mississippi</option>
+            <option value="MO">Missouri</option>
+            <option value="MT">Montana</option>
+            <option value="NE">Nebraska</option>
+            <option value="NV">Nevada</option>
+            <option value="NH">New Hampshire</option>
+            <option value="NJ">New Jersey</option>
+            <option value="NM">New Mexico</option>
+            <option value="NY">New York</option>
+            <option value="NC">North Carolina</option>
+            <option value="ND">North Dakota</option>
+            <option value="OH">Ohio</option>
+            <option value="OK">Oklahoma</option>
+            <option value="OR">Oregon</option>
+            <option value="PA">Pennsylvania</option>
+            <option value="RI">Rhode Island</option>
+            <option value="SC">South Carolina</option>
+            <option value="SD">South Dakota</option>
+            <option value="TN">Tennessee</option>
+            <option value="TX">Texas</option>
+            <option value="UT">Utah</option>
+            <option value="VT">Vermont</option>
+            <option value="VA">Virginia</option>
+            <option value="WA">Washington</option>
+            <option value="WV">West Virginia</option>
+            <option value="WI">Wisconsin</option>
+            <option value="WY">Wyoming</option>
+        </select>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <label for="postalCode" class="form-label">
+            ZIP Code <span class="text-danger">*</span>
+        </label>
+        <input 
+            id="postalCode"
+            type="text" 
+            class="form-control"
+            value="@Address.PostalCode"
+            @oninput="@(async (e) => { Address.PostalCode = e.Value?.ToString() ?? ""; await NotifyChange(); })"
+            maxlength="10"
+            placeholder="12345"
+            required />
+    </div>
+
+    <div class="col-md-6">
+        <label for="country" class="form-label">
+            Country <span class="text-danger">*</span>
+        </label>
+        <input 
+            id="country"
+            type="text" 
+            class="form-control"
+            value="@Address.Country"
+            autocomplete="country-name"
+            disabled
+            required />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Address Address { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<Address> OnAddressChanged { get; set; }
+
+    private async Task NotifyChange()
+    {
+        await OnAddressChanged.InvokeAsync(Address);
+    }
+}

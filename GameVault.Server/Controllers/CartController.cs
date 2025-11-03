@@ -129,9 +129,9 @@ public class CartController : ControllerBase
 
             var updatedItem = await _cartService.UpdateQuantityAsync(user.Id, listingId, request.Quantity);
 
-            if (updatedItem is null)
+            if (updatedItem == null)
             {
-                return NotFound();
+                return NotFound(new { error = "Item not found in cart" });
             }
 
             CartItemDTO fullItem = await _cartService.PopulateCartItem(updatedItem);

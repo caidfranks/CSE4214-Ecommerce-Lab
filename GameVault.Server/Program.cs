@@ -9,6 +9,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
+
 
 // builder.Services.AddAuthorization(options =>
 //     {
@@ -36,6 +38,10 @@ builder.Services.AddSingleton<IFirestoreService, FirestoreService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<SquarePaymentService>();
+builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<InvoiceService>();
+builder.Services.AddScoped<TaxService>();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
