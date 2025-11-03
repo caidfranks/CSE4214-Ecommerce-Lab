@@ -147,34 +147,11 @@ public class AuthService
     {
         try
         {
-            var content = new StringContent(
-                JsonSerializer.Serialize(new { email, requestType = "PASSWORD_RESET" }),
-                Encoding.UTF8,
-                "application/json"
-            );
+            var request = new { Email = email };
+            var response = await _httpClient.PostAsJsonAsync("api/auth/password-reset", request);
+            var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
 
-            var response = await _httpClient.PostAsync(
-                $"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={_apiKey}",
-                content
-            );
-
-            if (response.IsSuccessStatusCode)
-            {
-                return new BaseResponse
-                {
-                    Success = true,
-                    Message = "Password reset email sent successfully"
-                };
-            }
-
-            var errorContent = await response.Content.ReadAsStringAsync();
-            var errorData = JsonSerializer.Deserialize<FirebaseErrorResponse>(errorContent);
-
-            return new BaseResponse
-            {
-                Success = false,
-                Message = errorData?.Error?.Message ?? "Failed to send reset email"
-            };
+            return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
         }
         catch (Exception ex)
         {
@@ -191,61 +168,25 @@ public class AuthService
     {
         try
         {
-            if (string.IsNullOrEmpty(_currentToken))
+            if (!IsAuthenticated)
             {
                 return new BaseResponse { Success = false, Message = "Not authenticated" };
             }
 
-            // First verify current password by trying to sign in
-            var verifyContent = new StringContent(
-                JsonSerializer.Serialize(new { email = CurrentUser?.Email, password = currentPassword, returnSecureToken = true }),
-                Encoding.UTF8,
-                "application/json"
-            );
+            var request = new { CurrentPassword = currentPassword, NewPassword = newPassword };
+            var response = await _httpClient.PostAsJsonAsync("api/auth/change-password", request);
+            var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
 
-            var verifyResponse = await _httpClient.PostAsync(
-                $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={_apiKey}",
-                verifyContent
-            );
-
-            if (!verifyResponse.IsSuccessStatusCode)
-            {
-                return new BaseResponse { Success = false, Message = "Current password is incorrect" };
-            }
-
-            // Now change the password
-            var content = new StringContent(
-                JsonSerializer.Serialize(new { idToken = _currentToken, password = newPassword, returnSecureToken = true }),
-                Encoding.UTF8,
-                "application/json"
-            );
-
-            var response = await _httpClient.PostAsync(
-                $"https://identitytoolkit.googleapis.com/v1/accounts:update?key={_apiKey}",
-                content
-            );
-
-            if (response.IsSuccessStatusCode)
-            {
-                var responseData = await response.Content.ReadFromJsonAsync<FirebaseAuthResponse>();
-                if (responseData != null)
-                {
-                    _currentToken = responseData.IdToken;
-                    // Update the authorization header with new token
-                    _httpClient.DefaultRequestHeaders.Authorization =
-                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
-                }
-
-                return new BaseResponse { Success = true, Message = "Password changed successfully" };
-            }
-
-            var errorContent = await response.Content.ReadAsStringAsync();
-            return new BaseResponse { Success = false, Message = "Failed to change password" };
+            return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Change password error: {ex.Message}");
-            return new BaseResponse { Success = false, Message = "An error occurred" };
+            return new BaseResponse
+            {
+                Success = false,
+                Message = "An error occurred while changing password"
+            };
         }
     }
 }

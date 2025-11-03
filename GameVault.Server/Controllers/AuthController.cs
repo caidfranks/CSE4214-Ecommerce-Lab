@@ -4,6 +4,7 @@ using GameVault.Server.Services;
 using GameVault.Shared.Models;
 using GameVault.Shared.DTOs;
 using GameVault.Server.Models.Firestore;
+using System.Text.Json;
 
 namespace GameVault.Server.Controllers;
 
@@ -132,7 +133,6 @@ public class AuthController : ControllerBase
                     Type = user.Type,
                     Banned = false
                 }
-                // No ID Token because not actually logging in
             });
         }
         catch (InvalidOperationException ex)
@@ -188,40 +188,6 @@ public class AuthController : ControllerBase
                     Message = "Failed to submit application. Please try again",
                 };
             }
-
-
-            // Do all this stuff when approved:
-            // var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
-
-            // var user = new User
-            // {
-            //     UserId = userId!,
-            //     Email = request.Email,
-            //     DisplayName = request.DisplayName ?? string.Empty,
-            //     Role = nameof(AccountType.Vendor),
-            //     ApprovalStatus = nameof(ApprovalStatus.Pending),
-            //     BusinessName = request.BusinessName,
-            //     BusinessDescription = request.BusinessDescription
-            // };
-
-            // await _firestore.SetDocumentAsync("users", userId!, user);
-
-            // return Ok(new AuthResponse
-            // {
-            //     Success = true,
-            //     Message = "Vendor application submitted. Please wait for admin approval.",
-            //     UserId = userId,
-            //     User = new UserProfile
-            //     {
-            //         UserId = user.UserId,
-            //         Email = user.Email,
-            //         DisplayName = user.DisplayName,
-            //         Role = user.Role,
-            //         ApprovalStatus = user.ApprovalStatus,
-            //         BusinessName = user.BusinessName,
-            //         BusinessDescription = user.BusinessDescription
-            //     }
-            // });
         }
         catch (InvalidOperationException ex)
         {
@@ -282,12 +248,205 @@ public class AuthController : ControllerBase
             }
         });
     }
+
+    [HttpPost("password-reset")]
+    public async Task<ActionResult<BaseResponse>> SendPasswordReset([FromBody] PasswordResetRequest request)
+    {
+        try
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            using var httpClient = new HttpClient();
+            var firebaseAuthUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={apiKey}";
+
+            string? emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST");
+            if (!string.IsNullOrEmpty(emulatorHost))
+            {
+                firebaseAuthUrl = $"http://{emulatorHost}/identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={apiKey}";
+            }
+
+            var resetData = new
+            {
+                email = request.Email,
+                requestType = "PASSWORD_RESET"
+            };
+
+            var response = await httpClient.PostAsJsonAsync(firebaseAuthUrl, resetData);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return Ok(new BaseResponse
+                {
+                    Success = true,
+                    Message = "Password reset email sent successfully"
+                });
+            }
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            var errorData = JsonSerializer.Deserialize<FirebaseErrorResponse>(errorContent);
+
+            return BadRequest(new BaseResponse
+            {
+                Success = false,
+                Message = errorData?.Error?.Message ?? "Failed to send reset email"
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Password reset error: {ex.Message}");
+            return StatusCode(500, new BaseResponse
+            {
+                Success = false,
+                Message = "An error occurred while sending reset email"
+            });
+        }
+    }
+
+    [HttpPost("change-password")]
+    public async Task<ActionResult<BaseResponse>> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        try
+        {
+            var apiKey = _configuration["Firebase:ApiKey"];
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Firebase configuration error"
+                });
+            }
+
+            // Get the token from Authorization header
+            var authHeader = Request.Headers["Authorization"].ToString();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return Unauthorized(new BaseResponse
+                {
+                    Success = false,
+                    Message = "Not authenticated"
+                });
+            }
+
+            var token = authHeader.Substring("Bearer ".Length);
+
+            // Verify the token and get user info
+            var userId = await _firebaseAuth.VerifyTokenAsync(token);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new BaseResponse
+                {
+                    Success = false,
+                    Message = "Invalid or expired token"
+                });
+            }
+
+            var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", userId);
+            if (user == null)
+            {
+                return NotFound(new BaseResponse
+                {
+                    Success = false,
+                    Message = "User not found"
+                });
+            }
+
+            using var httpClient = new HttpClient();
+            var firebaseAuthUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={apiKey}";
+
+            string? emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST");
+            if (!string.IsNullOrEmpty(emulatorHost))
+            {
+                firebaseAuthUrl = $"http://{emulatorHost}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={apiKey}";
+            }
+
+            // Verify current password
+            var verifyData = new
+            {
+                email = user.Email,
+                password = request.CurrentPassword,
+                returnSecureToken = true
+            };
+
+            var verifyResponse = await httpClient.PostAsJsonAsync(firebaseAuthUrl, verifyData);
+
+            if (!verifyResponse.IsSuccessStatusCode)
+            {
+                return BadRequest(new BaseResponse
+                {
+                    Success = false,
+                    Message = "Current password is incorrect"
+                });
+            }
+
+            // Update password
+            var updateUrl = $"https://identitytoolkit.googleapis.com/v1/accounts:update?key={apiKey}";
+            if (!string.IsNullOrEmpty(emulatorHost))
+            {
+                updateUrl = $"http://{emulatorHost}/identitytoolkit.googleapis.com/v1/accounts:update?key={apiKey}";
+            }
+
+            var updateData = new
+            {
+                idToken = token,
+                password = request.NewPassword,
+                returnSecureToken = true
+            };
+
+            var updateResponse = await httpClient.PostAsJsonAsync(updateUrl, updateData);
+
+            if (updateResponse.IsSuccessStatusCode)
+            {
+                return Ok(new BaseResponse
+                {
+                    Success = true,
+                    Message = "Password changed successfully"
+                });
+            }
+
+            var errorContent = await updateResponse.Content.ReadAsStringAsync();
+            return BadRequest(new BaseResponse
+            {
+                Success = false,
+                Message = "Failed to change password"
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Change password error: {ex.Message}");
+            return StatusCode(500, new BaseResponse
+            {
+                Success = false,
+                Message = "An error occurred while changing password"
+            });
+        }
+    }
 }
 
+// Request/Response models
 public class LoginRequest
 {
     public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+}
+
+public class PasswordResetRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
 }
 
 public class FirebaseLoginResponse
@@ -298,4 +457,15 @@ public class FirebaseLoginResponse
     public string ExpiresIn { get; set; } = string.Empty;
     public string LocalId { get; set; } = string.Empty;
     public bool Registered { get; set; }
+}
+
+public class FirebaseErrorResponse
+{
+    public FirebaseError? Error { get; set; }
+}
+
+public class FirebaseError
+{
+    public int Code { get; set; }
+    public string? Message { get; set; }
 }
