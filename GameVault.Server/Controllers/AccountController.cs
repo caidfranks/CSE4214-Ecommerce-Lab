@@ -243,6 +243,7 @@ namespace GameVault.Server.Controllers
                     BanMsg = account.BanMsg,
                     Name = account.Name,
                     ReviewedBy = account.ReviewedBy,
+                    BalanceInCents = account.BalanceInCents
                 };
                 accountDTOs.Add(accountDTO);
             }

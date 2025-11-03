@@ -1,0 +1,83 @@
+@page "/orders"
+@using GameVault.Shared.DTOs
+@using GameVault.Shared.Models
+@inject Services.AuthService AuthService
+@inject Services.OrderService OrderService
+
+<PageTitle>Order History</PageTitle>
+
+@if (orders == null)
+{
+  @if (error == string.Empty)
+  {
+    <p><em>Loading...</em></p>
+  }
+  else
+  {
+    <p class="alert alert-danger mt-2"><em>@error</em></p>
+  }
+}
+else if (orders.Count == 0)
+{
+  <p><em>No previous orders found</em></p>
+}
+else
+{
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Id</th>
+        <th>Total</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var order in orders)
+      {
+        <tr>
+          <td>@(order.OrderDate.ToLocalTime().ToString())</td>
+          <td>@order.Id</td>
+          <td>@((order.TotalInCents / 100M).ToString("C2"))</td>
+          <td>
+            <button>Details</button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@code {
+  public string error = string.Empty;
+  public List<OrderDTO>? orders;
+
+  private async Task LoadData()
+  {
+    orders = null;
+
+    if (AuthService.CurrentUserId is not null)
+    {
+      ListResponse<OrderDTO> result = await OrderService.GetOrderHistory(AuthService.CurrentUserId);
+      if (result.Success)
+      {
+        orders = result.List;
+      }
+      else
+      {
+        error = result.Message ?? "";
+      }
+      await InvokeAsync(StateHasChanged);
+    }
+    else
+    {
+      Console.WriteLine("Not logged in");
+      error = "Not logged in";
+    }
+  }
+
+  protected override async Task OnInitializedAsync()
+  {
+    await LoadData();
+  }
+}

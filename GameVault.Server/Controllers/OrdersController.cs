@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using GameVault.Server.Services;
 using GameVault.Shared.Models;
 using GameVault.Server.Models.Firestore;
+using GameVault.Shared.DTOs;
 
 namespace GameVault.Server.Controllers;
 
@@ -27,29 +28,48 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<Order>>> GetMyOrders([FromHeader] string? Authorization)
+    public async Task<ActionResult<ListResponse<OrderDTO>>> GetMyOrders([FromHeader] string? Authorization)
     {
         try
         {
             var user = await _userService.GetUserFromHeader(Authorization);
             if (user is null)
             {
-                return Unauthorized(new { error = "User not authenticated" });
+                return Unauthorized();  //new { error = "User not authenticated" });
             }
 
             if (user.Type != AccountType.Customer)
             {
-                return Unauthorized(new { error = "Must be a customer to view orders" });
+                return Forbid();
             }
 
             var orders = await _orderService.GetOrdersByCustomerIdAsync(user.Id);
 
-            return Ok(orders);
+            List<OrderDTO> orderDTOs = [];
+
+            foreach (Order order in orders)
+            {
+                orderDTOs.Add(new OrderDTO()
+                {
+                    Id = order.Id,
+                    CustomerId = order.CustomerId,
+                    OrderDate = order.OrderDate,
+                    SubtotalInCents = order.SubtotalInCents,
+                    TaxInCents = order.TaxInCents,
+                    TotalInCents = order.TotalInCents
+                });
+            }
+
+            return Ok(new ListResponse<OrderDTO>()
+            {
+                Success = true,
+                List = orderDTOs
+            });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving orders");
-            return StatusCode(500, new { error = "Failed to retrieve orders" });
+            return StatusCode(500); //, new { error = "Failed to retrieve orders" });
         }
     }
 
