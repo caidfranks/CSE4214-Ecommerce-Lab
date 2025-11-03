@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text;
@@ -12,7 +11,6 @@ public class SquarePaymentService
     private readonly ILogger<SquarePaymentService> _logger;
     private readonly HttpClient _httpClient;
     private readonly string _accessToken;
-    private readonly string _baseUrl;
 
     public SquarePaymentService(IConfiguration configuration, ILogger<SquarePaymentService> logger, IHttpClientFactory httpClientFactory)
     {
@@ -21,10 +19,8 @@ public class SquarePaymentService
 
         _accessToken = configuration["Square:AccessToken"] 
             ?? throw new InvalidOperationException("Square:AccessToken not configured");
-        
-        _baseUrl = "https://connect.squareupsandbox.com/v2";
 
-        _httpClient.BaseAddress = new Uri(_baseUrl);
+        _httpClient.BaseAddress = new Uri("https://connect.squareupsandbox.com/v2/");
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -39,12 +35,6 @@ public class SquarePaymentService
     {
         try
         {
-            _logger.LogInformation(
-                "Processing payment: ${amount} for customer {customerId}, order {orderId}",
-                amountInCents / 100.0,
-                customerId,
-                orderId);
-
             var requestBody = new
             {
                 source_id = paymentMethodId,
@@ -54,15 +44,15 @@ public class SquarePaymentService
                     amount = amountInCents,
                     currency = "USD"
                 },
+                location_id = "L3VRG5E7HM55C",
                 reference_id = orderId,
-                customer_id = customerId,
                 note = $"GameVault Order {orderId}"
             };
 
             var json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("/payments", content);
+            var response = await _httpClient.PostAsync("payments", content);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
@@ -79,7 +69,6 @@ public class SquarePaymentService
                 }
                 else
                 {
-                    _logger.LogWarning("Payment not completed. Status: {status}", status);
                     return (false, null, $"Payment status: {status}");
                 }
             }
@@ -103,12 +92,6 @@ public class SquarePaymentService
     {
         try
         {
-            _logger.LogInformation(
-                "Processing refund: ${amount} for payment {paymentId}. Reason: {reason}",
-                amountInCents / 100.0,
-                paymentId,
-                reason);
-
             var requestBody = new
             {
                 idempotency_key = Guid.NewGuid().ToString(),
@@ -124,7 +107,7 @@ public class SquarePaymentService
             var json = JsonSerializer.Serialize(requestBody);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("/refunds", content);
+            var response = await _httpClient.PostAsync("refunds", content);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
@@ -141,7 +124,6 @@ public class SquarePaymentService
                 }
                 else
                 {
-                    _logger.LogWarning("Refund not completed. Status: {status}", status);
                     return (false, null, $"Refund status: {status}");
                 }
             }
@@ -162,9 +144,7 @@ public class SquarePaymentService
     {
         try
         {
-            _logger.LogInformation("Verifying payment {paymentId}", paymentId);
-
-            var response = await _httpClient.GetAsync($"/payments/{paymentId}");
+            var response = await _httpClient.GetAsync($"payments/{paymentId}");
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
@@ -175,12 +155,10 @@ public class SquarePaymentService
 
                 if (status == "COMPLETED")
                 {
-                    _logger.LogInformation("Payment {paymentId} verified successfully", paymentId);
                     return (true, null);
                 }
                 else
                 {
-                    _logger.LogWarning("Payment {paymentId} status: {status}", paymentId, status);
                     return (false, $"Payment status: {status}");
                 }
             }

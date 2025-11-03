@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using GameVault.Server.Services;
 using GameVault.Shared.DTOs;
+using GameVault.Shared.Models;
 
 namespace GameVault.Server.Controllers;
 
@@ -9,31 +10,38 @@ namespace GameVault.Server.Controllers;
 public class CheckoutController : ControllerBase
 {
     private readonly OrderService _orderService;
-    private readonly ICurrentUserService _currentUserService;
+    private readonly UserService _userService;
     private readonly ILogger<CheckoutController> _logger;
 
     public CheckoutController(
         OrderService orderService,
-        ICurrentUserService currentUserService,
+        UserService userService,
         ILogger<CheckoutController> logger)
     {
         _orderService = orderService;
-        _currentUserService = currentUserService;
+        _userService = userService;
         _logger = logger;
     }
 
     [HttpPost]
-    public async Task<IActionResult> ProcessCheckout([FromBody] CheckoutRequestDTO request)
+    public async Task<IActionResult> ProcessCheckout(
+        [FromBody] CheckoutRequestDTO request,
+        [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
             {
                 return Unauthorized(new { error = "User not authenticated" });
             }
 
-            var userId = _currentUserService.UserId;
-            _logger.LogInformation("Processing checkout for user {userId}", userId);
+            if (user.Type != AccountType.Customer)
+            {
+                return Unauthorized(new { error = "Must be a customer to checkout" });
+            }
+
+            _logger.LogInformation("Processing checkout for user {userId}", user.Id);
 
             if (string.IsNullOrEmpty(request.PaymentMethodId))
             {
@@ -46,14 +54,14 @@ public class CheckoutController : ControllerBase
             }
 
             var (success, orderId, invoiceIds, errorMessage) = await _orderService.CreateOrderFromCartAsync(
-                userId,
+                user.Id,
                 request.PaymentMethodId,
                 request.ShipTo
             );
 
             if (!success)
             {
-                _logger.LogWarning("Checkout failed for user {userId}: {error}", userId, errorMessage);
+                _logger.LogWarning("Checkout failed for user {userId}: {error}", user.Id, errorMessage);
                 return BadRequest(new CheckoutResponseDTO
                 {
                     Success = false,
@@ -61,7 +69,7 @@ public class CheckoutController : ControllerBase
                 });
             }
 
-            _logger.LogInformation("Checkout successful for user {userId}, order {orderId}", userId, orderId);
+            _logger.LogInformation("Checkout successful for user {userId}, order {orderId}", user.Id, orderId);
 
             var order = await _orderService.GetOrderByIdAsync(orderId!);
 

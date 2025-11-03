@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using GameVault.Server.Services;
+using GameVault.Shared.Models;
 
 namespace GameVault.Server.Controllers;
 
@@ -8,33 +9,39 @@ namespace GameVault.Server.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly OrderService _orderService;
-    private readonly ICurrentUserService _currentUser;
+    private readonly UserService _userService;
     private readonly IFirestoreService _firestore;
     private readonly ILogger<OrdersController> _logger;
 
     public OrdersController(
         OrderService orderService,
-        ICurrentUserService currentUserService,
+        UserService userService,
         IFirestoreService firestore,
         ILogger<OrdersController> logger)
     {
         _orderService = orderService;
-        _currentUser = currentUserService;
+        _userService = userService;
         _firestore = firestore;
         _logger = logger;
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetMyOrders()
+    public async Task<IActionResult> GetMyOrders([FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUser.IsAuthenticated || string.IsNullOrEmpty(_currentUser.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
             {
                 return Unauthorized(new { error = "User not authenticated" });
             }
 
-            var orders = await _orderService.GetOrdersByCustomerIdAsync(_currentUser.UserId);
+            if (user.Type != AccountType.Customer)
+            {
+                return Unauthorized(new { error = "Must be a customer to view orders" });
+            }
+
+            var orders = await _orderService.GetOrdersByCustomerIdAsync(user.Id);
 
             return Ok(orders);
         }
@@ -46,11 +53,12 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetOrderById(string id)
+    public async Task<IActionResult> GetOrderById(string id, [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUser.IsAuthenticated || string.IsNullOrEmpty(_currentUser.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
             {
                 return Unauthorized(new { error = "User not authenticated" });
             }
@@ -62,7 +70,7 @@ public class OrdersController : ControllerBase
                 return NotFound(new { error = "Order not found" });
             }
 
-            if (order.CustomerId != _currentUser.UserId)
+            if (order.CustomerId != user.Id)
             {
                 return StatusCode(403, new { error = "Access denied" });
             }
@@ -77,11 +85,12 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet("{id}/invoices")]
-    public async Task<IActionResult> GetOrderInvoices(string id)
+    public async Task<IActionResult> GetOrderInvoices(string id, [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUser.IsAuthenticated || string.IsNullOrEmpty(_currentUser.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
             {
                 return Unauthorized(new { error = "User not authenticated" });
             }
@@ -92,7 +101,7 @@ public class OrdersController : ControllerBase
                 return NotFound(new { error = "Order not found" });
             }
 
-            if (order.CustomerId != _currentUser.UserId)
+            if (order.CustomerId != user.Id)
             {
                 return StatusCode(403, new { error = "Access denied" });
             }

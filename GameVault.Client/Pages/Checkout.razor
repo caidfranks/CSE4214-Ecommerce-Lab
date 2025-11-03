@@ -44,6 +44,7 @@
                     <div class="card-body">
                         <h2 class="card-title h5 mb-3">2. Payment Information</h2>
                         <SquarePaymentForm 
+                            @ref="paymentFormRef"
                             OnPaymentMethodCreated="@HandlePaymentMethodCreated"
                             IsEnabled="@isAddressComplete" />
                         
@@ -85,7 +86,14 @@
                         @if (!canCheckout && !isProcessing)
                         {
                             <p class="text-danger small text-center mt-2 mb-0">
-                                Please complete all required fields
+                                @if (!isAddressComplete)
+                                {
+                                    <span>Please complete shipping address</span>
+                                }
+                                else if (string.IsNullOrEmpty(paymentMethodId))
+                                {
+                                    <span>Please enter payment information</span>
+                                }
                             </p>
                         }
                     </div>
@@ -96,6 +104,8 @@
 </div>
 
 @code {
+    private SquarePaymentForm? paymentFormRef;
+    
     private Address shippingAddress = new()
     {
         Street = "",
@@ -106,29 +116,23 @@
     };
 
     private string? paymentMethodId;
-
     private int subtotalInCents = 0;
     private int taxInCents = 0;
     private int totalInCents = 0;
-
     private bool isProcessing = false;
     private string? errorMessage;
+    
     private bool isAddressComplete => 
         !string.IsNullOrWhiteSpace(shippingAddress.Street) &&
         !string.IsNullOrWhiteSpace(shippingAddress.City) &&
         !string.IsNullOrWhiteSpace(shippingAddress.State) &&
         !string.IsNullOrWhiteSpace(shippingAddress.PostalCode);
     
-    private bool canCheckout => 
-        isAddressComplete && 
-        !string.IsNullOrEmpty(paymentMethodId) &&
-        !isProcessing;
+    private bool canCheckout => isAddressComplete && !isProcessing;
 
     protected override async Task OnInitializedAsync()
     {
-        // for testing
         subtotalInCents = 2000;
-        
         await EstimateTax();
     }
 
@@ -169,10 +173,7 @@
 
     private async Task ProcessCheckout()
     {
-        if (!canCheckout)
-        {
-            return;
-        }
+        if (!canCheckout) return;
 
         isProcessing = true;
         errorMessage = null;
@@ -180,6 +181,20 @@
 
         try
         {
+            if (paymentFormRef != null)
+            {
+                await paymentFormRef.TokenizeCardAsync();
+                await Task.Delay(500);
+            }
+
+            if (string.IsNullOrEmpty(paymentMethodId))
+            {
+                errorMessage = "Please enter valid payment information";
+                isProcessing = false;
+                StateHasChanged();
+                return;
+            }
+
             var request = new CheckoutRequestDTO
             {
                 PaymentMethodId = paymentMethodId!,
@@ -190,13 +205,11 @@
 
             if (response.Success)
             {
-                Logger.LogInformation("Checkout successful, order ID: {orderId}", response.OrderId);
                 Navigation.NavigateTo($"/order-confirmation/{response.OrderId}");
             }
             else
             {
                 errorMessage = response.ErrorMessage ?? "Checkout failed. Please try again.";
-                Logger.LogWarning("Checkout failed: {error}", errorMessage);
             }
         }
         catch (Exception ex)

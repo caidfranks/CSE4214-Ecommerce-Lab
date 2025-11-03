@@ -1,6 +1,4 @@
 ﻿using System.Net.Http.Json;
-using System.Security.Principal;
-using System.Text.Json;
 using GameVault.Shared.DTOs;
 using GameVault.Shared.Models;
 
@@ -12,6 +10,8 @@ public class AuthService
     private string? _currentUserId;
     private string? _currentToken;
     private UserDTO? _currentUser;
+
+    public event Action? OnAuthStateChanged;
 
     public AuthService(HttpClient httpClient)
     {
@@ -42,18 +42,19 @@ public class AuthService
 
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
+            
+            OnAuthStateChanged?.Invoke();
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
-    public async Task<AuthResponse> RegisterCustomerAsync(string email, string password) //, string? displayName)
+    public async Task<AuthResponse> RegisterCustomerAsync(string email, string password)
     {
         var request = new RegisterCustomerRequest
         {
             Email = email,
             Password = password,
-            // DisplayName = displayName
         };
 
         var response = await _httpClient.PostAsJsonAsync("api/auth/register/customer", request);
@@ -61,14 +62,8 @@ public class AuthService
 
         if (result?.Success == true && result.IdToken != null)
         {
-            // Don't set token because not actually logged in on the server side
-            // _currentToken = result.IdToken;
             _currentUserId = result.Data?.Id ?? null;
             _currentUser = result.Data;
-
-            // Not actually logged in on the server side
-            // _httpClient.DefaultRequestHeaders.Authorization =
-            //     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
         }
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
@@ -91,17 +86,6 @@ public class AuthService
         var response = await _httpClient.PostAsJsonAsync("api/auth/register/vendor", request);
         var result = await response.Content.ReadFromJsonAsync<DataResponse<string>>();
 
-        // Don't do any of this because account not really created
-        //      && result.IdToken != null)
-        // {
-        //     _currentToken = result.IdToken;
-        //     _currentUserId = result.UserId;
-        //     _currentUser = result.User;
-
-        //     _httpClient.DefaultRequestHeaders.Authorization =
-        //         new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
-        // }
-
         return result ?? new DataResponse<string> { Success = false, Message = "Unknown error" };
     }
 
@@ -111,5 +95,7 @@ public class AuthService
         _currentUserId = null;
         _currentUser = null;
         _httpClient.DefaultRequestHeaders.Authorization = null;
+        
+        OnAuthStateChanged?.Invoke();
     }
 }

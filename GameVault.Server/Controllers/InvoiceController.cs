@@ -12,28 +12,36 @@ namespace GameVault.Server.Controllers;
 public class InvoiceController : ControllerBase
 {
     private readonly InvoiceService _invoiceService;
-    private readonly ICurrentUserService _currentUserService;
+    private readonly UserService _userService;
     private readonly IFirestoreService _firestore;
     private readonly ILogger<InvoiceController> _logger;
 
     public InvoiceController(
         InvoiceService invoiceService,
-        ICurrentUserService currentUserService,
+        UserService userService,
         IFirestoreService firestore,
         ILogger<InvoiceController> logger)
     {
         _invoiceService = invoiceService;
-        _currentUserService = currentUserService;
+        _userService = userService;
         _firestore = firestore;
         _logger = logger;
     }
     
     [HttpPost]
-    public async Task<ActionResult<Invoice>> CreateInvoice([FromBody] CreateInvoiceRequest request)
+    public async Task<ActionResult<Invoice>> CreateInvoice(
+        [FromBody] CreateInvoiceRequest request,
+        [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.Type != AccountType.Customer)
             {
                 return Unauthorized();
             }
@@ -56,11 +64,14 @@ public class InvoiceController : ControllerBase
     }
 
     [HttpGet("{invoiceId}")]
-    public async Task<ActionResult<Invoice>> GetInvoice(string invoiceId)
+    public async Task<ActionResult<Invoice>> GetInvoice(
+        string invoiceId,
+        [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
             {
                 return Unauthorized();
             }
@@ -71,13 +82,7 @@ public class InvoiceController : ControllerBase
                 return NotFound();
             }
 
-            var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", _currentUserService.UserId);
-            if (user == null)
-            {
-                return Unauthorized();
-            }
-
-            if (user.Type == AccountType.Vendor && invoice.VendorId != _currentUserService.UserId)
+            if (user.Type == AccountType.Vendor && invoice.VendorId != user.Id)
             {
                 return StatusCode(403, new { error = "Access denied" });
             }
@@ -92,11 +97,19 @@ public class InvoiceController : ControllerBase
     }
 
     [HttpGet("order/{orderId}")]
-    public async Task<ActionResult<List<Invoice>>> GetInvoicesByOrder(string orderId)
+    public async Task<ActionResult<List<Invoice>>> GetInvoicesByOrder(
+        string orderId,
+        [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            if (user.Type != AccountType.Customer)
             {
                 return Unauthorized();
             }
@@ -112,22 +125,19 @@ public class InvoiceController : ControllerBase
     }
 
     [HttpGet("vendor/{vendorId}")]
-    public async Task<ActionResult<List<Invoice>>> GetInvoicesByVendor(string vendorId)
+    public async Task<ActionResult<List<Invoice>>> GetInvoicesByVendor(
+        string vendorId,
+        [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
             {
                 return Unauthorized();
             }
 
-            var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", _currentUserService.UserId);
-            if (user == null)
-            {
-                return Unauthorized();
-            }
-
-            if (user.Type == AccountType.Vendor && _currentUserService.UserId != vendorId)
+            if (user.Type == AccountType.Vendor && user.Id != vendorId)
             {
                 return StatusCode(403, new { error = "Access denied" });
             }
@@ -143,11 +153,14 @@ public class InvoiceController : ControllerBase
     }
 
     [HttpGet("{invoiceId}/items")]
-    public async Task<ActionResult<List<InvoiceItem>>> GetInvoiceItems(string invoiceId)
+    public async Task<ActionResult<List<InvoiceItem>>> GetInvoiceItems(
+        string invoiceId,
+        [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
             {
                 return Unauthorized();
             }
@@ -158,13 +171,7 @@ public class InvoiceController : ControllerBase
                 return NotFound();
             }
 
-            var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", _currentUserService.UserId);
-            if (user == null)
-            {
-                return Unauthorized();
-            }
-
-            if (user.Type == AccountType.Vendor && invoice.VendorId != _currentUserService.UserId)
+            if (user.Type == AccountType.Vendor && invoice.VendorId != user.Id)
             {
                 return StatusCode(403, new { error = "Access denied" });
             }
@@ -182,17 +189,18 @@ public class InvoiceController : ControllerBase
     [HttpPut("{invoiceId}/status")]
     public async Task<ActionResult> UpdateInvoiceStatus(
         string invoiceId,
-        [FromBody] UpdateStatusRequest request)
+        [FromBody] UpdateStatusRequest request,
+        [FromHeader] string? Authorization)
     {
         try
         {
-            if (!_currentUserService.IsAuthenticated || string.IsNullOrEmpty(_currentUserService.UserId))
+            var user = await _userService.GetUserFromHeader(Authorization);
+            if (user is null)
             {
                 return Unauthorized();
             }
 
-            var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", _currentUserService.UserId);
-            if (user == null || user.Type != AccountType.Vendor)
+            if (user.Type != AccountType.Vendor)
             {
                 return Unauthorized();
             }
@@ -203,7 +211,7 @@ public class InvoiceController : ControllerBase
                 return NotFound();
             }
 
-            if (invoice.VendorId != _currentUserService.UserId)
+            if (invoice.VendorId != user.Id)
             {
                 return StatusCode(403, new { error = "Access denied" });
             }

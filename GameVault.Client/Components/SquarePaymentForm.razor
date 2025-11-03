@@ -9,18 +9,19 @@
             <p class="mb-0">Payment form will be enabled after completing shipping address</p>
         </div>
     }
-    else if (isLoading)
-    {
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="text-muted mt-2">Loading payment form...</p>
-        </div>
-    }
     else
     {
-        <div id="card-container" class="mb-3"></div>
+        <div id="card-container" class="mb-3" style="@(isLoading ? "display:none;" : "")"></div>
+
+        @if (isLoading)
+        {
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="text-muted mt-2">Loading payment form...</p>
+            </div>
+        }
 
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -36,6 +37,7 @@
                 <span>Payment method ready</span>
             </div>
         }
+
         <div class="alert alert-info py-2">
             <p class="fw-semibold mb-1 small">Test Cards (Sandbox):</p>
             <ul class="mb-0 small">
@@ -54,37 +56,55 @@
     [Parameter]
     public bool IsEnabled { get; set; } = true;
 
-    private bool isLoading = true;
+    private bool isLoading = false;
     private bool paymentSuccess = false;
     private string? errorMessage;
-    private DotNetObjectReference<SquarePaymentForm>? dotNetRef;
     private bool hasInitialized = false;
+    private bool initializationStarted = false;
+    private bool isInitializing = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsEnabled && !initializationStarted && !isInitializing)
+        {
+            initializationStarted = true;
+            isLoading = true;
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (IsEnabled && !hasInitialized)
+        if (isLoading && initializationStarted && !hasInitialized && !isInitializing)
         {
             await InitializeSquarePayments();
         }
     }
 
-    protected override void OnParametersSet()
-    {
-        if (!IsEnabled)
-        {
-            hasInitialized = false;
-            isLoading = true;
-        }
-    }
-
     private async Task InitializeSquarePayments()
     {
+        if (isInitializing || hasInitialized) return;
+
+        isInitializing = true;
+        
         try
         {
-            await Task.Delay(100);
+            bool containerExists = false;
+            for (int i = 0; i < 50; i++)
+            {
+                await Task.Delay(100);
+                containerExists = await JS.InvokeAsync<bool>("eval", 
+                    "document.getElementById('card-container') !== null");
+                
+                if (containerExists) break;
+            }
             
-            dotNetRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("initializeSquarePayments", dotNetRef);
+            if (!containerExists)
+            {
+                throw new Exception("Payment container not ready");
+            }
+            
+            using var tempRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("initializeSquarePayments", tempRef);
             
             hasInitialized = true;
             isLoading = false;
@@ -95,14 +115,43 @@
             Logger.LogError(ex, "Error initializing Square payments");
             errorMessage = "Failed to load payment form. Please refresh the page.";
             isLoading = false;
+            hasInitialized = false;
+            initializationStarted = false;
             StateHasChanged();
+        }
+        finally
+        {
+            isInitializing = false;
+        }
+    }
+
+    public async Task<string?> TokenizeCardAsync()
+    {
+        if (!hasInitialized)
+        {
+            errorMessage = "Payment form not ready. Please wait for the form to load.";
+            StateHasChanged();
+            return null;
+        }
+
+        try
+        {
+            using var freshRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("tokenizeSquareCard", freshRef);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error tokenizing card");
+            errorMessage = "Failed to process payment method";
+            StateHasChanged();
+            return null;
         }
     }
 
     [JSInvokable]
     public async Task HandlePaymentMethodCreated(string token)
     {
-        Logger.LogInformation("Payment method created: {token}", token);
         paymentSuccess = true;
         errorMessage = null;
         await OnPaymentMethodCreated.InvokeAsync(token);
@@ -112,14 +161,8 @@
     [JSInvokable]
     public void HandlePaymentError(string error)
     {
-        Logger.LogError("Payment error: {error}", error);
         errorMessage = error;
         paymentSuccess = false;
         StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        dotNetRef?.Dispose();
     }
 }

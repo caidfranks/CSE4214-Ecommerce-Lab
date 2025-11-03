@@ -1,56 +1,63 @@
 let payments;
 let card;
+let isInitialized = false;
 
-window.initializeSquarePayments = async function (dotNetHelper) {
+window.initializeSquarePayments = async function (dotNetHelperRef) {
+    if (isInitialized) {
+        console.log('Square payments already initialized');
+        return;
+    }
+
     try {
+        const container = document.getElementById('card-container');
+        if (!container) {
+            throw new Error('card-container element not found in DOM');
+        }
+
         const applicationId = 'sandbox-sq0idb-UqNPJw5lxgVgk9XIXeI3nw';
         const locationId = 'L3VRG5E7HM55C';
 
         payments = window.Square.payments(applicationId, locationId);
-
         card = await payments.card();
         await card.attach('#card-container');
 
+        isInitialized = true;
         console.log('Square Payments initialized successfully');
-
-        card.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            await handlePaymentMethodSubmission(dotNetHelper);
-        });
-
     } catch (error) {
         console.error('Error initializing Square Payments:', error);
-        dotNetHelper.invokeMethodAsync('HandlePaymentError', 'Failed to initialize payment form');
+        if (dotNetHelperRef) {
+            dotNetHelperRef.invokeMethodAsync('HandlePaymentError', 'Failed to initialize payment form: ' + error.message);
+        }
+        throw error;
     }
 };
 
 async function handlePaymentMethodSubmission(dotNetHelper) {
     try {
-        const submitButton = document.querySelector('button[type="submit"]');
-        if (submitButton) {
-            submitButton.disabled = true;
+        if (!card) {
+            throw new Error('Payment form not initialized');
+        }
+
+        if (!dotNetHelper) {
+            throw new Error('DotNet helper reference not provided');
         }
 
         const result = await card.tokenize();
 
         if (result.status === 'OK') {
-            console.log('Payment token created:', result.token);
-            
             await dotNetHelper.invokeMethodAsync('HandlePaymentMethodCreated', result.token);
         } else {
-
             let errorMessage = 'Payment processing failed';
-            
             if (result.errors) {
                 errorMessage = result.errors.map(error => error.message).join(', ');
             }
-            
-            console.error('Tokenization errors:', result.errors);
             dotNetHelper.invokeMethodAsync('HandlePaymentError', errorMessage);
         }
     } catch (error) {
-        console.error('Error during payment method submission:', error);
-        dotNetHelper.invokeMethodAsync('HandlePaymentError', 'An unexpected error occurred');
+        console.error('Error during payment submission:', error);
+        if (dotNetHelper) {
+            dotNetHelper.invokeMethodAsync('HandlePaymentError', 'An unexpected error occurred: ' + error.message);
+        }
     }
 }
 
@@ -64,4 +71,5 @@ window.destroySquarePayments = function () {
         card = null;
     }
     payments = null;
+    isInitialized = false;
 };
