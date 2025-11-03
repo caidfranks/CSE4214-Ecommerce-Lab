@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject Services.ListingService ListingService
 @inject Services.AuthService AuthService
+@inject Services.LogService LogService
 @using GameVault.Client.Services
 @using System.Runtime.CompilerServices
 @using GameVault.Shared.Models
@@ -85,9 +86,11 @@ else
                 </div>
                 <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
                     <button type="button" class="btn-approve"
-                        @onclick='async () => { await ListingService.ChangeListingStatusToPublished(selectedEntry.Id); await LoadData(); CloseModal(); }'>Approve</button>
+                        @onclick='async () => { await ListingService.ChangeListingStatusToPublished(selectedEntry.Id); LogService.LogListingStatusChangeAsync(selectedEntry.Id, "pending", "published"); await LoadData(); CloseModal(); }'>Approve</button>
                     <button type="button" class="btn-deny"
-                        @onclick='async () => { await ListingService.ChangeListingStatusToInactive(selectedEntry.Id); await LoadData(); CloseModal(); }'>Deny</button>
+                            @onclick='async () => { await ListingService.ChangeListingStatusToInactive(selectedEntry.Id); LogService.LogListingStatusChangeAsync(selectedEntry.Id, "pending", "inactive"); await LoadData(); CloseModal(); }'>
+                        Deny
+                    </button>
                 </div>
             </div>
         </div>

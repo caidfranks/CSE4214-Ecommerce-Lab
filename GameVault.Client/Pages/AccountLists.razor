@@ -284,6 +284,7 @@ else
     {
         await AuthService.CreateVendorAsync(request);
         await AccountService.ArchiveRequest(request.Id);
+        await LogService.LogVendorApprovalAsync(request.Id, request.Email, VendorApproval.Approved);
         CloseRequestPopup();
         await LoadData();
     }
@@ -293,6 +294,7 @@ else
         await AuthService.CreateVendorAsync(selectedRequest);
         await AccountService.BanAccount(selectedRequest.Id, RejectionReason);
         await AccountService.ArchiveRequest(selectedRequest.Id);
+        await LogService.LogVendorApprovalAsync(selectedRequest.Id, selectedRequest.Email, VendorApproval.Denied);
         CloseDenialPopup();
         await LoadData();
     }

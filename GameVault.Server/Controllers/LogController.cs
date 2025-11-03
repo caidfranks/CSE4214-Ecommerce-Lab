@@ -67,5 +67,33 @@ namespace GameVault.Server.Controllers
         return StatusCode(500, new LogListResponse { Success = false, Message = ex.Message });
       }
     }
-  }
+
+        [HttpPost]
+        public async Task<ActionResult> CreateLog([FromBody] LogDTO log)
+        {
+            try
+            {
+                await _firestore.AddDocumentAsync("logs", log);
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                await _firestore.AddDocumentAsync("logs", new FirestoreLog
+                {
+                    Summary = log.Summary,
+                    Type = log.Type,
+                    ObjectId = log.ObjectId,
+                    Status = log.Status,
+                    Timestamp = log.Timestamp,
+                    Details = log.Details
+                });
+
+                return StatusCode(500, new { success = false, message = ex.Message });
+            }
+        }
+
+
+
+
+    }
 }

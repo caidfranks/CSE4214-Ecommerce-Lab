@@ -1,6 +1,7 @@
 ﻿@page "/register/customer"
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
+@inject Services.LogService LogService
 
 <div class="auth-container">
     <div class="auth-card">
@@ -156,6 +157,7 @@
 
             if (result?.Success == true)
             {
+                await LogService.LogAccountCreationAsync("", email);
                 Navigation.NavigateTo("/");
             }
             else

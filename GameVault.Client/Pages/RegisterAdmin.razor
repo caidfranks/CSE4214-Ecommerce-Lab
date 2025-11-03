@@ -1,6 +1,7 @@
 ﻿@page "/register/admin"
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
+@inject Services.LogService LogService
 
 <h3>Invite Page</h3>
 
@@ -147,6 +148,7 @@
 
             if (result?.Success == true)
             {
+                await LogService.LogAccountCreationAsync("", email);
                 Navigation.NavigateTo("/");
             }
             else
