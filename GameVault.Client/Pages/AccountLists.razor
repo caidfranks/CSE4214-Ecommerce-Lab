@@ -15,16 +15,11 @@
 <h3>@PageTitle</h3>
 
 <header>
-    <button @onclick='() => Nav.NavigateTo("/manageAccounts/pendingVendors")' class="btn btn-secondary">Pending Vendor
-        Accounts</button>
-    <button @onclick='() => Nav.NavigateTo("/manageAccounts/activeVendors")' class="btn btn-secondary">Vendor
-        Accounts</button>
-    <button @onclick='() => Nav.NavigateTo("/manageAccounts/userAccounts")' class="btn btn-secondary">Customer
-        Accounts</button>
-    <button @onclick='() => Nav.NavigateTo("/manageAccounts/bannedAccounts")' class="btn btn-secondary">Banned
-        Accounts</button>
-    <button @onclick='() => Nav.NavigateTo("/adminAccounts")' class="btn btn-secondary">Admin
-        Accounts</button>
+    <a href="/manageAccounts/pendingVendors" class="btn btn-secondary">Pending Vendor Accounts</a>
+    <a href="/manageAccounts/activeVendors" class="btn btn-secondary">Vendor Accounts</a>
+    <a href="/manageAccounts/userAccounts" class="btn btn-secondary">Customer Accounts</a>
+    <a href="/manageAccounts/bannedAccounts" class="btn btn-secondary">Banned Accounts</a>
+    <a href="/adminAccounts" class="btn btn-secondary">Admin Accounts</a>
 </header>
 
 @if (StatusFilter == "pendingVendors")
@@ -263,14 +258,15 @@ else
         selectedUser = null;
     }
 
-    protected override void OnInitialized()
-        {
-            BreadcrumbService.Set(
-                new BreadcrumbItem("Home", "/"),
-                new BreadcrumbItem("Vendor Dashboard", "/vendor"),
-                new BreadcrumbItem("Orders")
-            );
-        }
+    protected override async Task OnParametersSetAsync()
+    {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Admin Dashboard", "/adminLanding"), 
+            new BreadcrumbItem("Manage Accounts", "/manageAccounts"),
+            new BreadcrumbItem(PageTitle)
+        );
+        await LoadData();
+    }
     private void OpenDenialPopup(RequestDTO selected) {
         selectedRequest = selected;
         RejectionReason = string.Empty;
@@ -342,11 +338,6 @@ else
         "bannedAccounts" => "Banned Accounts",
         _ => "Accounts"
     };
-
-    protected override async Task OnParametersSetAsync()
-    {
-        await LoadData();
-    }
 
     private async Task LoadData()
     {
