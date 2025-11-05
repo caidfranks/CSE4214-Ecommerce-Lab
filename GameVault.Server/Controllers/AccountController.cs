@@ -19,9 +19,7 @@ namespace GameVault.Server.Controllers
         private readonly UserService _userService;
         private readonly IConfiguration _configuration;
         private readonly ICurrentUserService _currentUser;
-
-        public AccountController(IFirestoreService firestore, UserService userService, IConfiguration configuration)
-        public AccountController(IFirestoreService firestore, IConfiguration configuration, ICurrentUserService currentUser)
+        public AccountController(IFirestoreService firestore, IConfiguration configuration, UserService userService, ICurrentUserService currentUser)
         {
             _firestore = firestore;
             _userService = userService;
@@ -139,7 +137,7 @@ namespace GameVault.Server.Controllers
             {
                 return Unauthorized();
             }
-            else if (user.Type != AccountType.Admin)
+            else if (user.Type != AccountType.Admin && user.Id != id)
             {
                 return Forbid();
             }

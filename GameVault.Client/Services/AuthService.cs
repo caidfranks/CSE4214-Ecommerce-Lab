@@ -21,7 +21,7 @@ public class AuthService
 
     public event Action? OnAuthStateChanged;
 
-    public AuthService(HttpClient httpClient, CookieService cookies)
+    public AuthService(HttpClient httpClient, IConfiguration configuration, CookieService cookies)
     {
         _httpClient = httpClient;
         _configuration = configuration;

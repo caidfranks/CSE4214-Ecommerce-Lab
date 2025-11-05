@@ -80,11 +80,11 @@
 
 @if (_showForgotPassword)
 {
-    <div class="modal-overlay" @onclick="() => _showForgotPassword = false">
+    <div class="modal-overlay" @onclick="CloseForgotPasswordModal">
         <div class="modal-content" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h4>Reset Password</h4>
-                <button class="btn-close" @onclick="() => _showForgotPassword = false"></button>
+                <button class="btn-close" @onclick="CloseForgotPasswordModal"></button>
             </div>
             <div class="modal-body">
                 <p>Enter your email address and we'll send you a link to reset your password.</p>
@@ -100,7 +100,7 @@
                 }
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" @onclick="() => _showForgotPassword = false" disabled="@_isResetting">Cancel</button>
+                <button class="btn btn-secondary" @onclick="CloseForgotPasswordModal" disabled="@_isResetting">Cancel</button>
                 <button class="btn btn-primary" @onclick="HandlePasswordReset" disabled="@_isResetting">
                     @if (_isResetting)
                     {
@@ -112,7 +112,6 @@
         </div>
     </div>
 }
-
 
 @code {
     private string _email = "";
@@ -145,6 +144,14 @@
     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
+    }
+
+    private void CloseForgotPasswordModal()
+    {
+        _showForgotPassword = false;
+        _resetEmail = "";
+        _resetMessage = "";
+        _resetMessageType = "";
     }
 
     private bool ValidateForm()
@@ -239,7 +246,8 @@
             {
                 _resetMessage = "Password reset email sent! Check your inbox.";
                 _resetMessageType = "success";
-                // Clear the email field after 2 seconds and close modal
+
+                // Close modal after 2 seconds
                 await Task.Delay(2000);
                 _resetEmail = "";
                 _showForgotPassword = false;
@@ -262,27 +270,8 @@
             _isResetting = false;
         }
     }
-      if (result is not null && result.Success)
-      {
-        Navigation.NavigateTo("/");
-      }
-      else
-      {
-        _error = result?.Message ?? "Login failed. Please check your credentials and try again.";
-      }
-    }
-    catch (Exception ex)
-    {
-      Console.WriteLine(ex);
-      _error = "An unexpected error occurred. Please try again later.";
-    }
-    finally
-    {
-      _isLoading = false;
-    }
-  }
 
-  protected override void OnInitialized()
+    protected override void OnInitialized()
     {
         if (AuthService.IsAuthenticated)
         {

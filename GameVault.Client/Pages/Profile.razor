@@ -235,13 +235,9 @@
 
 @code {
     private bool isLoading = true;
-    private bool isLoadingPayment = false;
     private bool isEditingAccount = false;
-    private bool isEditingPayment = false;
     private bool isSaving = false;
-    private bool isSavingPayment = false;
     private bool showDeleteConfirm = false;
-    private bool hasPaymentMethod = false;
     private bool showChangePassword = false;
     private bool isChangingPassword = false;
 
@@ -255,8 +251,6 @@
 
     private string accountMessage = "";
     private string accountMessageType = "";
-    private string paymentMessage = "";
-    private string paymentMessageType = "";
     private string passwordChangeMessage = "";
     private string passwordChangeMessageType = "";
 
@@ -331,11 +325,6 @@
         editedBusinessName = userDetails?.Name ?? "";
         accountMessage = "";
     }
-    private void CancelPaymentEdit()
-    {
-        isEditingPayment = false;
-        paymentMessage = "";
-    }
 
     private async Task DeleteAccount()
     {
@@ -344,7 +333,7 @@
             var result = await AccountService.DeleteAccountAsync();
             if (result.Success)
             {
-                AuthService.Logout();
+                await AuthService.Logout().ConfigureAwait(false);
                 Navigation.NavigateTo("/");
             }
         }
