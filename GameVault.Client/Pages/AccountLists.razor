@@ -15,11 +15,16 @@
 <h3>@PageTitle</h3>
 
 <header>
-    <a href="/manageAccounts/pendingVendors" class="btn btn-secondary">Pending Vendor Accounts</a>
-    <a href="/manageAccounts/activeVendors" class="btn btn-secondary">Vendor Accounts</a>
-    <a href="/manageAccounts/userAccounts" class="btn btn-secondary">Customer Accounts</a>
-    <a href="/manageAccounts/bannedAccounts" class="btn btn-secondary">Banned Accounts</a>
-    <a href="/adminAccounts" class="btn btn-secondary">Admin Accounts</a>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/pendingVendors")' class="btn btn-secondary">Pending Vendor
+    Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/activeVendors")' class="btn btn-secondary">Vendor
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/userAccounts")' class="btn btn-secondary">Customer
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/manageAccounts/bannedAccounts")' class="btn btn-secondary">Banned
+        Accounts</button>
+    <button @onclick='() => Nav.NavigateTo("/adminAccounts")' class="btn btn-secondary">Admin
+        Accounts</button>
 </header>
 
 @if (StatusFilter == "pendingVendors")
