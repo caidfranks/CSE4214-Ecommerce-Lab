@@ -16,7 +16,7 @@
 
 <header>
     <button @onclick='() => Nav.NavigateTo("/manageAccounts/pendingVendors")' class="btn btn-secondary">Pending Vendor
-        Accounts</button>
+    Accounts</button>
     <button @onclick='() => Nav.NavigateTo("/manageAccounts/activeVendors")' class="btn btn-secondary">Vendor
         Accounts</button>
     <button @onclick='() => Nav.NavigateTo("/manageAccounts/userAccounts")' class="btn btn-secondary">Customer
@@ -263,14 +263,15 @@ else
         selectedUser = null;
     }
 
-    protected override void OnInitialized()
-        {
-            BreadcrumbService.Set(
-                new BreadcrumbItem("Home", "/"),
-                new BreadcrumbItem("Vendor Dashboard", "/vendor"),
-                new BreadcrumbItem("Orders")
-            );
-        }
+    protected override async Task OnParametersSetAsync()
+    {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Admin Dashboard", "/adminLanding"), 
+            new BreadcrumbItem("Manage Accounts", "/manageAccounts"),
+            new BreadcrumbItem(PageTitle)
+        );
+        await LoadData();
+    }
     private void OpenDenialPopup(RequestDTO selected) {
         selectedRequest = selected;
         RejectionReason = string.Empty;
@@ -342,11 +343,6 @@ else
         "bannedAccounts" => "Banned Accounts",
         _ => "Accounts"
     };
-
-    protected override async Task OnParametersSetAsync()
-    {
-        await LoadData();
-    }
 
     private async Task LoadData()
     {
