@@ -123,8 +123,8 @@ else
     protected override async Task OnParametersSetAsync()
     {
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+            new BreadcrumbItem("Admin Dashboard", "/adminLanding"),
+            new BreadcrumbItem("Listing Management", "/viewListings"),
             new BreadcrumbItem(PageTitle)
         );
         await LoadData();

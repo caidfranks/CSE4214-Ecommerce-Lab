@@ -122,9 +122,9 @@ else
                                 </div>
                                 <div class="col-md-8 mt-3 mt-md-0">
                                 @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer){
-                                    <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
+                                    @* <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
                                         <i class="bi bi-cart-plus"></i> Add to Cart
-                                    </button> 
+                                    </button>  *@
                                     <GameVault.Client.Components.AddToCartButton ListingId="@Id" Quantity="@selectedQuantity" />
                                 }
                                 </div>
@@ -218,13 +218,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadProduct();
+        await LoadSuggestedProducts();
+
         BreadcrumbService.Set(
             new BreadcrumbItem("Home", "/"),
             new BreadcrumbItem("Browse", "/"),
             new BreadcrumbItem(product?.Name ?? "Product")
         );
-        await LoadProduct();
-        await LoadSuggestedProducts();
     }
 
     protected override async Task OnParametersSetAsync()
@@ -232,6 +233,13 @@ else
         // Reload product when ID changes
         await LoadProduct();
         await LoadSuggestedProducts();
+
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Browse", "/"),
+            new BreadcrumbItem(product?.Name ?? "Product")
+        );
+        
         showAddedMessage = false;
         selectedQuantity = 1;
     }

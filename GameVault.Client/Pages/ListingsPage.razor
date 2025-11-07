@@ -17,12 +17,11 @@
 </header>
 
 @code {
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Vendor Dashboard", "/vendor"),
-            new BreadcrumbItem("Listings Management")
+            new BreadcrumbItem("Admin Dashboard", "/viewListings"),
+            new BreadcrumbItem("Listing Management")
         );
     }
 }

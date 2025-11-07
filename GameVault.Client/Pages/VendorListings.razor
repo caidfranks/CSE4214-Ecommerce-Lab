@@ -141,6 +141,8 @@ else if (listings.Count == 0)
     @* loading = true; *@
     @* Console.WriteLine("Set loading to true"); *@
 
+    updateBreadcrumb();
+
     // Call Firestore
     if (AuthService.CurrentUserId is not null) {
       VendorListingListResponse result = (await ListingService.GetVendorListingsByStatus(AuthService.CurrentUserId, filter));
@@ -153,16 +155,21 @@ else if (listings.Count == 0)
       error = "Not logged in";
     }
     @* loading = false; *@
-    @* Console.WriteLine("Set loading to false"); *@
-  }
+        @* Console.WriteLine("Set loading to false"); *@
+    }
 
-  protected override async Task OnInitializedAsync()
-  {
-    BreadcrumbService.Set(
-        new BreadcrumbItem("Home", "/"),
-        new BreadcrumbItem("Vendor Dashboard", "/vendor"),
-        new BreadcrumbItem($"{filter} Listings")
-    );
-    await LoadData();
-  }
+    protected override async Task OnInitializedAsync()
+    {
+        updateBreadcrumb();
+        await LoadData();
+    }
+
+    private void updateBreadcrumb()
+    {
+        BreadcrumbService.Set(
+            new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+            new BreadcrumbItem("Listing Management", "/adminLanding/viewListings"),
+            new BreadcrumbItem($"{filter} Listings")
+        );
+    }
 }
