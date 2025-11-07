@@ -1,6 +1,11 @@
-﻿using System.Net.Http.Json;
-using GameVault.Shared.DTOs;
+﻿using GameVault.Shared.DTOs;
 using GameVault.Shared.Models;
+using Google.Apis.Auth.OAuth2;
+using System.Net.Http.Json;
+using System.Security.Principal;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace GameVault.Client.Services;
 
@@ -8,15 +13,21 @@ public class AuthService
 {
     private readonly HttpClient _httpClient;
     private readonly CookieService _cookies;
+    private readonly IConfiguration _configuration;
+    private string? _apiKey;
     private string? _currentUserId;
     private string? _currentToken;
     private UserDTO? _currentUser;
 
     public event Action? OnAuthStateChanged;
 
-    public AuthService(HttpClient httpClient, CookieService cookies)
+    public AuthService(HttpClient httpClient, IConfiguration configuration, CookieService cookies)
     {
         _httpClient = httpClient;
+        _configuration = configuration;
+        _apiKey = _configuration["Firebase:ApiKey"];
+
+
         _cookies = cookies;
     }
 
@@ -53,6 +64,27 @@ public class AuthService
         {
             // Silent fail
         }
+    }
+
+    // Helper classes for Firebase API responses
+    private class FirebaseAuthResponse
+    {
+        public string IdToken { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string RefreshToken { get; set; } = "";
+        public string ExpiresIn { get; set; } = "";
+        public string LocalId { get; set; } = "";
+    }
+
+    private class FirebaseErrorResponse
+    {
+        public FirebaseError? Error { get; set; }
+    }
+
+    private class FirebaseError
+    {
+        public int Code { get; set; }
+        public string? Message { get; set; }
     }
 
     public async Task<AuthResponse> LoginAsync(string email, string password)
@@ -198,5 +230,52 @@ public class AuthService
         await _cookies.DeleteCookieAsync("currentUser");
         
         OnAuthStateChanged?.Invoke();
+    }
+
+    public async Task<BaseResponse> SendPasswordResetEmailAsync(string email)
+    {
+        try
+        {
+            var request = new { Email = email };
+            var response = await _httpClient.PostAsJsonAsync("api/auth/password-reset", request);
+            var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+            return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Password reset error: {ex.Message}");
+            return new BaseResponse
+            {
+                Success = false,
+                Message = "An error occurred while sending reset email"
+            };
+        }
+    }
+
+    public async Task<BaseResponse> ChangePasswordAsync(string currentPassword, string newPassword)
+    {
+        try
+        {
+            if (!IsAuthenticated)
+            {
+                return new BaseResponse { Success = false, Message = "Not authenticated" };
+            }
+
+            var request = new { CurrentPassword = currentPassword, NewPassword = newPassword };
+            var response = await _httpClient.PostAsJsonAsync("api/auth/change-password", request);
+            var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+            return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Change password error: {ex.Message}");
+            return new BaseResponse
+            {
+                Success = false,
+                Message = "An error occurred while changing password"
+            };
+        }
     }
 }

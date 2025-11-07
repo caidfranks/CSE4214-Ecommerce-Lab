@@ -112,4 +112,52 @@ public class AccountService
             };
         }
     }
+
+    public async Task<BaseResponse> UpdateAccountAsync(UpdateAccountDTO dto)
+    {
+        try
+        {
+            var response = await _httpClient.PutAsJsonAsync("api/account/update", dto);
+            var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+            return result ?? new BaseResponse
+            {
+                Success = false,
+                Message = "Unknown error"
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating account: {ex.Message}");
+            return new BaseResponse
+            {
+                Success = false,
+                Message = ex.Message
+            };
+        }
+    }
+
+    public async Task<BaseResponse> DeleteAccountAsync()
+    {
+        try
+        {
+            var response = await _httpClient.DeleteAsync("api/account/delete");
+            var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+            return result ?? new BaseResponse
+            {
+                Success = false,
+                Message = "Unknown error"
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting account: {ex.Message}");
+            return new BaseResponse
+            {
+                Success = false,
+                Message = ex.Message
+            };
+        }
+    }
 }

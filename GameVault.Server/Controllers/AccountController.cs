@@ -18,12 +18,13 @@ namespace GameVault.Server.Controllers
         private readonly IFirestoreService _firestore;
         private readonly UserService _userService;
         private readonly IConfiguration _configuration;
-
-        public AccountController(IFirestoreService firestore, UserService userService, IConfiguration configuration)
+        private readonly ICurrentUserService _currentUser;
+        public AccountController(IFirestoreService firestore, IConfiguration configuration, UserService userService, ICurrentUserService currentUser)
         {
             _firestore = firestore;
             _userService = userService;
             _configuration = configuration;
+            _currentUser = currentUser;
         }
 
         [HttpPost("archive")]
@@ -136,7 +137,7 @@ namespace GameVault.Server.Controllers
             {
                 return Unauthorized();
             }
-            else if (user.Type != AccountType.Admin)
+            else if (user.Type != AccountType.Admin && user.Id != id)
             {
                 return Forbid();
             }
@@ -166,6 +167,89 @@ namespace GameVault.Server.Controllers
                 Success = true,
                 Data = accountDTO
             };
+        }
+
+        [HttpPut("update")]
+        public async Task<ActionResult<BaseResponse>> UpdateAccount([FromBody] UpdateAccountDTO dto)
+        {
+            if (!_currentUser.IsAuthenticated || string.IsNullOrEmpty(_currentUser.UserId))
+            {
+                return Unauthorized(new BaseResponse
+                {
+                    Success = false,
+                    Message = "User not authenticated"
+                });
+            }
+
+            try
+            {
+                var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", _currentUser.UserId);
+
+                if (user == null)
+                {
+                    return NotFound(new BaseResponse
+                    {
+                        Success = false,
+                        Message = "User not found"
+                    });
+                }
+
+                if (!string.IsNullOrEmpty(dto.DisplayName))
+                {
+                    await _firestore.SetDocumentFieldAsync("users", _currentUser.UserId, "Name", dto.DisplayName);
+                }
+
+                return Ok(new BaseResponse
+                {
+                    Success = true,
+                    Message = "Account updated successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating account: {ex.Message}");
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Internal server error"
+                });
+            }
+        }
+
+        [HttpDelete("delete")]
+        public async Task<ActionResult<BaseResponse>> DeleteAccount()
+        {
+            if (!_currentUser.IsAuthenticated || string.IsNullOrEmpty(_currentUser.UserId))
+            {
+                return Unauthorized(new BaseResponse
+                {
+                    Success = false,
+                    Message = "User not authenticated"
+                });
+            }
+
+            try
+            {
+                // TODO: Add additional checks (no pending orders, etc.)
+                // TODO: Delete all related data (orders, listings if vendor, etc.)
+
+                await _firestore.DeleteDocumentAsync("users", _currentUser.UserId);
+
+                return Ok(new BaseResponse
+                {
+                    Success = true,
+                    Message = "Account deleted successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting account: {ex.Message}");
+                return StatusCode(500, new BaseResponse
+                {
+                    Success = false,
+                    Message = "Internal server error"
+                });
+            }
         }
 
         [HttpGet("vendors")]
