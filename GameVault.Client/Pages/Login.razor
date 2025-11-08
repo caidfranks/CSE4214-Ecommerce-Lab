@@ -3,175 +3,275 @@
 @inject NavigationManager Navigation
 
 <div class="login-container">
-  <div class="login-card">
-    <div class="login-header">
-      <h1 class="login-title">Welcome to GameVault</h1>
-      <p class="login-subtitle">Sign in to your account</p>
+    <div class="login-card">
+        <div class="login-header">
+            <h1 class="login-title">Welcome to GameVault</h1>
+            <p class="login-subtitle">Sign in to your account</p>
+        </div>
+
+        <form class="login-form" @onsubmit="HandleLogin" @onsubmit:preventDefault="true">
+            <div class="form-group">
+                <label for="email" class="form-label">Email Address</label>
+                <input type="email" id="email" class="form-control @(_emailError != null ? "is-invalid" : "")" @bind="_email"
+                       @oninput="ClearEmailError" placeholder="Enter your email" required />
+                @if (!string.IsNullOrEmpty(_emailError))
+                {
+                    <div class="invalid-feedback">@_emailError</div>
+                }
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Password</label>
+                <div class="password-input-group">
+                    <input type="@(_showPassword ? "text" : "password")" id="password"
+                           class="form-control @(_passwordError != null ? "is-invalid" : "")" @bind="_password"
+                           @oninput="ClearPasswordError" placeholder="Enter your password" required />
+                    <button type="button" class="password-toggle" @onclick="TogglePasswordVisibility"
+                            title="@(_showPassword ? "Hide password" : "Show password")">
+                        <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
+                    </button>
+                </div>
+                @if (!string.IsNullOrEmpty(_passwordError))
+                {
+                    <div class="invalid-feedback">@_passwordError</div>
+                }
+            </div>
+
+            <div class="form-options">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="rememberMe" @bind="_rememberMe" />
+                    <label class="form-check-label" for="rememberMe">Remember me</label>
+                </div>
+                <a href="#" class="forgot-password" @onclick="() => _showForgotPassword = true" @onclick:preventDefault="true">Forgot password?</a>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    @_error
+                </div>
+            }
+
+            <button type="submit" class="btn btn-primary login-button" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    @("Signing in...")
+                }
+                else
+                {
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    @("Sign In")
+                }
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <p class="register-text">
+                Don't have an account?
+                <a href="/register/customer" class="register-link">Sign up as Customer</a>
+                or
+                <a href="/register/vendor" class="register-link">Register as Vendor</a>
+            </p>
+        </div>
     </div>
-
-    <form class="login-form" @onsubmit="HandleLogin" @onsubmit:preventDefault="true">
-      <div class="form-group">
-        <label for="email" class="form-label">Email Address</label>
-        <input type="email" id="email" class="form-control @(_emailError != null ? "is-invalid" : "")" @bind="_email"
-          @oninput="ClearEmailError" placeholder="Enter your email" required />
-        @if (!string.IsNullOrEmpty(_emailError))
-        {
-          <div class="invalid-feedback">@_emailError</div>
-        }
-      </div>
-
-      <div class="form-group">
-        <label for="password" class="form-label">Password</label>
-        <div class="password-input-group">
-          <input type="@(_showPassword ? "text" : "password")" id="password"
-            class="form-control @(_passwordError != null ? "is-invalid" : "")" @bind="_password"
-            @oninput="ClearPasswordError" placeholder="Enter your password" required />
-          <button type="button" class="password-toggle" @onclick="TogglePasswordVisibility"
-            title="@(_showPassword ? "Hide password" : "Show password")">
-            <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
-          </button>
-        </div>
-        @if (!string.IsNullOrEmpty(_passwordError))
-        {
-          <div class="invalid-feedback">@_passwordError</div>
-        }
-      </div>
-
-      <div class="form-options">
-        <div class="form-check">
-          <input type="checkbox" class="form-check-input" id="rememberMe" @bind="_rememberMe" />
-          <label class="form-check-label" for="rememberMe">Remember me</label>
-        </div>
-        <a href="#" class="forgot-password">Forgot password?</a>
-      </div>
-
-      @if (!string.IsNullOrEmpty(_error))
-      {
-        <div class="alert alert-danger" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2"></i>
-          @_error
-        </div>
-      }
-
-      <button type="submit" class="btn btn-primary login-button" disabled="@_isLoading">
-        @if (_isLoading)
-        {
-          <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-          @("Signing in...")
-        }
-        else
-        {
-          <i class="bi bi-box-arrow-in-right me-2"></i>
-          @("Sign In")
-        }
-      </button>
-    </form>
-
-    <div class="login-footer">
-      <p class="register-text">
-        Don't have an account?
-        <a href="/register/customer" class="register-link">Sign up as Customer</a>
-        or
-        <a href="/register/vendor" class="register-link">Register as Vendor</a>
-      </p>
-    </div>
-  </div>
 </div>
 
+@if (_showForgotPassword)
+{
+    <div class="modal-overlay" @onclick="CloseForgotPasswordModal">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h4>Reset Password</h4>
+                <button class="btn-close" @onclick="CloseForgotPasswordModal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Enter your email address and we'll send you a link to reset your password.</p>
+                <div class="form-group">
+                    <label for="resetEmail" class="form-label">Email Address</label>
+                    <input type="email" id="resetEmail" class="form-control" @bind="_resetEmail" placeholder="Enter your email" />
+                </div>
+                @if (!string.IsNullOrEmpty(_resetMessage))
+                {
+                    <div class="alert @(_resetMessageType == "success" ? "alert-success" : "alert-danger") mt-3">
+                        @_resetMessage
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @onclick="CloseForgotPasswordModal" disabled="@_isResetting">Cancel</button>
+                <button class="btn btn-primary" @onclick="HandlePasswordReset" disabled="@_isResetting">
+                    @if (_isResetting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    Send Reset Link
+                </button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
-  private string _email = "";
-  private string _password = "";
-  private string? _error;
-  private string? _emailError;
-  private string? _passwordError;
-  private bool _isLoading = false;
-  private bool _showPassword = false;
-  private bool _rememberMe = false;
+    private string _email = "";
+    private string _password = "";
+    private string? _error;
+    private string? _emailError;
+    private string? _passwordError;
+    private bool _isLoading = false;
+    private bool _showPassword = false;
+    private bool _rememberMe = false;
 
-  private void ClearEmailError()
-  {
-    _emailError = null;
-    _error = null;
-  }
+    private bool _showForgotPassword = false;
+    private string _resetEmail = "";
+    private string _resetMessage = "";
+    private string _resetMessageType = "";
+    private bool _isResetting = false;
 
-  private void ClearPasswordError()
-  {
-    _passwordError = null;
-    _error = null;
-  }
-
-  private void TogglePasswordVisibility()
-  {
-    _showPassword = !_showPassword;
-  }
-
-  private bool ValidateForm()
-  {
-    bool isValid = true;
-    _emailError = null;
-    _passwordError = null;
-
-    if (string.IsNullOrWhiteSpace(_email))
+    private void ClearEmailError()
     {
-      _emailError = "Email is required";
-      isValid = false;
-    }
-    else if (!_email.Contains("@") || !_email.Contains("."))
-    {
-      _emailError = "Please enter a valid email address";
-      isValid = false;
+        _emailError = null;
+        _error = null;
     }
 
-    if (string.IsNullOrWhiteSpace(_password))
+    private void ClearPasswordError()
     {
-      _passwordError = "Password is required";
-      isValid = false;
-    }
-    else if (_password.Length < 6)
-    {
-      _passwordError = "Password must be at least 6 characters";
-      isValid = false;
+        _passwordError = null;
+        _error = null;
     }
 
-    return isValid;
-  }
-
-  private async Task HandleLogin()
-  {
-    if (!ValidateForm())
+    private void TogglePasswordVisibility()
     {
-      return;
+        _showPassword = !_showPassword;
     }
 
-    _isLoading = true;
-    _error = null;
-
-    try
+    private void CloseForgotPasswordModal()
     {
-      var result = await AuthService.LoginAsync(_email, _password);
+        _showForgotPassword = false;
+        _resetEmail = "";
+        _resetMessage = "";
+        _resetMessageType = "";
+    }
 
-      if (result is not null && result.Success)
-      {
-        Navigation.NavigateTo("/");
-      }
-      else
-      {
-        _error = result?.Message ?? "Login failed. Please check your credentials and try again.";
-      }
-    }
-    catch (Exception ex)
+    private bool ValidateForm()
     {
-      Console.WriteLine(ex);
-      _error = "An unexpected error occurred. Please try again later.";
-    }
-    finally
-    {
-      _isLoading = false;
-    }
-  }
+        bool isValid = true;
+        _emailError = null;
+        _passwordError = null;
 
-  protected override void OnInitialized()
+        if (string.IsNullOrWhiteSpace(_email))
+        {
+            _emailError = "Email is required";
+            isValid = false;
+        }
+        else if (!_email.Contains("@") || !_email.Contains("."))
+        {
+            _emailError = "Please enter a valid email address";
+            isValid = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(_password))
+        {
+            _passwordError = "Password is required";
+            isValid = false;
+        }
+        else if (_password.Length < 6)
+        {
+            _passwordError = "Password must be at least 6 characters";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private async Task HandleLogin()
+    {
+        if (!ValidateForm())
+        {
+            return;
+        }
+
+        _isLoading = true;
+        _error = null;
+
+        try
+        {
+            var result = await AuthService.LoginAsync(_email, _password);
+
+            if (result is not null && result.Success)
+            {
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                _error = result?.Message ?? "Login failed. Please check your credentials and try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _error = "An unexpected error occurred. Please try again later.";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task HandlePasswordReset()
+    {
+        if (string.IsNullOrWhiteSpace(_resetEmail))
+        {
+            _resetMessage = "Please enter your email address";
+            _resetMessageType = "error";
+            return;
+        }
+
+        if (!_resetEmail.Contains("@") || !_resetEmail.Contains("."))
+        {
+            _resetMessage = "Please enter a valid email address";
+            _resetMessageType = "error";
+            return;
+        }
+
+        _isResetting = true;
+        _resetMessage = "";
+
+        try
+        {
+            var result = await AuthService.SendPasswordResetEmailAsync(_resetEmail);
+
+            if (result.Success)
+            {
+                _resetMessage = "Password reset email sent! Check your inbox.";
+                _resetMessageType = "success";
+
+                // Close modal after 2 seconds
+                await Task.Delay(2000);
+                _resetEmail = "";
+                _showForgotPassword = false;
+                _resetMessage = "";
+            }
+            else
+            {
+                _resetMessage = result.Message ?? "Failed to send reset email. Please try again.";
+                _resetMessageType = "error";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _resetMessage = "An error occurred. Please try again.";
+            _resetMessageType = "error";
+        }
+        finally
+        {
+            _isResetting = false;
+        }
+    }
+
+    protected override void OnInitialized()
     {
         if (AuthService.IsAuthenticated)
         {

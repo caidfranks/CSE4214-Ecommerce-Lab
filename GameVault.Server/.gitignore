@@ -504,3 +504,5 @@ gamevault-*-*.json
 
 # Firebase local developoment cache
 .firebase_data
+
+appsettings.developoment.json

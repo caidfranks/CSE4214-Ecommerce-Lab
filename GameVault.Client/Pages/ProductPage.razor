@@ -377,7 +377,7 @@ else
 
     private void ViewProduct(string productId)
     {
-        Nav.NavigateTo($"/product/{productId}");
+        Nav.NavigateTo($"/product/{product?.Id}");
     }
 
     private async Task HandleVendorNameAsync(string ownerId)

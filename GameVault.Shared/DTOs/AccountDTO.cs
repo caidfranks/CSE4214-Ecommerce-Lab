@@ -20,3 +20,8 @@ public class AccountDTO : NewAccountDTO
 {
   public required string UserID { get; set; }
 }
+
+public class UpdateAccountDTO
+{
+    public string? DisplayName { get; set; }
+}

@@ -1,0 +1,415 @@
+﻿@page "/profile"
+@inject Services.AuthService AuthService
+@inject Services.AccountService AccountService
+@inject NavigationManager Navigation
+@using GameVault.Shared.Models
+@using GameVault.Shared.DTOs
+
+<div class="profile-container">
+    @if (!AuthService.IsAuthenticated)
+    {
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Please log in to view your profile.
+        </div>
+    }
+    else if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3">Loading profile...</p>
+        </div>
+    }
+    else if (userDetails == null)
+    {
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            Failed to load profile information.
+        </div>
+    }
+    else
+    {
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <i class="bi bi-person-circle"></i>
+            </div>
+            <div class="profile-header-info">
+                <h2>@userDetails.Name</h2>
+                <p class="profile-email">@userDetails.Email</p>
+                <span class="profile-badge profile-badge-@userDetails.Type.ToString().ToLower()">
+                    @GetRoleIcon(userDetails.Type) @userDetails.Type
+                </span>
+            </div>
+        </div>
+
+        @if (userDetails.Banned == true)
+        {
+            <div class="alert alert-danger mb-4">
+                <i class="bi bi-ban me-2"></i>
+                <strong>Account Banned:</strong> @userDetails.BanMsg
+            </div>
+        }
+
+        <!-- Account Information Section -->
+        <div class="profile-section">
+            <div class="profile-section-header">
+                <h3>
+                    <i class="bi bi-person-vcard me-2"></i>
+                    Account Information
+                </h3>
+                @if (!isEditingAccount)
+                {
+                    <button class="btn btn-outline-primary btn-sm" @onclick="() => isEditingAccount = true">
+                        <i class="bi bi-pencil me-1"></i> Edit
+                    </button>
+                }
+            </div>
+
+            @if (isEditingAccount)
+            {
+                <div class="profile-edit-form">
+                    <div class="form-group">
+                        <label for="displayName">Display Name</label>
+                        <input type="text" id="displayName" class="form-control" @bind="editedName" />
+                    </div>
+
+                    @if (userDetails.Type == AccountType.Vendor)
+                    {
+                        <div class="form-group">
+                            <label for="businessName">Business Name</label>
+                            <input type="text" id="businessName" class="form-control" @bind="editedBusinessName" disabled />
+                            <small class="form-text text-muted">Contact support to change business name</small>
+                        </div>
+                    }
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" @onclick="SaveAccountChanges" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            <i class="bi bi-check-lg me-1"></i> Save Changes
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="CancelAccountEdit" disabled="@isSaving">
+                            <i class="bi bi-x-lg me-1"></i> Cancel
+                        </button>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(accountMessage))
+                    {
+                        <div class="alert @(accountMessageType == "success" ? "alert-success" : "alert-danger") mt-3">
+                            @accountMessage
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="profile-info-grid">
+                    <div class="profile-info-item">
+                        <label>Display Name</label>
+                        <p>@userDetails.Name</p>
+                    </div>
+                    <div class="profile-info-item">
+                        <label>Email Address</label>
+                        <p>@userDetails.Email</p>
+                    </div>
+                    <div class="profile-info-item">
+                        <label>Account Type</label>
+                        <p>@userDetails.Type</p>
+                    </div>
+                    @if (userDetails.Type == AccountType.Vendor && !string.IsNullOrEmpty(userDetails.ReviewedBy))
+                    {
+                        <div class="profile-info-item">
+                            <label>Reviewed By</label>
+                            <p>@userDetails.ReviewedBy</p>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Security Section -->
+        <div class="profile-section">
+            <div class="profile-section-header">
+                <h3>
+                    <i class="bi bi-shield-lock me-2"></i>
+                    Security
+                </h3>
+            </div>
+            <div class="profile-info-grid">
+                <div class="profile-info-item">
+                    <label>Password</label>
+                    <p>••••••••</p>
+                    <button class="btn btn-outline-primary btn-sm mt-2" @onclick="() => showChangePassword = true">
+                        <i class="bi bi-key me-1"></i> Change Password
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="profile-section profile-section-danger">
+            <div class="profile-section-header">
+                <h3>
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Danger Zone
+                </h3>
+            </div>
+            <div class="danger-zone-content">
+                <p>Once you delete your account, there is no going back. Please be certain.</p>
+                <button class="btn btn-danger" @onclick="() => showDeleteConfirm = true">
+                    <i class="bi bi-trash me-1"></i> Delete Account
+                </button>
+            </div>
+        </div>
+
+        @if (showDeleteConfirm)
+        {
+            <div class="modal-overlay" @onclick="() => showDeleteConfirm = false">
+                <div class="modal-content" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h4>Confirm Account Deletion</h4>
+                        <button class="btn-close" @onclick="() => showDeleteConfirm = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+                        <p class="text-danger"><strong>All your data will be permanently deleted.</strong></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="() => showDeleteConfirm = false">Cancel</button>
+                        <button class="btn btn-danger" @onclick="DeleteAccount">
+                            <i class="bi bi-trash me-1"></i> Delete Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showChangePassword)
+        {
+            <div class="modal-overlay" @onclick="() => showChangePassword = false">
+                <div class="modal-content" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h4>Change Password</h4>
+                        <button class="btn-close" @onclick="() => showChangePassword = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="currentPassword">Current Password</label>
+                            <input type="password" id="currentPassword" class="form-control" @bind="currentPassword" placeholder="Enter current password" />
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password</label>
+                            <input type="password" id="newPassword" class="form-control" @bind="newPassword" placeholder="Enter new password" />
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" class="form-control" @bind="confirmPassword" placeholder="Confirm new password" />
+                        </div>
+                        @if (!string.IsNullOrEmpty(passwordChangeMessage))
+                        {
+                            <div class="alert @(passwordChangeMessageType == "success" ? "alert-success" : "alert-danger") mt-3">
+                                @passwordChangeMessage
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="() => showChangePassword = false" disabled="@isChangingPassword">Cancel</button>
+                        <button class="btn btn-primary" @onclick="ChangePassword" disabled="@isChangingPassword">
+                            @if (isChangingPassword)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            Change Password
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+
+@code {
+    private bool isLoading = true;
+    private bool isEditingAccount = false;
+    private bool isSaving = false;
+    private bool showDeleteConfirm = false;
+    private bool showChangePassword = false;
+    private bool isChangingPassword = false;
+
+    private UserDTO? userDetails;
+
+    private string editedName = "";
+    private string editedBusinessName = "";
+    private string currentPassword = "";
+    private string newPassword = "";
+    private string confirmPassword = "";
+
+    private string accountMessage = "";
+    private string accountMessageType = "";
+    private string passwordChangeMessage = "";
+    private string passwordChangeMessageType = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthService.IsAuthenticated && AuthService.CurrentUser != null)
+        {
+            await LoadUserDetails();
+
+        }
+        isLoading = false;
+    }
+
+    private async Task LoadUserDetails()
+    {
+        try
+        {
+            var result = await AccountService.GetAccountByIdAsync(AuthService.CurrentUser!.Id);
+            if (result.Success)
+            {
+                userDetails = result.Data;
+                editedName = userDetails?.Name ?? "";
+                editedBusinessName = userDetails?.Name ?? "";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user details: {ex.Message}");
+        }
+    }
+
+    private async Task SaveAccountChanges()
+    {
+        isSaving = true;
+        accountMessage = "";
+
+        try
+        {
+            var result = await AccountService.UpdateAccountAsync(new UpdateAccountDTO
+            {
+                DisplayName = editedName
+            });
+
+            if (result.Success)
+            {
+                accountMessage = "Account updated successfully!";
+                accountMessageType = "success";
+                isEditingAccount = false;
+                await LoadUserDetails();
+            }
+            else
+            {
+                accountMessage = result.Message ?? "Failed to update account";
+                accountMessageType = "error";
+            }
+        }
+        catch (Exception ex)
+        {
+            accountMessage = $"Error: {ex.Message}";
+            accountMessageType = "error";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void CancelAccountEdit()
+    {
+        isEditingAccount = false;
+        editedName = userDetails?.Name ?? "";
+        editedBusinessName = userDetails?.Name ?? "";
+        accountMessage = "";
+    }
+
+    private async Task DeleteAccount()
+    {
+        try
+        {
+            var result = await AccountService.DeleteAccountAsync();
+            if (result.Success)
+            {
+                await AuthService.Logout().ConfigureAwait(false);
+                Navigation.NavigateTo("/");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting account: {ex.Message}");
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        passwordChangeMessage = "";
+
+        if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            passwordChangeMessage = "All fields are required";
+            passwordChangeMessageType = "error";
+            return;
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            passwordChangeMessage = "New passwords do not match";
+            passwordChangeMessageType = "error";
+            return;
+        }
+
+        if (newPassword.Length < 6)
+        {
+            passwordChangeMessage = "Password must be at least 6 characters";
+            passwordChangeMessageType = "error";
+            return;
+        }
+
+        isChangingPassword = true;
+
+        try
+        {
+            var result = await AuthService.ChangePasswordAsync(currentPassword, newPassword);
+
+            if (result.Success)
+            {
+                passwordChangeMessage = "Password changed successfully!";
+                passwordChangeMessageType = "success";
+                await Task.Delay(2000);
+                showChangePassword = false;
+                currentPassword = "";
+                newPassword = "";
+                confirmPassword = "";
+                passwordChangeMessage = "";
+            }
+            else
+            {
+                passwordChangeMessage = result.Message ?? "Failed to change password";
+                passwordChangeMessageType = "error";
+            }
+        }
+        catch (Exception ex)
+        {
+            passwordChangeMessage = $"Error: {ex.Message}";
+            passwordChangeMessageType = "error";
+        }
+        finally
+        {
+            isChangingPassword = false;
+        }
+    }
+
+    private string GetRoleIcon(AccountType type)
+    {
+        return type switch
+        {
+            AccountType.Customer => "👤",
+            AccountType.Vendor => "🏪",
+            AccountType.Admin => "⚙️",
+            _ => ""
+        };
+    }
+}

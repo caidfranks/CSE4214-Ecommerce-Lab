@@ -16,6 +16,8 @@ builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(provider => 
     provider.GetRequiredService<CustomAuthenticationStateProvider>());
+
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ListingService>();
 builder.Services.AddScoped<InvoiceService>();
 builder.Services.AddScoped<CartService>();

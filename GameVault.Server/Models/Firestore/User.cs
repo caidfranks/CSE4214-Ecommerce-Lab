@@ -31,7 +31,6 @@ public class FirestoreUser
   [FirestoreProperty]
   public int BalanceInCents { get; set; } = 0; 
 
-  // Password stored via Firebase Auth
 }
 
 [FirestoreData]
