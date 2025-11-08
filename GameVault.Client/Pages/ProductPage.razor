@@ -341,13 +341,28 @@ else
 
     private async Task LoadSuggestedProducts()
     {
-        if (product != null)
+        if (product != null && !string.IsNullOrWhiteSpace(product.Category))
         {
             var categoryProducts = await ProductService.GetProductsByCategoryAsync(product.Category);
-            suggestedProducts = categoryProducts
-            .Where(p => p.Id != product.Id)
-            .Take(4)
-            .ToList();
+            
+            if (categoryProducts != null && categoryProducts.Any())
+            {
+                suggestedProducts = categoryProducts
+                    .Where(p => p.Id != product.Id)
+                    .Take(4)
+                    .ToList();
+            }
+        }
+        else
+        {
+            var allProducts = await ProductService.GetAllProductsAsync();
+            if (allProducts != null && allProducts.Any())
+            {
+                suggestedProducts = allProducts
+                    .Where(p => p.Id != product?.Id)
+                    .Take(4)
+                    .ToList();
+            }
         }
     }
 
