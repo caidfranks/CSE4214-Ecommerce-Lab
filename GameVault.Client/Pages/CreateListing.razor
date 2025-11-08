@@ -1,21 +1,26 @@
 @page "/vendor/listings/create"
 @inject NavigationManager Nav
-@* @inject UserState User *@
 @using GameVault.Client.Models
 @using GameVault.Client.Services
-@using System.Runtime.CompilerServices
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
-@using System.Reflection
 @inject Services.ListingService ListingService
 @inject ProductService ProductService
 @inject BreadcrumbService BreadcrumbService
 
 <h3>Create Listing</h3>
 
-@* <EditForm Model="@model" OnValidSubmit="@HandleLogin"> *@
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success">@successMessage</div>
+}
+
 <EditForm Model="@model" OnValidSubmit="@HandleCreate">
-  @* <DataAnnotationsValidator /> *@
   <div style="margin-bottom:8px;">
     <label>Name</label><br />
     <InputText @bind-Value="model.Name" />
@@ -45,7 +50,16 @@
       }
     </select>
   </div>
-  <button type="submit">Create Listing</button>
+  <button type="submit" disabled="@isSubmitting">
+    @if (isSubmitting)
+    {
+        <span>Creating...</span>
+    }
+    else
+    {
+        <span>Create Listing</span>
+    }
+  </button>
 </EditForm>
 
 @code {
@@ -59,57 +73,53 @@
   };
 
   private List<CategoryDTO>? categories = [];
+  private bool isSubmitting = false;
+  private string errorMessage = "";
+  private string successMessage = "";
 
   protected override async Task OnInitializedAsync()
   {
     await LoadCategories();
     BreadcrumbService.Set(
-    new BreadcrumbItem("Home", "/"),
-    new BreadcrumbItem("Vendor Dashboard", "/vendor"),
-    new BreadcrumbItem("Create Listing")
+      new BreadcrumbItem("Home", "/"),
+      new BreadcrumbItem("Vendor Dashboard", "/vendor"),
+      new BreadcrumbItem("Create Listing")
     );
   }
 
   private async Task LoadCategories()
   {
-    // Load categories from ProductService
     categories = await ProductService.GetCategoriesAsync();
   }
 
   private async Task HandleCreate()
   {
-    @* User.IsLoggedIn = true;
-        User.Username = string.IsNullOrWhiteSpace(model.Username) ? "Guest" : model.Username;
-        User.Role = string.IsNullOrWhiteSpace(model.Role) ? "Customer" : model.Role; *@
+    isSubmitting = true;
+    errorMessage = "";
+    successMessage = "";
 
-    // Later: verify if user is a logged in vendor
-    @* GameVault.Shared.Models.Listing newListing = new()
-    {
-      Id = "", // Fix later
-      Name = model.Name,
-      Price = (int)(model.Price * 100),
-      Description = model.Description,
-      Stock = model.Stock,
-      Status = 0, // Add later
-      OwnerID = "", // Add after login stuff
-      Image = "" // Add later
-    }; *@
+    var result = await ListingService.CreateAsync(
+      model.Name, 
+      model.Price, 
+      model.Description, 
+      model.Stock, 
+      model.Category ?? ""
+    );
 
-    var result = await ListingService.CreateAsync(model.Name, model.Price, model.Description, model.Stock, model?.Category
-    ?? "");
+    isSubmitting = false;
 
     if (result is { Success: true })
     {
       Console.WriteLine("Creation Success!");
+      successMessage = "Listing created successfully!";
+      
+      await Task.Delay(1000);
+      Nav.NavigateTo("/vendor/listings");
     }
     else
     {
-      Console.WriteLine(result?.Message ?? "Login failed. Please check your credentials and try again.");
+      errorMessage = result?.Message ?? "Failed to create listing. Please try again.";
+      Console.WriteLine(errorMessage);
     }
-
-    // home
-    @* Nav.NavigateTo("/"); *@
   }
-
-
 }

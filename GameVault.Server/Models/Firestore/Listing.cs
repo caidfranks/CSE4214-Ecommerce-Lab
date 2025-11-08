@@ -37,7 +37,7 @@ public class FirestoreListing
   [FirestoreProperty]
   public string RemoveMsg { get; set; } = string.Empty;
 
-  [FirestoreProperty]
+  [FirestoreProperty("category")]
   public required string Category { get; set; }
 }
 

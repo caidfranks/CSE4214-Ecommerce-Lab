@@ -72,26 +72,30 @@ else
     </table>
 }
 
-@if (showModal)
+@if (showModal && selectedEntry != null)
 {
     <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
+        <div class="modal-dialog modal-xl" style="max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
                 <div class="modal-header">
-                    <h5 class="modal-title">@selectedEntry?.Name Details</h5>
+                    <h5 class="modal-title">@selectedEntry.Name Details</h5>
                     <button type="button" class="btn-close" @onclick="CloseModal"></button>
                 </div>
-                <div class="modal-body p-0">
-                    <!-- Load another page inside the modal -->
-                    <iframe src="@selectedPageUrl" width="100%" height="600px" frameborder="0"></iframe>
+                <div class="modal-body p-0" style="flex: 1; overflow: hidden;">
+                    <iframe src="@selectedPageUrl" width="100%" height="100%" frameborder="0" style="display: block;"></iframe>
                 </div>
-                <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-approve"
-                        @onclick='async () => { await ListingService.ChangeListingStatusToPublished(selectedEntry.Id); LogService.LogListingStatusChangeAsync(selectedEntry.Id, "pending", "published"); await LoadData(); CloseModal(); }'>Approve</button>
-                    <button type="button" class="btn-deny"
-                            @onclick='async () => { await ListingService.ChangeListingStatusToInactive(selectedEntry.Id); LogService.LogListingStatusChangeAsync(selectedEntry.Id, "pending", "inactive"); await LoadData(); CloseModal(); }'>
-                        Deny
+                <div class="modal-footer bg-light p-3 d-flex justify-content-between gap-2" style="flex-shrink: 0;">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">
+                        Close
                     </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success" @onclick="HandleApprove">
+                            Approve
+                        </button>
+                        <button type="button" class="btn btn-danger" @onclick="HandleDeny">
+                            Deny
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -173,5 +177,25 @@ else
     {
         showModal = false;
         selectedEntry = null;
+    }
+
+    private async Task HandleApprove()
+    {
+        if (selectedEntry == null) return;
+        
+        await ListingService.ChangeListingStatusToPublished(selectedEntry.Id);
+        await LogService.LogListingStatusChangeAsync(selectedEntry.Id, "pending", "published");
+        CloseModal();
+        await LoadData();
+    }
+
+    private async Task HandleDeny()
+    {
+        if (selectedEntry == null) return;
+        
+        await ListingService.ChangeListingStatusToInactive(selectedEntry.Id);
+        await LogService.LogListingStatusChangeAsync(selectedEntry.Id, "pending", "inactive");
+        CloseModal();
+        await LoadData();
     }
 }
