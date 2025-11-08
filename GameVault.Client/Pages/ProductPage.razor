@@ -1,9 +1,12 @@
 ﻿@page "/product/{id}"
 @using GameVault.Client.Services
 @using GameVault.Client.Models
+@using GameVault.Shared.DTOs
 @inject Services.AuthService AuthService
+@inject AccountService AccountService
 @inject ProductService ProductService
 @inject ListingService ListingService
+@inject LogService LogService
 @inject NavigationManager Nav
 @inject BreadcrumbService BreadcrumbService
 
@@ -64,7 +67,15 @@ else
                     <!-- Vendor Name -->
                     <p class="vendor-info mb-3">
                         <i class="bi bi-shop"></i>
-                        Sold by: <strong>@product.VendorName</strong>
+                        @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
+                        {
+                            <button type="button" class="btn-ban" @onclick='async () => { HandleVendorNameAsync(product.OwnerId); }'>@product.VendorName</button>
+                        }
+                        else
+                        {
+                            <p>Sold by: <strong> @product.VendorName </strong></p>
+                        }
+
                     </p>
 
                     <!-- Category -->
@@ -148,7 +159,8 @@ else
                     }
                     else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
                     {
-                        <button class="btn btn-primary btn-lg w-100" @onclick="() => RemoveListing()">
+                        <button class="btn btn-primary btn-lg w-100" @onclick=' () => RemoveListing()'
+         ">
                             Remove
                         </button>
 
@@ -203,13 +215,90 @@ else
     </div>
 }
 
+@if (showAccountPopup)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@selectedUser?.Name Details</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAccountPopup"></button>
+                </div>
+                @*<div class="modal-body p-0">
+                            <!-- Load another page inside the modal -->
+                            <iframe src="@selectedPageUrl" width="100%" height="600px" frameborder="0"></iframe>
+                        </div>*@
+                <div class="modal-body">
+                    @* Display vendor request details here *@
+                    @if (selectedUser != null)
+                    {
+                        <div class="container-fluid">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Email:</strong> @selectedUser.Email
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Name:</strong> @selectedUser.Name
+                                </div>
+                            </div>
+                           @* <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Description:</strong> @selectedUser.Reason
+                                </div>
+                                 Add more fields from UserDTO as needed 
+                            </div>*@
+                            @* Add any other relevant fields from your UserDTO *@
+                        </div>
+                    }
+                </div>
+
+                <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn-ban" @onclick='async () => { OpenBanPopup(selectedUser); }'>Ban</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showBanPopup)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmation</h5>
+                    <button type="button" class="btn-close" @onclick="CloseBanPopup"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <h3>Confirmation</h3>
+                    <p>Are you sure?</p>
+                    <p>Enter reason for ban</p>
+                    <input type="text" id="reason" class="form-control" @bind="RejectionReason"
+                           placeholder="Enter reason" />
+                </div>
+                <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn-approve"
+                            @onclick='HandleBanUser'>
+                        Ban User
+                    </button>
+                    <button type="button" class="btn-deny" @onclick='CloseBanPopup'>Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter]
     public string Id { get; set; } = string.Empty;
     [Parameter]
     [SupplyParameterFromQuery(Name = "modal")]
     public bool IsInModal { get; set; } = false;
-
+    private List<UserDTO>? accounts;
+    private UserDTO? selectedUser;
+    private string RejectionReason = string.Empty;
+    private bool showAccountPopup;
+    private bool showBanPopup;
     private Product? product;
     private List<Product> suggestedProducts = new();
     private int selectedQuantity = 1;
@@ -239,7 +328,7 @@ else
             new BreadcrumbItem("Browse", "/"),
             new BreadcrumbItem(product?.Name ?? "Product")
         );
-        
+
         showAddedMessage = false;
         selectedQuantity = 1;
     }
@@ -272,6 +361,7 @@ else
     private void RemoveListing()
     {
         ListingService.ChangeListingStatusToRemoved($"{@Id}");
+        LogService.LogListingStatusChangeAsync(@Id, "Published", "Removed");
         showRemovalMessage = true;
     }
 
@@ -288,5 +378,57 @@ else
     private void ViewProduct(string productId)
     {
         Nav.NavigateTo($"/product/{productId}");
+    }
+
+    private async Task HandleVendorNameAsync(string ownerId)
+    {
+        var response = await AccountService.GetAccountByIdAsync(ownerId);
+        if (response.Success && response.Data != null)
+        {
+            OpenAccountPopup(response.Data);
+        }
+    }
+
+    private void OpenAccountPopup(UserDTO selected)
+    {
+        selectedUser = selected;
+        showAccountPopup = true;
+    }
+
+    private void CloseAccountPopup()
+    {
+        showAccountPopup = false;
+        selectedUser = null;
+    }
+
+    private void OpenBanPopup(UserDTO selected)
+    {
+        selectedUser = selected;
+        RejectionReason = string.Empty;
+        showBanPopup = true;
+    }
+
+    private void CloseBanPopup()
+    {
+        showBanPopup = false;
+        selectedUser = null;
+    }
+
+    private async Task HandleBanUser()
+    {
+        @* await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID);  *@
+        /* await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); */
+        await AccountService.BanAccount(selectedUser.Id, RejectionReason);
+        await ListingService.DeactivateAllUserListingsAsync(selectedUser.Id);
+
+        await LogService.LogAccountBanAsync(
+            selectedUser.Id,
+            selectedUser.Email,
+            RejectionReason
+        );
+
+        //await LoadData();
+        CloseBanPopup();
+        CloseAccountPopup();
     }
 }

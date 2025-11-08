@@ -7,7 +7,8 @@
 @inject NavigationManager Nav
 @inject Services.AuthService AuthService
 @inject Services.InvoiceService InvoiceService
-@inject BreadcrumbService BreadcrumbService
+@inject Services.BreadcrumbService BreadcrumbService
+@inject Services.LogService LogService
 
 <PageTitle>@filter Orders</PageTitle>
 
@@ -110,16 +111,16 @@ else if (invoices.Count == 0)
         <td>
           @switch (filter) {
             case InvoiceStatus.Pending:
-              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.AwaitingShipment); }">Accept</button>
-              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrder); }">Decline</button> @* With Message *@
+              <button @onclick='async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.AwaitingShipment); await LogService.LogInvoiceStatusChangeAsync(invoice.Id, "Pending", "Awaiting Shipment");}'>Accept</button>
+              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrderPending); }">Decline</button> @* With Message *@
             break;
             case InvoiceStatus.AwaitingShipment:
-              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.Shipped); }">Shipped</button>
-              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrder); }">Decline</button> @* With Message *@
+              <button @onclick='async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.Shipped); await LogService.LogInvoiceStatusChangeAsync(invoice.Id, "Awaiting Shipment", "Shipped");}'>Shipped</button>
+              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrderAwaitingShipment); }">Decline</button> @* With Message *@
             break;
             case InvoiceStatus.Shipped:
-              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.Completed); }">Arrived</button>
-              <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.AwaitingShipment); }">Failed</button>
+              <button @onclick='async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.Completed); await LogService.LogInvoiceStatusChangeAsync(invoice.Id, "Shipped", "Completed");}'>Arrived</button>
+              <button @onclick='async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.AwaitingShipment); await LogService.LogInvoiceStatusChangeAsync(invoice.Id, "Shipped", "Awaiting Shipment", "Shipping Failed");}'>Failed</button>
             break;
             case InvoiceStatus.Completed:
             break;
@@ -129,10 +130,10 @@ else if (invoices.Count == 0)
             break;
             case InvoiceStatus.PendingReturn:
               <button @onclick="async () => { await SetOrderStatus(invoice.Id, InvoiceStatus.AwaitingReturn); }">Accept</button>
-              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrder); }">Decline</button> @* With Message *@
+              <button @onclick="() => { OpenPrompt(PromptType.Decline, invoice.Id, DeclineOrderPending); }">Decline</button> @* With Message *@
             break;
             case InvoiceStatus.AwaitingReturn:
-              <button @onclick='async () => { await SetOrderStatusWithMessage(invoice.Id, InvoiceStatus.Completed, "Return Completed!"); }'>Received</button>
+              <button @onclick='async () => { await SetOrderStatusWithMessage(invoice.Id, InvoiceStatus.Completed, "Return Completed!"); await LogService.LogInvoiceStatusChangeAsync(invoice.Id, "Pending Return", "Completed");}'>Received</button>
               <button @onclick="() => { OpenPrompt(PromptType.Fail, invoice.Id, FailOrder); }">Failed</button> @* With Message *@
             break;
           }
@@ -240,12 +241,19 @@ else if (invoices.Count == 0)
     onPromptClose = null;
   }
 
-  private async Task DeclineOrder() {
+  private async Task DeclineOrderPending() {
     await SetOrderStatusWithMessage(selectedOrder, InvoiceStatus.Declined, message);
+    await LogService.LogInvoiceStatusChangeAsync(selectedOrder, "Pending", "Declined");
+    @* Console.WriteLine($"Would have declined {selectedOrder} with message {message}"); *@
+  }
+  private async Task DeclineOrderAwaitingShipment() {
+    await SetOrderStatusWithMessage(selectedOrder, InvoiceStatus.Declined, message);
+    await LogService.LogInvoiceStatusChangeAsync(selectedOrder, "Awaiting Shipment", "Declined");
     @* Console.WriteLine($"Would have declined {selectedOrder} with message {message}"); *@
   }
   private async Task FailOrder() {
     await SetOrderStatusWithMessage(selectedOrder, InvoiceStatus.PendingReturn, message);
+    await LogService.LogInvoiceStatusChangeAsync(selectedOrder, "Pending Return", "Failed");
     @* Console.WriteLine($"Would have failed {selectedOrder} with message {message}"); *@
   }
   private async Task SetOrderStatus(string id, InvoiceStatus newStatus) {
@@ -254,6 +262,7 @@ else if (invoices.Count == 0)
       // Set error
       Console.Write($"Set order status failed: {response.Message}");
     }
+
     await LoadData();
   }
   private async Task SetOrderStatusWithMessage(string id, InvoiceStatus newStatus, string newMessage) {

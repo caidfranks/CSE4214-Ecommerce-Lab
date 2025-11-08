@@ -1,8 +1,11 @@
 ﻿@page "/actionLogs"
 @using GameVault.Client.Services
 @using GameVault.Shared.Models
+@using GameVault.Shared.DTOs
 @inject Services.AuthService AuthService
 @inject Services.LogService LogService
+@inject ListingService ListingService
+@inject AccountService AccountService
 @inject NavigationManager Navigation
 @inject BreadcrumbService BreadcrumbService
 
@@ -37,7 +40,12 @@ else
                     @* TODO: Display logs differently by type *@
                     <td>@entry.Type</td>
                     @* TODO: Make ObjectId field link to object (type of object based on type of log) *@
-                    <td>@entry.ObjectId</td>
+                    <td>
+                        <button type="button" class="btn-ban" @onclick='() => HandleObjectId(entry.ObjectId)'>
+                            @entry.ObjectId
+                        </button>
+                    </td>
+                   
                     @* TODO: Display logs differently by type *@
                     <td>@entry.Status</td>
                     <td>@entry.Summary</td>
@@ -48,9 +56,87 @@ else
     </table>
 }
 
+@if (showAccountPopup)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@selectedUser?.Name Details</h5>
+                    <button type="button" class="btn-close" @onclick="CloseAccountPopup"></button>
+                </div>
+                @*<div class="modal-body p-0">
+                            <!-- Load another page inside the modal -->
+                            <iframe src="@selectedPageUrl" width="100%" height="600px" frameborder="0"></iframe>
+                        </div>*@
+                <div class="modal-body">
+                    @* Display vendor request details here *@
+                    @if (selectedUser != null)
+                    {
+                        <div class="container-fluid">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Email:</strong> @selectedUser.Email
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Name:</strong> @selectedUser.Name
+                                </div>
+                            </div>
+                            @* <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <strong>Description:</strong> @selectedUser.Reason
+                                </div>
+                                 Add more fields from UserDTO as needed 
+                            </div>*@
+                            @* Add any other relevant fields from your UserDTO *@
+                        </div>
+                    }
+                </div>
+
+                <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn-ban" @onclick='async () => { OpenBanPopup(selectedUser); }'>Ban</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (showBanPopup)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmation</h5>
+                    <button type="button" class="btn-close" @onclick="CloseBanPopup"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <h3>Confirmation</h3>
+                    <p>Are you sure?</p>
+                    <p>Enter reason for ban</p>
+                    <input type="text" id="reason" class="form-control" @bind="RejectionReason"
+                           placeholder="Enter reason" />
+                </div>
+                <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn-approve"
+                            @onclick='HandleBanUser'>
+                        Ban User
+                    </button>
+                    <button type="button" class="btn-deny" @onclick='CloseBanPopup'>Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<LogDTO>? entries;
     private string errorMessage = string.Empty;
+    private List<UserDTO>? accounts;
+    private UserDTO? selectedUser;
+    private string RejectionReason = string.Empty;
+    private bool showAccountPopup;
+    private bool showBanPopup;
 
     private async Task LoadData()
     {
@@ -79,6 +165,72 @@ else
         {
             Console.WriteLine($"Exception: {ex}");
             errorMessage = $"Error loading action logs: {ex.Message}";
+        }
+    }
+
+    private void OpenAccountPopup(UserDTO selected)
+    {
+        selectedUser = selected;
+        showAccountPopup = true;
+    }
+
+    private void CloseAccountPopup()
+    {
+        showAccountPopup = false;
+        selectedUser = null;
+    }
+
+    private void OpenBanPopup(UserDTO selected)
+    {
+        selectedUser = selected;
+        RejectionReason = string.Empty;
+        showBanPopup = true;
+    }
+
+    private void CloseBanPopup()
+    {
+        showBanPopup = false;
+        selectedUser = null;
+    }
+
+    private async Task HandleBanUser()
+    {
+        @* await AccountService.ChangeAccountStatusToBanned(selectedEntry.UserID);  *@
+        /* await ListingService.ChangeAllVendorListingsToInactive(selectedEntry.UserID); */
+        await AccountService.BanAccount(selectedUser.Id, RejectionReason);
+        await ListingService.DeactivateAllUserListingsAsync(selectedUser.Id);
+
+        await LogService.LogAccountBanAsync(
+            selectedUser.Id,
+            selectedUser.Email,
+            RejectionReason
+        );
+
+        await LoadData();
+        CloseBanPopup();
+        CloseAccountPopup();
+    }
+
+    private async Task HandleObjectId(string objectId)
+    {
+        var response = await AccountService.GetAccountByIdAsync(objectId);
+        if (response.Success && response.Data != null)
+        {
+            OpenAccountPopup(response.Data);
+        }
+    }
+
+    private async Task<bool> IsUserObjectId(string objectId)
+    {
+        // Check if the objectId exists in the users database
+        try
+        {
+            var user = await AccountService.GetAccountByIdAsync(objectId);
+            return user != null;
+        }
+        catch
+        {
+            return false;
         }
     }
 }
