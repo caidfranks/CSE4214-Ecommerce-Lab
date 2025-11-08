@@ -13,6 +13,7 @@ namespace GameVault.Client.Models
         public string CategoryName { get; set; } = "";
         public int Stock { get; set; }
         public string Description { get; set; } = "";
+        public string OwnerId { get; set; } = "";
 
         public static Product FromFullListingDTO(FullListingDTO dto)
         {
@@ -27,10 +28,10 @@ namespace GameVault.Client.Models
                 CategoryName = dto.CategoryName,
                 Stock = dto.Stock,
                 Description = dto.Description,
+                OwnerId = dto.OwnerID
                 // Leaving out:
                 // Status
                 // LastModified
-                // OwnerId
             };
         }
     }

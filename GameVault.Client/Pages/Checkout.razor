@@ -4,11 +4,13 @@
 @using GameVault.Shared.Models
 @using GameVault.Client.Services
 @using Microsoft.AspNetCore.Authorization
+@inject AuthService AuthService
 @inject CheckoutService CheckoutService
 @inject CartService CartService
 @inject NavigationManager Navigation
 @inject ILogger<Checkout> Logger
 @inject BreadcrumbService BreadcrumbService
+@inject LogService LogService
 @implements IDisposable
 
 <PageTitle>Checkout - GameVault</PageTitle>
@@ -110,7 +112,7 @@
 
 @code {
     private SquarePaymentForm? paymentFormRef;
-    
+
     private Address shippingAddress = new()
     {
         Street = "",
@@ -126,13 +128,13 @@
     private int totalInCents = 0;
     private bool isProcessing = false;
     private string? errorMessage;
-    
+
     private bool isAddressComplete => 
         !string.IsNullOrWhiteSpace(shippingAddress.Street) &&
         !string.IsNullOrWhiteSpace(shippingAddress.City) &&
         !string.IsNullOrWhiteSpace(shippingAddress.State) &&
         !string.IsNullOrWhiteSpace(shippingAddress.PostalCode);
-    
+
     private bool canCheckout => isAddressComplete && !isProcessing;
 
     protected override async Task OnInitializedAsync()
@@ -154,7 +156,7 @@
         try
         {
             var cart = await CartService.LoadCartAsync();
-            
+
             if (cart != null && cart.Items != null && cart.Items.Any())
             {
                 @* decimal subtotalInCents = 0;
@@ -168,7 +170,7 @@
             {
                 subtotalInCents = 0;
             }
-            
+
 
             if (!string.IsNullOrEmpty(shippingAddress.State))
             {
@@ -190,7 +192,7 @@
         {
             await EstimateTax();
         }
-        
+
         StateHasChanged();
     }
 
@@ -263,13 +265,16 @@
                 paymentMethodId = null;
                 if (paymentFormRef != null)
                 {
-                await paymentFormRef.ResetForm();
+                    await paymentFormRef.ResetForm();
                 }
                 Navigation.NavigateTo($"/order-confirmation/{response.OrderId}");
+                await LogService.LogTransactionAsync(response.OrderId, "Successful", response.TotalAmountInCents);// / 100);
+                await LogService.LogOrderPlacedAsync(response.OrderId, AuthService.CurrentUserId, response.TotalAmountInCents, response.InvoiceIds.Count);
             }
             else
             {
                 errorMessage = response.ErrorMessage ?? "Checkout failed. Please try again.";
+                await LogService.LogTransactionAsync(response.OrderId, "Failed", response.TotalAmountInCents);
                 paymentMethodId = null;
             }
         }

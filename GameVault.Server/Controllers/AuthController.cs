@@ -14,12 +14,14 @@ namespace GameVault.Server.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    UserService _userService;
     private readonly IFirebaseAuthService _firebaseAuth;
     private readonly IFirestoreService _firestore;
     private readonly IConfiguration _configuration;
 
-    public AuthController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, IConfiguration configuration)
+    public AuthController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, IConfiguration configuration, UserService userService)
     {
+        _userService = userService;
         _firebaseAuth = firebaseAuth;
         _firestore = firestore;
         _configuration = configuration;
@@ -222,23 +224,24 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("create/vendor")]
-    public async Task<ActionResult<AuthResponse>> CreateVendor([FromBody] RegisterVendorRequest request)
+    public async Task<ActionResult<AuthResponse>> CreateVendor([FromBody] RegisterVendorRequest request, [FromHeader] string? Authorization)
+       
     {
-        Console.WriteLine($"Received request: {System.Text.Json.JsonSerializer.Serialize(request)}");
         try
         {
             //var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
             var userId = request.Id;
+            var currentUserId = await _userService.GetUserFromHeader(Authorization);
 
             var user = new User
             {
-                 Id = userId!,
-                 BanMsg = null,
-                 Banned = false,
-                 Email = request.Email,
-                 Name = request.DisplayName ?? string.Empty,
-                 Type = AccountType.Vendor,
-                 //ReviewedBy = 
+                Id = userId!,
+                BanMsg = null,
+                Banned = false,
+                Email = request.Email,
+                Name = request.DisplayName ?? string.Empty,
+                Type = AccountType.Vendor,
+                ReviewedBy = currentUserId.Id 
             };
 
              await _firestore.SetDocumentAsync("users", userId!, user);

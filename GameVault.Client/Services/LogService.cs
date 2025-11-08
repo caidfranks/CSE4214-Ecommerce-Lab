@@ -140,9 +140,9 @@ public class LogService
         return CreateLogAsync(
             LogType.OrderPlaced,
             orderId,
-            $"Order placed: {itemCount} item(s) totaling ${totalAmount:F2}",
+            $"Order placed: {itemCount} item(s) totaling ${totalAmount / 100}",
             0,
-            details ?? $"Customer: {customerId}, Total: ${totalAmount:F2}, Items: {itemCount}"
+            details ?? $"Customer: {customerId}, Total: ${totalAmount / 100}, Items: {itemCount}"
         );
     }
 
@@ -157,14 +157,14 @@ public class LogService
         );
     }
 
-    public Task LogTransactionAsync(string transactionId, string type, decimal amount, int status, string? details = null)
+    public Task LogTransactionAsync(string transactionId, string type, decimal amount)//, int status, string? details = null)
     {
         return CreateLogAsync(
             LogType.Transaction,
             transactionId,
-            $"{type} transaction: ${amount:F2}",
-            status,
-            details ?? $"Transaction type: {type}, Amount: ${amount:F2}"
+            $"{type} transaction: ${amount / 2}",
+            0
+            //details ?? $"Transaction type: {type}, Amount: ${amount:F2}"
         );
     }
 
