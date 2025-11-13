@@ -159,8 +159,7 @@ else
                     }
                     else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
                     {
-                        <button class="btn btn-primary btn-lg w-100" @onclick=' () => RemoveListing()'
-         ">
+                        <button class="btn btn-primary btn-lg w-100" @onclick="() => RemoveListing()">
                             Remove
                         </button>
 
