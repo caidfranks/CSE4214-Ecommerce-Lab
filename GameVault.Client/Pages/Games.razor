@@ -194,7 +194,7 @@ else
         BreadcrumbService.Set(
         new BreadcrumbItem("Home", "/"),
         new BreadcrumbItem("Games")
-    );
+        );
         await LoadProducts();
         await LoadCategories();
         ApplyFilter();
@@ -224,6 +224,7 @@ else
         {
             selectedFilters.Add(category);
         }
+        ApplyFilter();
     }
 
     private void RemoveFilter(string category)
