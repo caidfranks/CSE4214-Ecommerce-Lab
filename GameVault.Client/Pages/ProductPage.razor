@@ -173,59 +173,59 @@ else
                     }
                     else if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
                     {
-                        <button class="btn btn-primary btn-lg w-100"
-                            @onclick=' () => RemoveListing()' ">
-                                                                                            Remove
-                                                                                        </button>
+                        <button class="btn btn-primary btn-lg w-100" @onclick="() => RemoveListing()">
+                            Remove
+                        </button>
 
-                                                                                        @if (showRemovalMessage)
-                                                                                        {
-                                                                                                                            <div class=" alert alert-success mt-3">
+                        @if (showRemovalMessage)
+                        {
+                            <div class=" alert alert-success
+                                            mt-3">
                                 <strong>Removed!</strong>
                                 <div class="mt-2">
                                     <button class="btn btn-sm btn-outline-success me-2" @onclick="ContinueShopping">
                                         Return to Home
                                     </button>
                                 </div>
-                        </div>
+                            </div>
+                        }
                     }
-                }
-                <!-- TODO: Diagnose cause of modal freezing at loading
-                                                    else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
-                                                    {
-                                                        <div class="alert alert-info">
-                                                            <i class="bi bi-info-circle"></i> Only customers can purchase products.
-                                                        </div>
-                                                    }-->
+                    <!-- TODO: Diagnose cause of modal freezing at loading
+                                                            else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
+                                                            {
+                                                                <div class="alert alert-info">
+                                                                    <i class="bi bi-info-circle"></i> Only customers can purchase products.
+                                                                </div>
+                                                            }-->
 
-                <!-- Description (REQ-47) -->
-                <div class="product-description mt-4">
-                    <h4>Product Description</h4>
-                    <p>@product.Description</p>
+                    <!-- Description (REQ-47) -->
+                    <div class="product-description mt-4">
+                        <h4>Product Description</h4>
+                        <p>@product.Description</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Suggested Products Section -->
-    <div class="suggested-products mt-5">
-        <h3 class="mb-4">You Might Also Like</h3>
-        <div class="row">
-            @foreach (var suggested in suggestedProducts)
-            {
-                <div class="col-md-3 mb-4">
-                    <div class="card h-100 suggested-card" @onclick="() => ViewProduct(suggested.Id)">
-                        <img src="@suggested.ThumbnailUrl" class="card-img-top" alt="@suggested.Name">
-                        <div class="card-body">
-                            <h6 class="card-title">@suggested.Name</h6>
-                            <p class="card-text text-primary fw-bold">$@suggested.Price.ToString("F2")</p>
-                            <small class="text-muted">@suggested.VendorName</small>
+        <!-- Suggested Products Section -->
+        <div class="suggested-products mt-5">
+            <h3 class="mb-4">You Might Also Like</h3>
+            <div class="row">
+                @foreach (var suggested in suggestedProducts)
+                {
+                    <div class="col-md-3 mb-4">
+                        <div class="card h-100 suggested-card" @onclick="() => ViewProduct(suggested.Id)">
+                            <img src="@suggested.ThumbnailUrl" class="card-img-top" alt="@suggested.Name">
+                            <div class="card-body">
+                                <h6 class="card-title">@suggested.Name</h6>
+                                <p class="card-text text-primary fw-bold">$@suggested.Price.ToString("F2")</p>
+                                <small class="text-muted">@suggested.VendorName</small>
+                            </div>
                         </div>
                     </div>
-                </div>
-            }
+                }
+            </div>
         </div>
-    </div>
     </div>
 }
 
