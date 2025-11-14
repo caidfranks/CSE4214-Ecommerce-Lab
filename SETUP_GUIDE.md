@@ -128,9 +128,10 @@ dotnet format
 
 ## Test Accounts (Production)
 ### Customers
-- alice@gamevault.com / Password123
-- bob@gamevault.com / Password123
-- carol@gamevault.com / Password123
+- alicetest@gamevault.com / Password123
+- bobtest@gamevault.com / Password123
+- caroltest@gamevault.com / Password123
+- davidtest@gamevault.com / Password123
 
 ### Vendors
 - gamestoppro@gamevault.com / Password123
@@ -139,4 +140,4 @@ dotnet format
 - epicdealsgaming@gamevault.com / Password123
 
 ### Admin
-- admin@gamevault.com / Admin123
+- admintest@gamevault.com / Admin123
