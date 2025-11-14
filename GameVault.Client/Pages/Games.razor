@@ -133,6 +133,17 @@ else
                                         <i class="bi bi-shop"></i> @product.VendorName
                                     </p>
 
+                                    <!-- Rating Info -->
+                                    @if (product.NumReviews > 0)
+                                    {
+                                        <p><i class="bi bi-hand-thumbs-up"></i> @(product.Rating)% | @product.NumReviews
+                                            review@(product.NumReviews == 1 ? "" : "s")</p>
+                                    }
+                                    else
+                                    {
+                                        <p><i class="bi bi-hand-thumbs-up"></i> -% | No reviews</p>
+                                    }
+
                                     <!-- Stock Info -->
                                     @if (product.Stock > 0 && product.Stock <= 5)
                                     {
