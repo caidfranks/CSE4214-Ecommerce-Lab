@@ -1,4 +1,4 @@
-﻿using FirebaseAdmin;
+using FirebaseAdmin;
 using FirebaseAdmin.Auth;
 using Google.Apis.Auth.OAuth2;
 
@@ -13,19 +13,53 @@ public class FirebaseAuthService : IFirebaseAuthService
         string emulatorHost = Environment.GetEnvironmentVariable("FIREBASE_AUTH_EMULATOR_HOST") ?? "";
         if (!string.IsNullOrEmpty(emulatorHost))
         {
-
             Console.WriteLine("Connecting to local auth emulator.");
         }
-        var projectId = configuration["Firebase:ProjectId"] ?? throw new InvalidOperationException("Firebase ProjectId is required");
-        var clientEmail = configuration["Firebase:ClientEmail"] ?? throw new InvalidOperationException("Firebase ClientEmail is required");
-        var privateKey = configuration["Firebase:PrivateKey"] ?? throw new InvalidOperationException("Firebase PrivateKey is required");
 
-        var credential = GoogleCredential.FromJson($@"{{
-                    ""type"": ""service_account"",
-                    ""project_id"": ""{projectId}"",
-                    ""client_email"": ""{clientEmail}"",
-                    ""private_key"": ""{privateKey.Replace("\\n", "\n")}""
-                }}");
+        GoogleCredential credential;
+        string projectId;
+
+        string? credentialsPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+        
+        if (!string.IsNullOrEmpty(credentialsPath) && File.Exists(credentialsPath))
+        {
+            Console.WriteLine($"Using Firebase credentials from file: {credentialsPath}");
+            credential = GoogleCredential.FromFile(credentialsPath);
+            
+            var credentialsJson = System.Text.Json.JsonDocument.Parse(File.ReadAllText(credentialsPath));
+            projectId = credentialsJson.RootElement.GetProperty("project_id").GetString() 
+                ?? throw new InvalidOperationException("Firebase ProjectId not found in credentials file");
+        }
+        else if (configuration["Firebase:ClientEmail"] != null && configuration["Firebase:PrivateKey"] != null)
+        {
+            Console.WriteLine("Using Firebase credentials from appsettings.json");
+            projectId = configuration["Firebase:ProjectId"] ?? throw new InvalidOperationException("Firebase ProjectId is required");
+            var clientEmail = configuration["Firebase:ClientEmail"];
+            var privateKey = configuration["Firebase:PrivateKey"];
+
+            credential = GoogleCredential.FromJson($@"{{
+                ""type"": ""service_account"",
+                ""project_id"": ""{projectId}"",
+                ""client_email"": ""{clientEmail}"",
+                ""private_key"": ""{privateKey.Replace("\\n", "\n")}""
+            }}");
+        }
+        else
+        {
+            Console.WriteLine("Using Application Default Credentials (Cloud Run)");
+            projectId = configuration["Firebase:ProjectId"] ?? "gamevault-9a27e";
+            
+            try
+            {
+                credential = GoogleCredential.GetApplicationDefault();
+                Console.WriteLine("Successfully loaded Application Default Credentials");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load Application Default Credentials: {ex.Message}");
+                throw new InvalidOperationException("Unable to load Firebase credentials. Please ensure the service is running on Google Cloud with proper permissions.", ex);
+            }
+        }
 
         if (FirebaseApp.DefaultInstance == null)
         {

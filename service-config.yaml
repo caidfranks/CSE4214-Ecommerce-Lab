@@ -1,0 +1,96 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  annotations:
+    run.googleapis.com/client-name: gcloud
+    run.googleapis.com/client-version: 547.0.0
+    run.googleapis.com/ingress: all
+    run.googleapis.com/ingress-status: all
+    run.googleapis.com/operation-id: fcd8723c-a398-4762-ae29-138432480955
+    run.googleapis.com/urls: '["https://gamevault-server-819772831155.us-central1.run.app","https://gamevault-server-fffocifmqa-uc.a.run.app"]'
+    serving.knative.dev/creator: CaidFranks@gmail.com
+    serving.knative.dev/lastModifier: CaidFranks@gmail.com
+  creationTimestamp: '2025-10-16T20:20:50.035715Z'
+  generation: 14
+  labels:
+    cloud.googleapis.com/location: us-central1
+  name: gamevault-server
+  namespace: '819772831155'
+  resourceVersion: AAZDh15qCpM
+  selfLink: /apis/serving.knative.dev/v1/namespaces/819772831155/services/gamevault-server
+  uid: 066d035e-ce04-4e2d-8081-b5240bb6ff61
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '20'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 547.0.0
+        run.googleapis.com/startup-cpu-boost: 'true'
+      labels:
+        client.knative.dev/nonce: ymifttjhkz
+        run.googleapis.com/startupProbeType: Default
+    spec:
+      containerConcurrency: 80
+      containers:
+      - env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /secrets/firebase-key.json
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Production
+        image: gcr.io/gamevault-9a27e/gamevault-server
+        ports:
+        - containerPort: 8080
+          name: http1
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+        startupProbe:
+          failureThreshold: 1
+          periodSeconds: 240
+          tcpSocket:
+            port: 8080
+          timeoutSeconds: 240
+        volumeMounts:
+        - mountPath: /secrets
+          name: firebase-credentials-gux-cad
+      serviceAccountName: 819772831155-compute@developer.gserviceaccount.com
+      timeoutSeconds: 300
+      volumes:
+      - name: firebase-credentials-hic-tof
+        secret:
+          items:
+          - key: latest
+            path: firebase-key.json
+          secretName: firebase-credentials
+      - name: firebase-credentials-gux-cad
+        secret:
+          items:
+          - key: latest
+            path: firebase-key.json
+          secretName: firebase-credentials
+  traffic:
+  - latestRevision: true
+    percent: 100
+status:
+  address:
+    url: https://gamevault-server-fffocifmqa-uc.a.run.app
+  conditions:
+  - lastTransitionTime: '2025-11-14T05:35:43.917715Z'
+    status: 'True'
+    type: Ready
+  - lastTransitionTime: '2025-11-14T05:35:42.675255Z'
+    status: 'True'
+    type: ConfigurationsReady
+  - lastTransitionTime: '2025-11-14T05:35:43.882054Z'
+    status: 'True'
+    type: RoutesReady
+  latestCreatedRevisionName: gamevault-server-00014-kjt
+  latestReadyRevisionName: gamevault-server-00014-kjt
+  observedGeneration: 14
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: gamevault-server-00014-kjt
+  url: https://gamevault-server-fffocifmqa-uc.a.run.app
