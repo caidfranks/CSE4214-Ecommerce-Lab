@@ -200,7 +200,7 @@ public class ProductController : ControllerBase
     {
         try
         {
-            var products = await _firestore.QueryDocumentsAsyncWithId<Models.Firestore.Listing>("listings", "category", category);
+            var products = await _firestore.QueryDocumentsAsyncWithId<Models.Firestore.Listing>("listings", "Category", category);
             List<FullListingDTO> dTOs = [];
 
             // Look up category in database
