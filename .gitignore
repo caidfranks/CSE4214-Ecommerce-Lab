@@ -496,4 +496,3 @@ gamevault-*-*.json
 .vscode
 /firebase-tools-instant-win.exe
 /GameVault.Server/appsettings.Development.json
-/GameVault.Server/Properties/launchSettings.json
