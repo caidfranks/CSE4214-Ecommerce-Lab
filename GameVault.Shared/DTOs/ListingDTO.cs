@@ -19,6 +19,8 @@ public class ListingDTO : NewListingDTO
   public required string Id { get; set; }
   public required string OwnerID { get; set; }
   public required DateTime LastModified { get; set; }
+  public int? Rating { get; set; } // Default to -1
+  public int? NumReviews { get; set; } // Default to 0
 }
 
 public class FullListingDTO : ListingDTO

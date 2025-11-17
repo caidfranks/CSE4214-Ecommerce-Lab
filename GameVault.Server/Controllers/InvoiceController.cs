@@ -216,7 +216,7 @@ public class InvoiceController : ControllerBase
     }
 
     [HttpGet("{invoiceId}/items")]
-    public async Task<ActionResult<List<InvoiceItem>>> GetInvoiceItems(
+    public async Task<ActionResult<ListResponse<InvoiceItemDTO>>> GetInvoiceItems(
         string invoiceId,
         [FromHeader] string? Authorization)
     {
@@ -234,18 +234,40 @@ public class InvoiceController : ControllerBase
                 return NotFound();
             }
 
+            // Also check if owner of order
+
             if (user.Type == AccountType.Vendor && invoice.VendorId != user.Id)
             {
                 return StatusCode(403, new { error = "Access denied" });
             }
 
             var items = await _invoiceService.GetInvoiceItemsAsync(invoiceId);
-            return Ok(items);
+
+            // Convert to DTOs
+
+            List<InvoiceItemDTO> dTOs = [];
+
+            foreach (InvoiceItem item in items)
+            {
+                InvoiceItemDTO dTO = new()
+                {
+                    InvoiceId = item.InvoiceId,
+                    ListingId = item.ListingId,
+                    Quantity = item.Quantity,
+                    PriceAtOrder = item.PriceAtOrder,
+                    NameAtOrder = item.NameAtOrder,
+                    DescAtOrder = item.DescAtOrder,
+                    Rating = item.Rating
+                };
+                dTOs.Add(dTO);
+            }
+
+            return Ok(new ListResponse<InvoiceItemDTO> { Success = true, List = dTOs });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting invoice items");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, new ListResponse<InvoiceItemDTO> { Success = false, Message = ex.Message });
         }
     }
 
@@ -328,5 +350,49 @@ public class InvoiceController : ControllerBase
         await _invoiceService.UpdateInvoiceStatusAsync(dTO.Id, dTO.Status, dTO.Message);
 
         return Ok();
+    }
+
+    [HttpPost("rate")]
+    public async Task<ActionResult<BaseResponse>> RateInvoiceItem([FromBody] RatingDTO dTO, [FromHeader] string? Authorization)
+    {
+        var user = await _userService.GetUserFromHeader(Authorization);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        // Customer
+        if (user.Type != AccountType.Customer)
+        {
+            return Forbid();
+        }
+
+        // TODO: Look up invoice, then order, and confirm owner
+
+        // Query "invoice_items" for provided listingId and invoiceId
+
+        var invoiceItem = await _invoiceService.GetInvoiceItemWithIdByBothId(dTO.InvoiceId, dTO.ListingId);
+
+        if (invoiceItem is null)
+        {
+            return NotFound(new BaseResponse
+            {
+                Success = false,
+                Message = "Invoice item not found"
+            });
+        }
+
+        // Use Id only
+        await _invoiceService.RateInvoiceItem(invoiceItem.Id, dTO.Rating);
+
+        // Run in background since not relevant to this customer right now
+        // _ = // Discards result without having to await the async call
+        _ = _invoiceService.CalculateRating(dTO.ListingId);
+
+        return Ok(new BaseResponse
+        {
+            Success = true,
+            Message = "Rating successfully updated"
+        });
     }
 }

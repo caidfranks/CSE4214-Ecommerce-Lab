@@ -117,7 +117,8 @@ public class InvoiceService
             Quantity = item.Quantity,
             PriceAtOrder = item.PriceInCents,
             NameAtOrder = item.ListingName,
-            DescAtOrder = listing?.Description ?? ""
+            DescAtOrder = listing?.Description ?? "",
+            Rating = RatingChoice.None
         };
 
         await _firestore.AddDocumentAsync(InvoiceItemsCollection, invoiceItem);
@@ -210,6 +211,11 @@ public class InvoiceService
     {
         var allItems = await _firestore.GetCollectionAsync<InvoiceItem>(InvoiceItemsCollection);
         return allItems.Where(item => item.InvoiceId == invoiceId).ToList();
+    }
+
+    public async Task<List<InvoiceItem>> GetInvoiceItemsByListingAsync(string listingId)
+    {
+        return await _firestore.QueryDocumentsAsync<InvoiceItem>(InvoiceItemsCollection, "ListingId", listingId);
     }
 
     public async Task UpdateInvoiceStatusAsync(
@@ -310,5 +316,62 @@ public class InvoiceService
         };
 
         await _firestore.SetDocumentAsync(InvoicesCollection, invoiceId, firestoreInvoice);
+    }
+
+    public async Task<InvoiceItemWithId?> GetInvoiceItemWithIdByBothId(string invoiceId, string listingId)
+    {
+        var results = await _firestore.QueryComplexDocumentsAsyncWithId<InvoiceItemWithId>(InvoiceItemsCollection, [
+                new() {
+                fieldName = "ListingId",
+                value = listingId
+            },
+            new() {
+                fieldName = "InvoiceId",
+                value = invoiceId
+            }
+            ]);
+
+        if (results is null || results.Count < 1)
+        {
+            return null;
+        }
+
+        return results[0];
+    }
+
+    public async Task RateInvoiceItem(string id, RatingChoice rating)
+    {
+        await _firestore.SetDocumentFieldAsync("invoice_items", id, "Rating", (int)rating);
+    }
+
+    public async Task CalculateRating(string listingId)
+    {
+        // Get all Invoice Items with that listingId
+        var items = await GetInvoiceItemsByListingAsync(listingId);
+
+        // Get sum of all ratings
+        int sum = 0;
+        foreach (InvoiceItem item in items)
+        {
+            sum += (int)item.Rating;
+        }
+
+        // Get count of ratings > 0
+        int count = 0;
+        foreach (InvoiceItem item in items)
+        {
+            count += (item.Rating != RatingChoice.None) ? 1 : 0;
+        }
+
+        // Percent = (sum - count) / count * 100
+        int percent = count > 0 ? (sum - count) * 100 / count : -1;
+        // -1 means no ratings
+
+        Console.WriteLine($"Updating listing {listingId} rating to {percent} based on {count} reviews");
+
+        // Set to rating field of listing
+        // TODO: Make a ListingService on Server to handle this stuff
+        await _firestore.SetDocumentFieldAsync("listings", listingId, "Rating", percent);
+        await _firestore.SetDocumentFieldAsync("listings", listingId, "NumReviews", count);
     }
 }

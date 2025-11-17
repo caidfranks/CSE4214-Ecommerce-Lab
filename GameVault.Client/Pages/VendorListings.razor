@@ -57,6 +57,9 @@ else if (listings.Count == 0)
         }
       <th>Name</th>
       <th>Price</th>
+      @if (filter == ListingStatus.Published) {
+        <th>Rating</th>
+      }
       <th>Stock</th>
       @if (filter == ListingStatus.Removed) {
         <th>Removal Message</th>
@@ -73,6 +76,17 @@ else if (listings.Count == 0)
         <td>@listing.LastModified.ToString()</td>
         <td>@listing.Name</td>
         <td>@((listing.Price / 100M).ToString("C2"))</td>
+        @if (filter == ListingStatus.Published) {
+          @if (listing.NumReviews > 0)
+          {
+              <td><i class="bi bi-hand-thumbs-up"></i> @(listing.Rating)% | @listing.NumReviews
+                  review@(listing.NumReviews == 1 ? "" : "s")</td>
+          }
+          else
+          {
+              <td><i class="bi bi-hand-thumbs-up"></i> -% | No reviews</td>
+          }
+        }
         @if (listing.Id == editingStock) {
           <td><InputNumber @bind-Value="@stock" /></td>
         } else {

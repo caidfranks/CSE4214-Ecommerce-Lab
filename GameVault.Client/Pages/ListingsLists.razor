@@ -47,6 +47,9 @@ else
             <tr>
                 <th>Name</th>
                 <th>User</th>
+                @if (filter == ListingStatus.Published) {
+                    <th>Rating</th>
+                }
                 <th>Status</th>
             </tr>
         </thead>
@@ -65,6 +68,17 @@ else
                         }
                     </td>
                     <td>@entry.OwnerID</td>
+                    @if (filter == ListingStatus.Published) {
+                    @if (entry.NumReviews > 0)
+                    {
+                        <td><i class="bi bi-hand-thumbs-up"></i> @(entry.Rating)% | @entry.NumReviews
+                            review@(entry.NumReviews == 1 ? "" : "s")</td>
+                    }
+                    else
+                    {
+                        <td><i class="bi bi-hand-thumbs-up"></i> -% | No reviews</td>
+                    }
+                    }
                     <td>@entry.Status</td>
                 </tr>
             }

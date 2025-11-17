@@ -1,0 +1,235 @@
+@inject AuthService AuthService
+@inject InvoiceService InvoiceService
+
+@if (Open && Invoice is not null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Invoice @Invoice.Id Details</h5>
+                    <button type="button" class="btn-close" @onclick="OnClose"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Total:</span>
+                        <span class="fw-medium">@(Invoice.Subtotal.ToString("C2"))</span>
+                    </div>
+
+                    @* TODO: Vendor display name *@
+
+                    @* TODO: Status and timestamp *@
+
+                    @if (error is not null)
+                    {
+                        <p><em>@error</em></p>
+                    }
+                    else if (items is null)
+                    {
+                        <p><em>Loading...</em></p>
+                    }
+                    else if (items.Count == 0)
+                    {
+                        <p><em>No contents</em></p>
+                    }
+                    else
+                    {
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Subtotal</th>
+                                    <th>Rating</th>
+                                    @if (AuthService.CurrentUser?.Type == AccountType.Customer)
+                                    {
+                                        <th>Actions</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in items)
+                                {
+                                    <tr>
+                                        <td>@item.NameAtOrder</td>
+                                        <td>@item.Quantity</td>
+                                        <td>@((item.PriceAtOrder / 100M).ToString("C2"))</td>
+                                        @switch (item.Rating)
+                                        {
+                                            case RatingChoice.Dislike:
+                                                <td><i class="bi bi-hand-thumbs-down"></i></td>
+                                                break;
+                                            case RatingChoice.Like:
+                                                <td><i class="bi bi-hand-thumbs-up"></i></td>
+                                                break;
+                                            default:
+                                                // and None
+                                                <td></td>
+                                                break;
+                                        }
+                                        @if (AuthService.CurrentUser?.Type == AccountType.Customer)
+                                        {
+                                            <td>
+                                                @switch (Invoice.Status)
+                                                {
+                                                    case InvoiceStatus.Completed:
+                                                    case InvoiceStatus.AwaitingReturn:
+                                                    case InvoiceStatus.PendingReturn:
+                                                        <button @onclick="() => { OpenPrompt(item); }">Rate</button>
+                                                        break;
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+                @* <div class="modal-footer">
+                    Footer goes here
+                </div> *@
+            </div>
+        </div>
+    </div>
+    @if (showPrompt && selectedItem is not null)
+    {
+        <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Rate</h5>
+                        <button type="button" class="btn-close" @onclick="ClosePrompt"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="d-flex flex-row mb-2 gap-2">
+                            <button class='btn btn-primary@(selectedItem.Rating == RatingChoice.Like ? " disabled" : "")'
+                                disabled=@(selectedItem.Rating == RatingChoice.Like)
+                                @onclick="async () => { await Rate(RatingChoice.Like); }">
+                                <div class="d-flex flex-column">
+                                    <i class="bi bi-hand-thumbs-up-fill fs-1"></i>
+                                    <span>Liked</span>
+                                </div>
+                            </button>
+                            <button class='btn btn-primary@(selectedItem.Rating == RatingChoice.Dislike ? " disabled" : "")'
+                                disabled=@(selectedItem.Rating == RatingChoice.Dislike)
+                                @onclick="async () => { await Rate(RatingChoice.Dislike); }">
+                                <div class="d-flex flex-column">
+                                    <i class="bi bi-hand-thumbs-down-fill fs-1"></i>
+                                    <span>Disliked</span>
+                                </div>
+                            </button>
+                        </div>
+                        <button class='btn btn-primary@(selectedItem.Rating == RatingChoice.None ? " disabled" : "")'
+                            disabled=@(selectedItem.Rating == RatingChoice.None)
+                            @onclick="async () => { await Rate(RatingChoice.None); }">Undo Rating</button>
+                    </div>
+                    @* <div class="modal-body">
+                        <h3>Feedback</h3>
+                        <p>Why are you returning this product?</p>
+                        <input type="text" id="reason" class="form-control" @bind="message" placeholder="Enter reason" />
+                    </div> *@
+                    @* <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn-approve" @onclick='AcceptPrompt'>Start Return</button>
+                        <button type="button" class="btn-deny" @onclick='ClosePrompt'>Cancel</button>
+                    </div> *@
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public required bool Open { get; set; }
+    [Parameter] public required InvoiceDTO? Invoice { get; set; }
+    [Parameter] public required Action OnClose { get; set; }
+
+    private List<InvoiceItemDTO>? items { get; set; }
+
+    private InvoiceItemDTO? selectedItem { get; set; }
+
+    public string? error { get; set; }
+
+    private bool showPrompt { get; set; } = false;
+
+    private void OpenPrompt(InvoiceItemDTO item)
+    {
+        selectedItem = item;
+        showPrompt = true;
+    }
+
+    private async Task Rate(RatingChoice rating)
+    {
+        showPrompt = false;
+        if (selectedItem is not null)
+        {
+            @* Console.WriteLine($"Would have rated with {rating}"); *@
+            // Temp:
+            @* selectedItem.Rating = rating; *@
+            error = "Applying rating...";
+            var result = await InvoiceService.RateInvoiceItem(selectedItem.InvoiceId, selectedItem.ListingId, rating);
+            if (result is not null && result.Success)
+            {
+                error = null;
+                await LoadData();
+            }
+            else
+            {
+                error = result?.Message ?? "Unknown error";
+            }
+        }
+        selectedItem = null;
+    }
+
+    private void ClosePrompt()
+    {
+        showPrompt = false;
+        selectedItem = null;
+    }
+
+    private async Task LoadData()
+    {
+        items = null;
+        error = null;
+
+        // Call Firestore
+        if (AuthService.CurrentUserId is not null)
+        {
+            if (Invoice is null)
+            {
+                Console.WriteLine("No invoice selected!");
+                return;
+            }
+            ListResponse<InvoiceItemDTO> result = (await InvoiceService.GetItemsByInvoice(Invoice.Id));
+            if (result.Success)
+            {
+                items = result.List;
+            }
+            else
+            {
+                Console.WriteLine($"Error fetching InvoiceItems: {result.Message}");
+                error = result.Message ?? "";
+            }
+            await InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
+    }
+
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Open)
+        {
+            await LoadData();
+        }
+        else
+        {
+            items = null;
+        }
+    }
+}

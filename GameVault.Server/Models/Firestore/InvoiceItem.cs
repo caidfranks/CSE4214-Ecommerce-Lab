@@ -1,3 +1,4 @@
+using GameVault.Shared.Models;
 using Google.Cloud.Firestore;
 
 namespace GameVault.Server.Models.Firestore;
@@ -16,4 +17,12 @@ public class InvoiceItem
   [FirestoreProperty] public required int PriceAtOrder { get; set; }
   [FirestoreProperty] public required string NameAtOrder { get; set; } = string.Empty;
   [FirestoreProperty] public required string DescAtOrder { get; set; } = string.Empty;
+  [FirestoreProperty] public required RatingChoice Rating { get; set; }
+}
+
+
+[FirestoreData]
+public class InvoiceItemWithId : InvoiceItem, IHasId
+{
+  public required string Id { get; set; }
 }

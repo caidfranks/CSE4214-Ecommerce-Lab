@@ -134,7 +134,9 @@ namespace GameVault.Server.Controllers
                     OwnerID = listing.OwnerID,
                     Image = listing.Image,
                     LastModified = listing.LastModified,
-                    Category = listing.Category
+                    Category = listing.Category,
+                    Rating = listing.Rating,
+                    NumReviews = listing.NumReviews
                 };
                 listingDTOs.Add(listingDTO);
             }
@@ -185,7 +187,9 @@ namespace GameVault.Server.Controllers
                     OwnerID = listing.OwnerID,
                     Image = listing.Image,
                     LastModified = listing.LastModified,
-                    Category = listing.Category
+                    Category = listing.Category,
+                    Rating = listing.Rating,
+                    NumReviews = listing.NumReviews
                 };
                 listingDTOs.Add(listingDTO);
             }
