@@ -75,8 +75,18 @@ public class FirebaseAuthService : IFirebaseAuthService
 
     public async Task<string?> VerifyTokenAsync(string idToken)
     {
-        var decodedToken = await _firebaseAuth.VerifyIdTokenAsync(idToken);
-        return decodedToken?.Uid ?? null;
+        try
+        {
+            var decodedToken = await _firebaseAuth.VerifyIdTokenAsync(idToken);
+
+            return decodedToken?.Uid ?? null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Firebase verify token error:");
+            Console.WriteLine(ex);
+            return null;
+        }
     }
 
     public async Task<string?> CreateUserAsync(string email, string password)

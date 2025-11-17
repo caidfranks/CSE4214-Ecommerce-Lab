@@ -60,7 +60,7 @@ else
           <h5 class="modal-title">Order @selectedOrder.Id Details</h5>
           <button type="button" class="btn-close" @onclick="CloseDetails"></button>
         </div>
-        <div class="modal-body p-0">
+        <div class="modal-body">
           <div class="d-flex justify-content-between mb-2">
             <span class="text-muted">Subtotal:</span>
             <span class="fw-medium">@((selectedOrder.SubtotalInCents / 100M).ToString("C2"))</span>
@@ -77,7 +77,11 @@ else
             <span>Total:</span>
             <span>@((selectedOrder.TotalInCents / 100M).ToString("C2"))</span>
           </div>
-          @if (invoices is null)
+          @if (error is not null && error != string.Empty)
+          {
+            <p><em>@error</em></p>
+          }
+          else if (invoices is null)
           {
             <p><em>Loading...</em></p>
           }
@@ -136,6 +140,7 @@ else
                     <td>@(invoice.ReturnMsg ?? "")</td>
                     @* TODO: Add option to view details and invoice items *@
                     <td>
+                      <button @onclick="() => { ShowItems(invoice); }">Details</button>
                       @switch (invoice.Status)
                       {
                         case InvoiceStatus.Pending:
@@ -151,7 +156,7 @@ else
                         case InvoiceStatus.Completed:
                           if (invoice.ReturnMsg == string.Empty)
                           {
-                            <button @onclick="() => { OpenPrompt(invoice.Id); }">Start Return</button>
+                            <button @onclick="() => { OpenPrompt(invoice); }">Start Return</button>
                           }
                           break;
                         case InvoiceStatus.Declined:
@@ -182,7 +187,7 @@ else
                       <h5 class="modal-title">Return</h5>
                       <button type="button" class="btn-close" @onclick="ClosePrompt"></button>
                     </div>
-                    <div class="modal-body p-0">
+                    <div class="modal-body">
                       <h3>Feedback</h3>
                       <p>Why are you returning this product?</p>
                       <input type="text" id="reason" class="form-control" @bind="message" placeholder="Enter reason" />
@@ -200,6 +205,7 @@ else
       </div>
     </div>
   </div>
+  <InvoicePreview Open=@showItems Invoice=@selectedInvoice OnClose=CloseItems />
 }
 
 @code {
@@ -207,14 +213,15 @@ else
   public List<OrderDTO>? orders;
   public OrderDTO? selectedOrder;
   public List<InvoiceDTO>? invoices;
-  public bool showDetails;
+  public bool showDetails = false;
   public bool showPrompt = false;
   private string message = string.Empty;
-  public string? selectedInvoice;
+  public InvoiceDTO? selectedInvoice;
+  public bool showItems = false;
 
-  private void OpenPrompt(string id)
+  private void OpenPrompt(InvoiceDTO invoice)
   {
-    selectedInvoice = id;
+    selectedInvoice = invoice;
     showPrompt = true;
   }
 
@@ -222,7 +229,7 @@ else
   {
     if (selectedInvoice is not null)
     {
-      await InvoiceService.SetOrderStatusWithMessage(selectedInvoice, InvoiceStatus.PendingReturn, message);
+      await InvoiceService.SetOrderStatusWithMessage(selectedInvoice.Id, InvoiceStatus.PendingReturn, message);
     }
     await LoadInvoices();
     ClosePrompt();
@@ -246,6 +253,18 @@ else
     showDetails = false;
     selectedOrder = null;
     invoices = null;
+  }
+
+  private void ShowItems(InvoiceDTO invoice)
+  {
+    selectedInvoice = invoice;
+    showItems = true;
+  }
+
+  private void CloseItems()
+  {
+    showItems = false;
+    selectedInvoice = null;
   }
 
   private async Task LoadData()

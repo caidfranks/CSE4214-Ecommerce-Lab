@@ -69,14 +69,27 @@ else
                         <i class="bi bi-shop"></i>
                         @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Admin)
                         {
-                            <button type="button" class="btn-ban" @onclick='async () => { HandleVendorNameAsync(product.OwnerId); }'>@product.VendorName</button>
+                            <button type="button" class="btn-ban"
+                                @onclick='async () => { HandleVendorNameAsync(product.OwnerId); }'>@product.VendorName</button>
                         }
                         else
                         {
-                            <p>Sold by: <strong> @product.VendorName </strong></p>
-                        }
+                        <p>Sold by: <strong> @product.VendorName </strong></p>
+                    }
 
                     </p>
+
+                    <!-- Rating -->
+                    @if (product.NumReviews > 0)
+                    {
+                        <p class='mb-0'><i class="bi bi-hand-thumbs-up"></i> @(product.Rating)%</p>
+                        <p>@product.NumReviews review@(product.NumReviews == 1 ? "" : "s")</p>
+                    }
+                    else
+                    {
+                        <p class='mb-0'><i class="bi bi-hand-thumbs-up"></i> -%</p>
+                        <p>No reviews</p>
+                    }
 
                     <!-- Category -->
                     <div class="mb-3">
@@ -132,12 +145,13 @@ else
                                     </select>
                                 </div>
                                 <div class="col-md-8 mt-3 mt-md-0">
-                                @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer){
-                                    @* <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
+                                    @if (AuthService.CurrentUser?.Type == Shared.Models.AccountType.Customer)
+                                    {
+                                        @* <button class="btn btn-primary btn-lg w-100" @onclick="AddToCart">
                                         <i class="bi bi-cart-plus"></i> Add to Cart
                                     </button>  *@
-                                    <GameVault.Client.Components.AddToCartButton ListingId="@Id" Quantity="@selectedQuantity" />
-                                }
+                                        <GameVault.Client.Components.AddToCartButton ListingId="@Id" Quantity="@selectedQuantity" />
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -165,7 +179,8 @@ else
 
                         @if (showRemovalMessage)
                         {
-                            <div class="alert alert-success mt-3">
+                            <div class=" alert alert-success
+                                            mt-3">
                                 <strong>Removed!</strong>
                                 <div class="mt-2">
                                     <button class="btn btn-sm btn-outline-success me-2" @onclick="ContinueShopping">
@@ -176,12 +191,12 @@ else
                         }
                     }
                     <!-- TODO: Diagnose cause of modal freezing at loading
-                    else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
-                    {
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> Only customers can purchase products.
-                        </div>
-                    }-->
+                                                            else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
+                                                            {
+                                                                <div class="alert alert-info">
+                                                                    <i class="bi bi-info-circle"></i> Only customers can purchase products.
+                                                                </div>
+                                                            }-->
 
                     <!-- Description (REQ-47) -->
                     <div class="product-description mt-4">
@@ -240,7 +255,7 @@ else
                                     <strong>Name:</strong> @selectedUser.Name
                                 </div>
                             </div>
-                           @* <div class="row mb-3">
+                            @* <div class="row mb-3">
                                 <div class="col-md-6">
                                     <strong>Description:</strong> @selectedUser.Reason
                                 </div>
@@ -252,7 +267,8 @@ else
                 </div>
 
                 <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-ban" @onclick='async () => { OpenBanPopup(selectedUser); }'>Ban</button>
+                    <button type="button" class="btn-ban"
+                        @onclick='async () => { OpenBanPopup(selectedUser); }'>Ban</button>
                 </div>
             </div>
         </div>
@@ -273,11 +289,10 @@ else
                     <p>Are you sure?</p>
                     <p>Enter reason for ban</p>
                     <input type="text" id="reason" class="form-control" @bind="RejectionReason"
-                           placeholder="Enter reason" />
+                        placeholder="Enter reason" />
                 </div>
                 <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-approve"
-                            @onclick='HandleBanUser'>
+                    <button type="button" class="btn-approve" @onclick='HandleBanUser'>
                         Ban User
                     </button>
                     <button type="button" class="btn-deny" @onclick='CloseBanPopup'>Cancel</button>
@@ -310,9 +325,9 @@ else
         await LoadSuggestedProducts();
 
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Browse", "/"),
-            new BreadcrumbItem(product?.Name ?? "Product")
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Browse", "/"),
+        new BreadcrumbItem(product?.Name ?? "Product")
         );
     }
 
@@ -323,9 +338,9 @@ else
         await LoadSuggestedProducts();
 
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Browse", "/"),
-            new BreadcrumbItem(product?.Name ?? "Product")
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Browse", "/"),
+        new BreadcrumbItem(product?.Name ?? "Product")
         );
 
         showAddedMessage = false;
@@ -343,13 +358,13 @@ else
         if (product != null && !string.IsNullOrWhiteSpace(product.Category))
         {
             var categoryProducts = await ProductService.GetProductsByCategoryAsync(product.Category);
-            
+
             if (categoryProducts != null && categoryProducts.Any())
             {
                 suggestedProducts = categoryProducts
-                    .Where(p => p.Id != product.Id)
-                    .Take(4)
-                    .ToList();
+                .Where(p => p.Id != product.Id)
+                .Take(4)
+                .ToList();
             }
         }
         else
@@ -358,9 +373,9 @@ else
             if (allProducts != null && allProducts.Any())
             {
                 suggestedProducts = allProducts
-                    .Where(p => p.Id != product?.Id)
-                    .Take(4)
-                    .ToList();
+                .Where(p => p.Id != product?.Id)
+                .Take(4)
+                .ToList();
             }
         }
     }
@@ -436,9 +451,9 @@ else
         await ListingService.DeactivateAllUserListingsAsync(selectedUser.Id);
 
         await LogService.LogAccountBanAsync(
-            selectedUser.Id,
-            selectedUser.Email,
-            RejectionReason
+        selectedUser.Id,
+        selectedUser.Email,
+        RejectionReason
         );
 
         //await LoadData();
