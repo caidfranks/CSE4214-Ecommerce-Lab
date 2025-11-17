@@ -8,7 +8,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001";
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5080";
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(apiBaseUrl) });
 
@@ -30,6 +30,7 @@ builder.Services.AddScoped<CookieService>();
 builder.Services.AddScoped<BreadcrumbService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<LogService>();
+builder.Services.AddScoped<NotificationService>();
 
 var app = builder.Build();
 

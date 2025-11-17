@@ -42,6 +42,7 @@ builder.Services.AddScoped<SquarePaymentService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<InvoiceService>();
 builder.Services.AddScoped<TaxService>();
+builder.Services.AddScoped<NotificationService>();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")

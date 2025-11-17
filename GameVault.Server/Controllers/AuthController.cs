@@ -14,13 +14,15 @@ namespace GameVault.Server.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    NotificationService _notifService;
     UserService _userService;
     private readonly IFirebaseAuthService _firebaseAuth;
     private readonly IFirestoreService _firestore;
     private readonly IConfiguration _configuration;
 
-    public AuthController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, IConfiguration configuration, UserService userService)
+    public AuthController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, IConfiguration configuration, UserService userService, NotificationService notifService)
     {
+        _notifService = notifService;
         _userService = userService;
         _firebaseAuth = firebaseAuth;
         _firestore = firestore;
@@ -189,6 +191,12 @@ public class AuthController : ControllerBase
 
             if (id is not null)
             {
+                var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", 0);
+                foreach (var admin in adminUsers)
+                {
+                    await _notifService.CreateNotifAsync(admin.Id, "New Vendor Application", "A new vendor application has been submitted");
+                }
+
                 return new DataResponse<string>
                 {
                     Success = true,
@@ -245,8 +253,9 @@ public class AuthController : ControllerBase
             };
 
              await _firestore.SetDocumentAsync("users", userId!, user);
+             await _notifService.CreateNotifAsync(userId, "Vendor Application Approved", "Your vendor account has been approved. You may now login.");
 
-             return Ok(new AuthResponse
+            return Ok(new AuthResponse
             {
                  Success = true,
                  Message = "Vendor account successfully created.",
@@ -261,6 +270,64 @@ public class AuthController : ControllerBase
                      ReviewedBy = user.ReviewedBy
                  }
              });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new DataResponse<string>
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, new DataResponse<string>
+            {
+                Success = false,
+                Message = "An unexpected error occurred while creating your vendor account. Please try again later."
+            });
+        }
+    }
+
+    [HttpPost("deny/vendor")]
+    public async Task<ActionResult<AuthResponse>> CreateDeniedVendor([FromBody] RegisterVendorRequest request, [FromHeader] string? Authorization)
+
+    {
+        try
+        {
+            //var userId = await _firebaseAuth.CreateUserAsync(request.Email, request.Password);
+            var userId = request.Id;
+            var currentUserId = await _userService.GetUserFromHeader(Authorization);
+
+            var user = new User
+            {
+                Id = userId!,
+                BanMsg = request.Reason,
+                Banned = true,
+                Email = request.Email,
+                Name = request.DisplayName ?? string.Empty,
+                Type = AccountType.Vendor,
+                ReviewedBy = currentUserId.Id
+            };
+
+            await _firestore.SetDocumentAsync("users", userId!, user);
+            await _notifService.CreateNotifAsync(userId, "Vendor Application Denied", $"Your vendor account has been Denied. Reason: {request.Reason}.");
+
+            return Ok(new AuthResponse
+            {
+                Success = true,
+                Message = "Vendor account denied.",
+                Data = new UserDTO
+                {
+                    Id = userId,
+                    Email = user.Email,
+                    Name = user.Name,
+                    Type = user.Type,
+                    Banned = user.Banned,
+                    BanMsg = user.BanMsg,
+                    ReviewedBy = user.ReviewedBy
+                }
+            });
         }
         catch (InvalidOperationException ex)
         {

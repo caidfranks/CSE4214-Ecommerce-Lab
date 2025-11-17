@@ -192,6 +192,35 @@ public class AuthService
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
+    public async Task<AuthResponse> CreateDeniedVendorAsync(RequestDTO request, string RejectionReason)
+    {
+        var vendorRequest = new RegisterVendorRequest
+        {
+            Id = request.Id,
+            Email = request.Email,
+            Password = request.Password,
+            DisplayName = request.Name,
+            Reason = RejectionReason
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("api/auth/deny/vendor", vendorRequest);
+        var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+        // Don't do any of this because account not really created
+        if (result.IdToken != null)
+        {
+
+            _currentToken = result.IdToken;
+            _currentUserId = result.Data?.Id ?? null;
+            _currentUser = result.Data;
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
+        }
+
+        return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
+    }
+
     public async Task<AuthResponse> RegisterAdminAsync(string email, string password) //, string? displayName)
     {
         var request = new RegisterAdminRequest
