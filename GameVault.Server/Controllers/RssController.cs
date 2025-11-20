@@ -63,7 +63,7 @@ namespace GameVault.Server.Controllers
         [ResponseCache(Duration = 300)]
         public async Task<IActionResult> Get(string userId)
         {
-            var items = await _firestore.QueryDocumentsAsync<FirestoreNotification>(
+            var items = await _firestore.QueryDocumentsAsyncWithId<Notification>(
                 "notifications", "UserId", userId);
 
             var feedItems = items
@@ -72,8 +72,8 @@ namespace GameVault.Server.Controllers
                     new XElement("item",
                         new XElement("title", i.Title),
                         new XElement("description", i.Message),
-                        new XElement("pubDate", i.Timestamp.ToUniversalTime().ToString("R"))
-                        //new XElement("guid", i.Id)
+                        new XElement("pubDate", i.Timestamp.ToUniversalTime().ToString("R")),
+                        new XElement("guid", i.Id)
                     ));
 
             var doc = new XDocument(
