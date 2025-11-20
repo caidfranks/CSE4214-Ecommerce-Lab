@@ -206,17 +206,7 @@ public class AuthService
         var response = await _httpClient.PostAsJsonAsync("api/auth/deny/vendor", vendorRequest);
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
 
-        // Don't do any of this because account not really created
-        if (result.IdToken != null)
-        {
-
-            _currentToken = result.IdToken;
-            _currentUserId = result.Data?.Id ?? null;
-            _currentUser = result.Data;
-
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
-        }
+        // Don't update tokens because not logged in (and can't log in because banned)
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
