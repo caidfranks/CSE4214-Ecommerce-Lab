@@ -191,7 +191,7 @@ public class AuthController : ControllerBase
 
             if (id is not null)
             {
-                var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", 0);
+                var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", (int)AccountType.Admin);
                 foreach (var admin in adminUsers)
                 {
                     await _notifService.CreateNotifAsync(admin.Id, "New Vendor Application", "A new vendor application has been submitted");
