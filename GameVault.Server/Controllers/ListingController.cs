@@ -215,7 +215,7 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Pending);
-            var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", 0);
+            var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", (int)AccountType.Admin);
             foreach (var admin in adminUsers)
             {
                 await _notifService.CreateNotifAsync(admin.Id, "New Listing Application", "A new listing has been submitted");
