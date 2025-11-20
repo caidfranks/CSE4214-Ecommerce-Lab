@@ -343,7 +343,7 @@ public class InvoiceController : ControllerBase
         }
         else if (dTO.Status == InvoiceStatus.AwaitingReturn) {
             await _notifService.CreateNotifAsync(order.CustomerId, "Return Disputed", $"Your return's status has changed to {dTO.Status}. Reason: {dTO.Message}.");
-            var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", 0);
+            var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", (int)AccountType.Admin);
             foreach (var admin in adminUsers)
             {
                 await _notifService.CreateNotifAsync(admin.Id, "Return Disputed", $"A return's status has changed to {dTO.Status}. Reason: {dTO.Message}.");
