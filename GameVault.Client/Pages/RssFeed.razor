@@ -1,5 +1,6 @@
 ﻿@page "/rssfeed/{userId}"
 @inject NotificationService RssService
+@inject AuthService AuthService
 @inject NavigationManager Nav
 
 <h3>Latest Notifications</h3>
@@ -20,7 +21,14 @@
 
 @if (feedItems == null)
 {
-    <p>Loading...</p>
+    @if (error == string.Empty)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <p class="alert alert-danger mt-2"><em>@error</em></p>
+    }
 }
 else if (!feedItems.Any())
 {
@@ -46,27 +54,60 @@ else
     private List<NotificationDTO>? feedItems;
     private string feedUrl => $"http://localhost:5080/api/rss/{userId}";
     private bool copySuccess = false;
+    public string error = string.Empty;
 
     void OpenRssFeed()
     {
-        Nav.NavigateTo(feedUrl, true);
+        if (AuthService.CurrentUserId is not null)
+        {
+            Nav.NavigateTo(feedUrl, true);
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
     }
 
     async Task CopyFeedUrl()
     {
-        copySuccess = true;
-        await Task.Delay(20000);
-        copySuccess = false;
+        if (AuthService.CurrentUserId is not null)
+        {
+            copySuccess = true;
+            await Task.Delay(20000);
+            copySuccess = false;
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
     }
 
     void SubscribeUsingProtocol()
     {
-        Nav.NavigateTo($"feed:{feedUrl}", true);
+        if (AuthService.CurrentUserId is not null)
+        {
+            Nav.NavigateTo($"feed:{feedUrl}", true);
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        var result = await RssService.GetNotifsAsync(userId);
-        feedItems = result.List ?? new List<NotificationDTO>();
+        if (AuthService.CurrentUserId is not null)
+        {
+            var result = await RssService.GetNotifsAsync(userId);
+            feedItems = result.List ?? new List<NotificationDTO>();
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
     }
 }
