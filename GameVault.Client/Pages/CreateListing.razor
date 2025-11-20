@@ -50,17 +50,78 @@
       }
     </select>
   </div>
-  <button type="submit" disabled="@isSubmitting">
-    @if (isSubmitting)
-    {
-        <span>Creating...</span>
-    }
-    else
-    {
-        <span>Create Listing</span>
-    }
-  </button>
+
+    <!-- Image Upload Section -->
+    <div style="margin-bottom:16px;">
+        <label>Product Image (Optional)</label><br />
+        <InputFile OnChange="HandleImageSelected" class="form-control" accept="image/*" />
+        <small class="form-text text-muted">Maximum file size: 500KB. Accepted formats: JPG, PNG, WebP</small>
+
+        @if (_isProcessingImage)
+        {
+            <div class="mt-2">
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                Processing image...
+            </div>
+        }
+
+        @if (_imageError != null)
+        {
+            <div class="alert alert-danger mt-2">@_imageError</div>
+        }
+
+        @if (model.Image != null)
+        {
+            <div class="mt-2">
+                <img src="@model.Image" alt="Preview" class="img-thumbnail" style="max-width: 200px; max-height: 200px; object-fit: cover;" />
+                <button type="button" class="btn btn-sm btn-danger ms-2" @onclick="RemoveImage">
+                    <i class="bi bi-trash"></i> Remove
+                </button>
+            </div>
+        }
+    </div>
+
+    <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+        @if (isSubmitting)
+        {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            <span>Creating...</span>
+        }
+        else
+        {
+            <span>Create Listing</span>
+        }
+    </button>
+    <button type="button" class="btn btn-secondary ms-2" @onclick='() => Nav.NavigateTo("/vendor/listings")'>
+        Cancel
+    </button>
 </EditForm>
+
+<!-- Preview Column -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Preview</h5>
+            </div>
+            <div class="card-body">
+                @if (model.Image != null)
+                {
+                    <img src="@model.Image" alt="Preview" class="img-fluid rounded mb-3" />
+                }
+                else
+                {
+                    <div class="text-center p-4 bg-light rounded mb-3">
+                        <i class="bi bi-image" style="font-size: 3rem; color: #ccc;"></i>
+                        <p class="text-muted mt-2">No image</p>
+                    </div>
+                }
+                
+                <h6 class="fw-bold">@(!string.IsNullOrEmpty(model.Name) ? model.Name : "Product Name")</h6>
+                <p class="text-primary fw-bold fs-5">$@((model.Price / 100M).ToString("F2"))</p>
+                <p class="text-muted small">Stock: @model.Stock</p>
+            </div>
+        </div>
+    </div>
 
 @code {
   private EditableListing model = new()
@@ -74,8 +135,10 @@
 
   private List<CategoryDTO>? categories = [];
   private bool isSubmitting = false;
+  private bool _isProcessingImage = false;
   private string errorMessage = "";
   private string successMessage = "";
+  private string? _imageError;
 
   protected override async Task OnInitializedAsync()
   {
@@ -92,6 +155,57 @@
     categories = await ProductService.GetCategoriesAsync();
   }
 
+    private async Task HandleImageSelected(InputFileChangeEventArgs e)
+    {
+        _isProcessingImage = true;
+        _imageError = null;
+
+        try
+        {
+            var file = e.File;
+
+            // Validate file size
+            if (file.Size > 500 * 1024)
+            {
+                _imageError = "Image must be less than 500KB. Please compress your image.";
+                _isProcessingImage = false;
+                return;
+            }
+
+            // Validate file type
+            var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp", "image/jpg" };
+            if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            {
+                _imageError = "Only JPEG, PNG, and WebP images are allowed";
+                _isProcessingImage = false;
+                return;
+            }
+
+            // Convert to Base64
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream(500 * 1024).ReadAsync(buffer);
+            var base64 = Convert.ToBase64String(buffer);
+            model.Image = $"data:{file.ContentType};base64,{base64}";
+
+            Console.WriteLine("Image processed successfully");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error processing image: {ex.Message}");
+            _imageError = "Failed to process image. Please try again.";
+        }
+        finally
+        {
+            _isProcessingImage = false;
+        }
+    }
+
+    private void RemoveImage()
+    {
+        model.Image = null;
+        _imageError = null;
+    }
+
   private async Task HandleCreate()
   {
     isSubmitting = true;
@@ -103,7 +217,8 @@
       model.Price, 
       model.Description, 
       model.Stock, 
-      model.Category ?? ""
+      model.Category ?? "",
+      model.Image ?? ""
     );
 
     isSubmitting = false;

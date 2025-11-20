@@ -9,7 +9,8 @@ public class EditableListing
   public required decimal Price { get; set; }
   public required int Stock { get; set; }
   public string? Category { get; set; }
-  public static EditableListing FromListingDTO(ListingDTO dto)
+  public string? Image { get; set; }
+    public static EditableListing FromListingDTO(ListingDTO dto)
   {
     return new()
     {
@@ -17,7 +18,8 @@ public class EditableListing
       Description = dto.Description,
       Price = dto.Price / 100M,
       Stock = dto.Stock,
-      Category = dto.Category
+      Category = dto.Category,
+      Image = dto.Image
     };
   }
 }

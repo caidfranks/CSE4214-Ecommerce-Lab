@@ -1,0 +1,112 @@
+﻿@inject HttpClient HttpClient
+
+<div class="image-upload-container mb-3">
+    <label class="form-label fw-bold">Product Image</label>
+
+    @if (!string.IsNullOrEmpty(CurrentImageUrl))
+    {
+        <div class="current-image mb-2">
+            <img src="@CurrentImageUrl" alt="Product" class="img-thumbnail" style="max-width: 200px; max-height: 200px; object-fit: cover;" />
+        </div>
+    }
+
+    <InputFile OnChange="HandleFileSelected" class="form-control" accept="image/*" />
+    <div class="form-text">Maximum file size: 500KB. Accepted formats: JPG, PNG, WebP</div>
+
+    @if (_isUploading)
+    {
+        <div class="alert alert-info mt-2 d-flex align-items-center">
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            Uploading image...
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(_message))
+    {
+        <div class="alert @(_isError ? "alert-danger" : "alert-success") mt-2">
+            <i class="bi @(_isError ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill") me-2"></i>
+            @_message
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string ListingId { get; set; } = string.Empty;
+    [Parameter] public string? CurrentImageUrl { get; set; }
+    [Parameter] public EventCallback<string> OnImageUploaded { get; set; }
+
+    private bool _isUploading;
+    private string? _message;
+    private bool _isError;
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _isUploading = true;
+        _message = null;
+        _isError = false;
+
+        try
+        {
+            var file = e.File;
+
+            // Client-side validation
+            if (file.Size > 500 * 1024)
+            {
+                _message = "File size must be less than 500KB. Please compress your image.";
+                _isError = true;
+                _isUploading = false;
+                return;
+            }
+
+            var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp", "image/jpg" };
+            if (!allowedTypes.Contains(file.ContentType.ToLower()))
+            {
+                _message = "Only JPEG, PNG, and WebP images are allowed";
+                _isError = true;
+                _isUploading = false;
+                return;
+            }
+
+            // Create form data
+            using var content = new MultipartFormDataContent();
+            var fileContent = new StreamContent(file.OpenReadStream(maxAllowedSize: 500 * 1024));
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(file.ContentType);
+            content.Add(fileContent, "file", file.Name);
+
+            // Upload
+            var response = await HttpClient.PostAsync($"api/listing/{ListingId}/upload-image", content);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<DataResponse<string>>();
+                if (result?.Success == true && result.Data != null)
+                {
+                    _message = "Image uploaded successfully!";
+                    _isError = false;
+                    await OnImageUploaded.InvokeAsync(result.Data);
+                }
+                else
+                {
+                    _message = result?.Message ?? "Failed to upload image";
+                    _isError = true;
+                }
+            }
+            else
+            {
+                var errorResult = await response.Content.ReadFromJsonAsync<DataResponse<string>>();
+                _message = errorResult?.Message ?? "Failed to upload image";
+                _isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            _message = "An error occurred while uploading";
+            _isError = true;
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+}
