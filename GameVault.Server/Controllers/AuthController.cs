@@ -331,7 +331,7 @@ public class AuthController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new DataResponse<string>
+            return BadRequest(new AuthResponse
             {
                 Success = false,
                 Message = ex.Message
@@ -339,7 +339,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception)
         {
-            return StatusCode(500, new DataResponse<string>
+            return StatusCode(500, new AuthResponse
             {
                 Success = false,
                 Message = "An unexpected error occurred while creating your vendor account. Please try again later."
