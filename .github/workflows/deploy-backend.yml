@@ -85,7 +85,7 @@ jobs:
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars ASPNETCORE_ENVIRONMENT=Production \
+            --set-env-vars ASPNETCORE_ENVIRONMENT=Production,GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-credentials.json \
             --set-secrets=/app/firebase-credentials.json=firebase-credentials:latest
 
 
