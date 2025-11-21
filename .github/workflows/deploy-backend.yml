@@ -1,0 +1,92 @@
+name: Build and Deploy Backend to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    # only triggers if these files change
+    paths:
+      - 'GameVault.Server/**'
+      - 'GameVault.Shared/**'
+      - 'Dockerfile'
+  # allows UI triggering
+  workflow_dispatch:
+
+env: 
+  PROJECT_ID: gamevault-9a27e
+  REGION: us-central1
+  SERVICE_NAME: gamevault-9a27e
+  REGISTRY: us-central1-docker.pkg.dev
+
+
+jobs:
+  #first job id - uncomment when we have xunit tests
+  # test:
+  #   name: Run Tests
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up .NET
+  #       uses: actions/setup-dotnet@v4
+  #       with:
+  #         dotnet-version: '9.0.x'
+
+  #     - name: Restore dependencies
+  #       run: dotnet restore
+
+  #     - name: Build
+  #       run: dotnet build --no-restore --configuration Release
+
+  #     # - name: Run unit Tests
+  #     #   run: dotnet test --no-build --configuration Release --verbosity normal
+
+  # second job id
+  build-and-deploy:
+    name: Build and Deploy to Cloud Run
+    # needs: test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        
+      - name: Configure Docker for Google Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Build and Push Docker Image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+                       -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest \
+                       -f Dockerfile .
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars ASPNETCORE_ENVIRONMENT=Production \
+            --set-secrets=/app/firebase-credentials.json=firebase-credentials:latest
+
+
+
