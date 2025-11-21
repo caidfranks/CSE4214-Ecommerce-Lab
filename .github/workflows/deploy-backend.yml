@@ -86,7 +86,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --set-env-vars ASPNETCORE_ENVIRONMENT=Production,GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-credentials.json \
-            --set-secrets=/secrets/firebase-credentials.json=firebase-credentials:latest
+            --update-secrets=/secrets/firebase-credentials.json=firebase-credentials:latest
 
 
 
