@@ -84,8 +84,10 @@ jobs:
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars ASPNETCORE_ENVIRONMENT=Production,GOOGLE_APPLICATION_CREDENTIALS=/secrets/firebase-credentials.json \
-            --update-secrets=/secrets/firebase-credentials.json=firebase-credentials:latest
+            --port 8080 \
+            --service-account gamevault-9a27e@appspot.gserviceaccount.com \
+            --set-env-vars ASPNETCORE_ENVIRONMENT=Production \
+            --timeout=300
 
 
 
