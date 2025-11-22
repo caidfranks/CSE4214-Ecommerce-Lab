@@ -72,16 +72,15 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:${{ github.sha }} \
-                       -t ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest \
-                       -f Dockerfile .
-          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest
+          gcloud builds submit \
+            --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest \
+            --timeout=20m \
+            .
 
       - name: Deploy to Cloud Run
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
-            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:${{ github.sha }} \
+            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest \
             --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \

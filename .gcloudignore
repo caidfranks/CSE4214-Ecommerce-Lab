@@ -1,0 +1,50 @@
+cat > .gcloudignore << 'EOF'
+# Git files
+.git
+.gitignore
+.github/
+
+# Firebase
+.firebase/
+.firebase_data/
+firebase-export-*/
+emulator_baseline/
+firebase-debug.log
+firestore-debug.log
+.firebaserc
+firebase.json
+functions/
+
+# Build artifacts
+**/bin/
+**/obj/
+**/node_modules/
+release/
+
+# IDE
+.idea/
+.vscode/
+.vs/
+.DS_Store
+
+# Client files (we only need the .csproj)
+GameVault.Client/wwwroot/
+GameVault.Client/bin/
+GameVault.Client/obj/
+
+# Documentation
+*.md
+!README.md
+
+# Scripts
+*.sh
+*.bat
+start-dev.*
+deploy-*.sh
+deploy-*.bat
+
+# Logs and temp files
+*.log
+latest_logs.json
+service-config.yaml
+EOF
