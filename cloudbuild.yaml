@@ -1,0 +1,16 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGISTRY}/${PROJECT_ID}/gamevault-repo/${_SERVICE_NAME}:${SHORT_SHA}'
+      - '-t'
+      - '${_REGISTRY}/${PROJECT_ID}/gamevault-repo/${_SERVICE_NAME}:latest'
+      - '.'
+    timeout: 1200s
+
+images:
+  - '${_REGISTRY}/${PROJECT_ID}/gamevault-repo/${_SERVICE_NAME}:${SHORT_SHA}'
+  - '${_REGISTRY}/${PROJECT_ID}/gamevault-repo/${_SERVICE_NAME}:latest'
+
+timeout: 1200s

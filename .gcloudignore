@@ -1,4 +1,3 @@
-cat > .gcloudignore << 'EOF'
 # Git files
 .git
 .gitignore
@@ -47,4 +46,3 @@ deploy-*.bat
 *.log
 latest_logs.json
 service-config.yaml
-EOF
