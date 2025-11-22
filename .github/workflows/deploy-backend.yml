@@ -9,6 +9,7 @@ on:
       - 'GameVault.Server/**'
       - 'GameVault.Shared/**'
       - 'Dockerfile'
+      - '.github/workflows/deploy-backend.yml'
   # allows UI triggering
   workflow_dispatch:
 
