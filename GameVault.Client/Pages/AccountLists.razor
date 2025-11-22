@@ -305,8 +305,9 @@ else
 
     private async Task HandleDenyRequest() {
         @* await AccountService.AddRemovalReason(selectedEntry.UserID, RejectionReason); *@
-        await AuthService.CreateVendorAsync(selectedRequest);
-        await AccountService.BanAccount(selectedRequest.Id, RejectionReason);
+        //await AuthService.CreateVendorAsync(selectedRequest);
+        await AuthService.CreateDeniedVendorAsync(selectedRequest, RejectionReason);
+        //await AccountService.BanAccount(selectedRequest.Id, RejectionReason);
         await AccountService.ArchiveRequest(selectedRequest.Id);
         await LogService.LogVendorApprovalAsync(selectedRequest.Id, selectedRequest.Email, VendorApproval.Denied);
         CloseDenialPopup();

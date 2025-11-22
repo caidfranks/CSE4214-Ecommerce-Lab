@@ -192,6 +192,25 @@ public class AuthService
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
 
+    public async Task<AuthResponse> CreateDeniedVendorAsync(RequestDTO request, string RejectionReason)
+    {
+        var vendorRequest = new RegisterVendorRequest
+        {
+            Id = request.Id,
+            Email = request.Email,
+            Password = request.Password,
+            DisplayName = request.Name,
+            Reason = RejectionReason
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("api/auth/deny/vendor", vendorRequest);
+        var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+        // Don't update tokens because not logged in (and can't log in because banned)
+
+        return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
+    }
+
     public async Task<AuthResponse> RegisterAdminAsync(string email, string password) //, string? displayName)
     {
         var request = new RegisterAdminRequest
