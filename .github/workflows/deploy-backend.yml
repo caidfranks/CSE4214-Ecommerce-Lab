@@ -75,6 +75,7 @@ jobs:
           gcloud builds submit \
             --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest \
             --timeout=20m \
+            --suppress-logs \
             .
 
       - name: Deploy to Cloud Run
