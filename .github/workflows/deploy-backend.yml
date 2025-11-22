@@ -72,11 +72,31 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          gcloud builds submit \
+          BUILD_ID=$(gcloud builds submit \
             --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest \
-            --timeout=20m \
-            --suppress-logs \
-            .
+            --format="value(id)" \
+            --async \
+            .)
+          echo "Build submitted with ID: $BUILD_ID"
+          echo "Waiting for build to complete..."
+
+          for i in {1..120}; do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --format="value(status)")
+            echo "Build status: $STATUS"
+
+            if [ "$STATUS" = "SUCCESS" ]; then
+              echo "Build completed successfully!"
+              exit 0
+            elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "TIMEOUT" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "Build failed with status: $STATUS"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "Build timeout after 20 minutes"
+          exit 1
 
       - name: Deploy to Cloud Run
         run: |
