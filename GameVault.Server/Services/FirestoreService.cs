@@ -1,4 +1,4 @@
-﻿using Google.Cloud.Firestore;
+using Google.Cloud.Firestore;
 using Google.Cloud.Firestore.V1;
 using Google.Apis.Auth.OAuth2;
 using Grpc.Auth;
@@ -14,42 +14,70 @@ public class FirestoreService : IFirestoreService
 
     public FirestoreService(IConfiguration configuration)
     {
-
-
         string? emulatorHost = Environment.GetEnvironmentVariable("FIRESTORE_EMULATOR_HOST");
-        if (string.IsNullOrEmpty(emulatorHost))
+        
+        if (!string.IsNullOrEmpty(emulatorHost))
         {
-            // Handle the case where the emulator variable is not set
-            // throw new InvalidOperationException("FIRESTORE_EMULATOR_HOST environment variable not set.");
+            Console.WriteLine("Connecting to local firestore emulator.");
             var projectId = configuration["Firebase:ProjectId"] ?? "demo-project";
-            var clientEmail = configuration["Firebase:ClientEmail"];
-            var privateKey = configuration["Firebase:PrivateKey"];
-
-            var credential = GoogleCredential.FromJson($@"{{
-                ""type"": ""service_account"",
-                ""project_id"": ""{projectId}"",
-                ""client_email"": ""{clientEmail}"",
-                ""private_key"": ""{privateKey?.Replace("\\n", "\n")}""
-            }}");
 
             var firestoreClientBuilder = new FirestoreClientBuilder
             {
-                ChannelCredentials = credential.ToChannelCredentials()
+                Endpoint = emulatorHost,
+                ChannelCredentials = ChannelCredentials.Insecure
             };
 
             _firestoreDb = FirestoreDb.Create(projectId, firestoreClientBuilder.Build());
         }
         else
         {
-            Console.WriteLine("Connecting to local firestore emulator.");
+            string? credentialsPath = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
+            GoogleCredential credential;
+            string projectId;
 
-            var projectId = configuration["Firebase:ProjectId"] ?? "demo-project";
+            if (!string.IsNullOrEmpty(credentialsPath) && File.Exists(credentialsPath))
+            {
+                Console.WriteLine($"Using Firestore credentials from file: {credentialsPath}");
+                credential = GoogleCredential.FromFile(credentialsPath);
+                
+                var credentialsJson = System.Text.Json.JsonDocument.Parse(File.ReadAllText(credentialsPath));
+                projectId = credentialsJson.RootElement.GetProperty("project_id").GetString() 
+                    ?? throw new InvalidOperationException("Firebase ProjectId not found in credentials file");
+            }
+            else if (configuration["Firebase:ClientEmail"] != null && configuration["Firebase:PrivateKey"] != null)
+            {
+                Console.WriteLine("Using Firestore credentials from appsettings.json");
+                projectId = configuration["Firebase:ProjectId"] ?? throw new InvalidOperationException("Firebase ProjectId is required");
+                var clientEmail = configuration["Firebase:ClientEmail"];
+                var privateKey = configuration["Firebase:PrivateKey"];
 
-            // Manually configure the FirestoreClientBuilder
+                credential = GoogleCredential.FromJson($@"{{
+                    ""type"": ""service_account"",
+                    ""project_id"": ""{projectId}"",
+                    ""client_email"": ""{clientEmail}"",
+                    ""private_key"": ""{privateKey.Replace("\\n", "\n")}""
+                }}");
+            }
+            else
+            {
+                Console.WriteLine("Using Firestore Application Default Credentials (Cloud Run)");
+                projectId = configuration["Firebase:ProjectId"] ?? "gamevault-9a27e";
+                
+                try
+                {
+                    credential = GoogleCredential.GetApplicationDefault();
+                    Console.WriteLine("Successfully loaded Firestore Application Default Credentials");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to load Firestore Application Default Credentials: {ex.Message}");
+                    throw new InvalidOperationException("Unable to load Firestore credentials. Please ensure the service is running on Google Cloud with proper permissions.", ex);
+                }
+            }
+
             var firestoreClientBuilder = new FirestoreClientBuilder
             {
-                Endpoint = emulatorHost,
-                ChannelCredentials = ChannelCredentials.Insecure
+                ChannelCredentials = credential.ToChannelCredentials()
             };
 
             _firestoreDb = FirestoreDb.Create(projectId, firestoreClientBuilder.Build());
@@ -172,14 +200,12 @@ public class FirestoreService : IFirestoreService
         if (queries.Count == 0) throw new ArgumentException("No queries provided");
         var collectionRef = _firestoreDb.Collection(collection);
         Query query = collectionRef.WhereEqualTo(queries[0].fieldName, queries[0].value);
-        // Console.WriteLine($"Querying where {queries[0].fieldName} = {queries[0].value}");
         bool first = true;
         foreach (QueryParam q in queries)
         {
             if (!first)
             {
                 query = query.WhereEqualTo(q.fieldName, q.value);
-                // Console.WriteLine($"Querying where {q.fieldName} = {q.value}");
             }
             first = false;
         }
@@ -188,11 +214,8 @@ public class FirestoreService : IFirestoreService
         var results = new List<T>();
         foreach (var document in snapshot.Documents)
         {
-            // T newResult = document.ConvertTo<T>();
             results.Add(document.ConvertTo<T>());
         }
-
-        // Console.WriteLine($"Query returned {results.Count} results from {snapshot.Documents.Count} documents");
 
         return results;
     }
@@ -202,14 +225,12 @@ public class FirestoreService : IFirestoreService
         if (queries.Count == 0) throw new ArgumentException("No queries provided");
         var collectionRef = _firestoreDb.Collection(collection);
         Query query = collectionRef.WhereEqualTo(queries[0].fieldName, queries[0].value);
-        // Console.WriteLine($"Querying where {queries[0].fieldName} = {queries[0].value}");
         bool first = true;
         foreach (QueryParam q in queries)
         {
             if (!first)
             {
                 query = query.WhereEqualTo(q.fieldName, q.value);
-                // Console.WriteLine($"Querying where {q.fieldName} = {q.value}");
             }
             first = false;
         }
@@ -222,8 +243,6 @@ public class FirestoreService : IFirestoreService
             newResult.Id = document.Id;
             results.Add(newResult);
         }
-
-        // Console.WriteLine($"Query returned {results.Count} results from {snapshot.Documents.Count} documents");
 
         return results;
     }
