@@ -1,9 +1,10 @@
-using GameVault.Server.Services;
 using GameVault.Server.Models;
 using GameVault.Server.Models.Firestore;
+using GameVault.Server.Services;
 using GameVault.Shared.DTOs;
 using GameVault.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
+using static Google.Rpc.Context.AttributeContext.Types;
 
 namespace GameVault.Server.Controllers;
 
@@ -13,17 +14,20 @@ public class InvoiceController : ControllerBase
 {
     private readonly InvoiceService _invoiceService;
     private readonly UserService _userService;
+    private readonly NotificationService _notifService;
     private readonly IFirestoreService _firestore;
     private readonly ILogger<InvoiceController> _logger;
 
     public InvoiceController(
         InvoiceService invoiceService,
         UserService userService,
+        NotificationService notifService,
         IFirestoreService firestore,
         ILogger<InvoiceController> logger)
     {
         _invoiceService = invoiceService;
         _userService = userService;
+        _notifService = notifService;
         _firestore = firestore;
         _logger = logger;
     }
@@ -302,6 +306,8 @@ public class InvoiceController : ControllerBase
             }
 
             await _invoiceService.UpdateInvoiceStatusAsync(invoiceId, request.Status, null);
+            var order = await _firestore.GetDocumentAsync<Order>("orders", invoice.OrderId);
+            await _notifService.CreateNotifAsync(order.CustomerId, "Order Status Change", $"Your order status has changed to {request.Status}.");
             return Ok();
         }
         catch (Exception ex)
@@ -348,8 +354,30 @@ public class InvoiceController : ControllerBase
         }
 
         await _invoiceService.UpdateInvoiceStatusAsync(dTO.Id, dTO.Status, dTO.Message);
+        var order = await _firestore.GetDocumentAsync<Order>("orders", invoice.OrderId);
+        if (dTO.Status == InvoiceStatus.Declined)
+        {
+            await _notifService.CreateNotifAsync(order.CustomerId, "Order Status Change", $"Your return status has changed to {dTO.Status}. Reason: {dTO.Message}.");
+        }
+        else if (dTO.Status == InvoiceStatus.PendingReturn)
+        {
+            await _notifService.CreateNotifAsync(invoice.VendorId, "Return Requested", $"An order has been marked {dTO.Status}. Reason: {dTO.Message}.");
+        }
+        else if (dTO.Status == InvoiceStatus.AwaitingReturn) {
+            await _notifService.CreateNotifAsync(order.CustomerId, "Return Disputed", $"Your return's status has changed to {dTO.Status}. Reason: {dTO.Message}.");
+            var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", (int)AccountType.Admin);
+            foreach (var admin in adminUsers)
+            {
+                await _notifService.CreateNotifAsync(admin.Id, "Return Disputed", $"A return's status has changed to {dTO.Status}. Reason: {dTO.Message}.");
+            }
+        }
+        else
+        {
+            await _notifService.CreateNotifAsync(order.CustomerId, "Order Status Change", $"Your return status has changed to {dTO.Status}.");
+        }
 
-        return Ok();
+
+            return Ok();
     }
 
     [HttpPost("rate")]

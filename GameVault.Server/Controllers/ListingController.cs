@@ -17,13 +17,15 @@ namespace GameVault.Server.Controllers
         private readonly IFirebaseAuthService _firebaseAuth;
         private readonly IFirestoreService _firestore;
         private readonly UserService _userService;
+        private readonly NotificationService _notifService;
         private readonly IConfiguration _configuration;
 
-        public ListingController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, UserService userService, IConfiguration configuration)
+        public ListingController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, UserService userService, NotificationService notifService, IConfiguration configuration)
         {
             _firebaseAuth = firebaseAuth;
             _firestore = firestore;
             _userService = userService;
+            _notifService = notifService;
             _configuration = configuration;
         }
 
@@ -217,6 +219,11 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Pending);
+            var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", (int)AccountType.Admin);
+            foreach (var admin in adminUsers)
+            {
+                await _notifService.CreateNotifAsync(admin.Id, "New Listing Application", "A new listing has been submitted");
+            }
 
             // TODO: Handle firestore errors
 
@@ -243,6 +250,9 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Inactive);
+            var listing = await _firestore.GetDocumentAsync<Listing>("listings", id);
+            await _notifService.CreateNotifAsync(listing.OwnerID, "Listing Inactive", "Your listing has been made inactive.");
+
 
             // TODO: Handle firestore errors
 
@@ -308,6 +318,8 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Published);
+            var listing = await _firestore.GetDocumentAsync<Listing>("listings", id);
+            await _notifService.CreateNotifAsync(listing.OwnerID, "Listing Approved", "Your listing has been approved.");
 
             // TODO: Handle firestore errors
 
@@ -334,6 +346,8 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Removed);
+            var listing = await _firestore.GetDocumentAsync<Listing>("listings", id);
+            await _notifService.CreateNotifAsync(listing.OwnerID, "Listing Removed", "Your listing has been removed.");
 
             // TODO: Handle firestore errors
 
