@@ -41,6 +41,11 @@
                 <span class="profile-badge profile-badge-@userDetails.Type.ToString().ToLower()">
                     @GetRoleIcon(userDetails.Type) @userDetails.Type
                 </span>
+                <span class="profile-badge">
+                    <button @onclick='() => Navigation.NavigateTo($"/rssfeed/{userDetails.Id}")' class="btn btn-secondary">
+                        RSS Feed
+                    </button>
+                </span>
             </div>
         </div>
 

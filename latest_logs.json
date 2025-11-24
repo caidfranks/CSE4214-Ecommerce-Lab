@@ -1,0 +1,38 @@
+[
+  {
+    "httpRequest": {
+      "latency": "0.003214819s",
+      "protocol": "HTTP/1.1",
+      "referer": "https://gamevault-9a27e.web.app/",
+      "remoteIp": "2600:1700:50f0:6c20:fdf8:b9ea:db84:d7a1",
+      "requestMethod": "OPTIONS",
+      "requestSize": "741",
+      "requestUrl": "https://gamevault-server-819772831155.us-central1.run.app/api/auth/login",
+      "responseSize": "232",
+      "serverIp": "2600:1900:4243:200::",
+      "status": 204,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Safari/605.1.15"
+    },
+    "insertId": "6916b37a000c69df16fc9abd",
+    "labels": {
+      "instanceId": "0014778296b2f3d0720d2d92f05586f7cfc2ad0647801e7fb68c4d68094687da0f275eb403037323e4b4637fd939417faac424d63ca8abd591975d8adf51596fceb56b87535159627724eb539511"
+    },
+    "logName": "projects/gamevault-9a27e/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2025-11-14T04:43:38.819225774Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "gamevault-server",
+        "location": "us-central1",
+        "project_id": "gamevault-9a27e",
+        "revision_name": "gamevault-server-00010-r99",
+        "service_name": "gamevault-server"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "d1ffc0ea3e5d641e",
+    "timestamp": "2025-11-14T04:43:38.804Z",
+    "trace": "projects/gamevault-9a27e/traces/0f0de26ff5f15b641c76c6fd8c3395e4",
+    "traceSampled": true
+  }
+]

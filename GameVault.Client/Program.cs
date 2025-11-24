@@ -30,6 +30,7 @@ builder.Services.AddScoped<CookieService>();
 builder.Services.AddScoped<BreadcrumbService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<LogService>();
+builder.Services.AddScoped<NotificationService>();
 
 var app = builder.Build();
 

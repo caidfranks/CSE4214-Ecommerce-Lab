@@ -47,6 +47,12 @@ if (tested)
 
 var builder = WebApplication.CreateBuilder(args);
 
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.ListenAnyIP(int.Parse(port));
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -84,6 +90,7 @@ builder.Services.AddScoped<SquarePaymentService>();
 builder.Services.AddScoped<OrderService>();
 builder.Services.AddScoped<InvoiceService>();
 builder.Services.AddScoped<TaxService>();
+builder.Services.AddScoped<NotificationService>();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
@@ -108,7 +115,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowBlazorClient");
 app.UseAuthorization();
 // app.UseAuthentication();

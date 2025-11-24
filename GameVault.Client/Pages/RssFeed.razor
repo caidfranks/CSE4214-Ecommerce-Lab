@@ -1,0 +1,113 @@
+﻿@page "/rssfeed/{userId}"
+@inject NotificationService RssService
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<h3>Latest Notifications</h3>
+
+<button class="btn btn-primary" @onclick="OpenRssFeed">
+   Open RSS Feed
+</button>
+<button class="btn btn-secondary" @onclick="CopyFeedUrl">
+    Copy RSS URL
+</button>
+<button class="btn btn-secondary" @onclick="SubscribeUsingProtocol">
+    Open in RSS Reader
+</button>
+@if (copySuccess)
+{
+    <input id="feedUrl" class="form-control" value="@feedUrl" readonly />
+}
+
+@if (feedItems == null)
+{
+    @if (error == string.Empty)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <p class="alert alert-danger mt-2"><em>@error</em></p>
+    }
+}
+else if (!feedItems.Any())
+{
+    <p>No notifications found.</p>
+}
+else
+{
+    <ul>
+        @foreach (var item in feedItems)
+        {
+            <li class="mb-3">
+                <strong>@item.Title</strong><br />
+                @item.Message<br />
+                <small>@item.Timestamp.ToLocalTime()</small>
+            </li>
+        }
+    </ul>
+}
+
+@code {
+    [Parameter]
+    public string userId { get; set; }
+    private List<NotificationDTO>? feedItems;
+    private string feedUrl => $"http://localhost:5080/api/rss/{userId}";
+    private bool copySuccess = false;
+    public string error = string.Empty;
+
+    void OpenRssFeed()
+    {
+        if (AuthService.CurrentUserId is not null)
+        {
+            Nav.NavigateTo(feedUrl, true);
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
+    }
+
+    async Task CopyFeedUrl()
+    {
+        if (AuthService.CurrentUserId is not null)
+        {
+            copySuccess = true;
+            await Task.Delay(20000);
+            copySuccess = false;
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
+    }
+
+    void SubscribeUsingProtocol()
+    {
+        if (AuthService.CurrentUserId is not null)
+        {
+            Nav.NavigateTo($"feed:{feedUrl}", true);
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (AuthService.CurrentUserId is not null)
+        {
+            var result = await RssService.GetNotifsAsync(userId);
+            feedItems = result.List ?? new List<NotificationDTO>();
+        }
+        else
+        {
+            Console.WriteLine("Not logged in");
+            error = "Not logged in";
+        }
+    }
+}

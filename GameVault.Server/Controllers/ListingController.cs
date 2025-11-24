@@ -17,13 +17,15 @@ namespace GameVault.Server.Controllers
         private readonly IFirebaseAuthService _firebaseAuth;
         private readonly IFirestoreService _firestore;
         private readonly UserService _userService;
+        private readonly NotificationService _notifService;
         private readonly IConfiguration _configuration;
 
-        public ListingController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, UserService userService, IConfiguration configuration)
+        public ListingController(IFirebaseAuthService firebaseAuth, IFirestoreService firestore, UserService userService, NotificationService notifService, IConfiguration configuration)
         {
             _firebaseAuth = firebaseAuth;
             _firestore = firestore;
             _userService = userService;
+            _notifService = notifService;
             _configuration = configuration;
         }
 
@@ -61,7 +63,8 @@ namespace GameVault.Server.Controllers
                 Status = newListing.Status,
                 OwnerID = user.Id,
                 LastModified = DateTime.UtcNow,
-                Category = newListing.Category
+                Category = newListing.Category,
+                Image = newListing.Image
             };
 
             await _firestore.AddDocumentAsync("listings", newListingObj);
@@ -217,6 +220,11 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Pending);
+            var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", (int)AccountType.Admin);
+            foreach (var admin in adminUsers)
+            {
+                await _notifService.CreateNotifAsync(admin.Id, "New Listing Application", "A new listing has been submitted");
+            }
 
             // TODO: Handle firestore errors
 
@@ -243,6 +251,9 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Inactive);
+            var listing = await _firestore.GetDocumentAsync<Listing>("listings", id);
+            await _notifService.CreateNotifAsync(listing.OwnerID, "Listing Inactive", "Your listing has been made inactive.");
+
 
             // TODO: Handle firestore errors
 
@@ -308,6 +319,8 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Published);
+            var listing = await _firestore.GetDocumentAsync<Listing>("listings", id);
+            await _notifService.CreateNotifAsync(listing.OwnerID, "Listing Approved", "Your listing has been approved.");
 
             // TODO: Handle firestore errors
 
@@ -334,6 +347,8 @@ namespace GameVault.Server.Controllers
             // TODO: Make sure owner
 
             await _firestore.SetDocumentFieldAsync("listings", id, "Status", (int)ListingStatus.Removed);
+            var listing = await _firestore.GetDocumentAsync<Listing>("listings", id);
+            await _notifService.CreateNotifAsync(listing.OwnerID, "Listing Removed", "Your listing has been removed.");
 
             // TODO: Handle firestore errors
 
@@ -438,6 +453,7 @@ namespace GameVault.Server.Controllers
                 listing.Price = modListing.Price;
                 listing.Stock = modListing.Stock;
                 listing.Status = ListingStatus.Inactive;
+                listing.Image = modListing.Image;
                 // Update in Firestore
                 await _firestore.SetDocumentAsync("listings", modListing.Id, listing);
 
@@ -482,6 +498,101 @@ namespace GameVault.Server.Controllers
                 Success = true,
                 Message = "Listing status successfully updated to pending",
             });
+        }
+
+        [HttpPost("{listingId}/upload-image")]
+        public async Task<ActionResult<DataResponse<string>>> UploadListingImage(
+    string listingId,
+    IFormFile file,
+    [FromHeader] string? Authorization)
+        {
+            try
+            {
+                // Verify user is authenticated
+                var user = await _userService.GetUserFromHeader(Authorization);
+                if (user == null)
+                {
+                    return Unauthorized(new DataResponse<string>
+                    {
+                        Success = false,
+                        Message = "Not authenticated"
+                    });
+                }
+
+                // Get the listing to verify ownership
+                var listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", listingId);
+                if (listing == null)
+                {
+                    return NotFound(new DataResponse<string>
+                    {
+                        Success = false,
+                        Message = "Listing not found"
+                    });
+                }
+
+                // Verify user owns this listing or is admin
+                if (listing.OwnerID != user.Id && user.Type != AccountType.Admin)
+                {
+                    return Forbid();
+                }
+
+                // Validate file
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest(new DataResponse<string>
+                    {
+                        Success = false,
+                        Message = "No file uploaded"
+                    });
+                }
+
+                // Validate file type
+                var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp", "image/jpg" };
+                if (!allowedTypes.Contains(file.ContentType.ToLower()))
+                {
+                    return BadRequest(new DataResponse<string>
+                    {
+                        Success = false,
+                        Message = "Only JPEG, PNG, and WebP images are allowed"
+                    });
+                }
+
+                // Validate file size (500KB max)
+                if (file.Length > 500 * 1024)
+                {
+                    return BadRequest(new DataResponse<string>
+                    {
+                        Success = false,
+                        Message = "File size must be less than 500KB"
+                    });
+                }
+
+                // Convert to Base64
+                using var memoryStream = new MemoryStream();
+                await file.CopyToAsync(memoryStream);
+                var bytes = memoryStream.ToArray();
+                var base64 = Convert.ToBase64String(bytes);
+                var dataUrl = $"data:{file.ContentType};base64,{base64}";
+
+                // Update listing in Firestore
+                await _firestore.SetDocumentFieldAsync("listings", listingId, "Image", dataUrl);
+
+                return Ok(new DataResponse<string>
+                {
+                    Success = true,
+                    Message = "Image uploaded successfully",
+                    Data = dataUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error uploading image: {ex.Message}");
+                return StatusCode(500, new DataResponse<string>
+                {
+                    Success = false,
+                    Message = "Failed to upload image"
+                });
+            }
         }
     }
 }
