@@ -395,21 +395,33 @@ public class ProductController : ControllerBase
     [HttpGet("categories")]
     public async Task<ActionResult<ListResponse<CategoryDTO>>> GetCategories()
     {
-        var categories = await _firestore.GetCollectionAsyncWithId<Category>("categories");
-        List<CategoryDTO> dTOs = [];
-        foreach (Category category in categories)
+        try
         {
-            dTOs.Add(new()
+            var categories = await _firestore.GetCollectionAsyncWithId<Category>("categories");
+            List<CategoryDTO> dTOs = [];
+            foreach (Category category in categories)
             {
-                Id = category.Id,
-                Name = category.Name,
-            });
+                dTOs.Add(new()
+                {
+                    Id = category.Id,
+                    Name = category.Name,
+                });
+            }
+            return new ListResponse<CategoryDTO>()
+            {
+                Success = true,
+                List = dTOs
+            };
         }
-        return new ListResponse<CategoryDTO>()
+        catch (Exception ex)
         {
-            Success = true,
-            List = dTOs
-        };
+            Console.WriteLine(ex);
+            return new ListResponse<CategoryDTO>()
+            {
+                Success = false,
+                Message = "Unknown failure"
+            };
+        }
     }
 }
 

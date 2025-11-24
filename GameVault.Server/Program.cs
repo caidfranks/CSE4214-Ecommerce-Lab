@@ -1,5 +1,47 @@
 using GameVault.Server.Services;
 using GameVault.Server.Filters;
+using GameVault.Server.Tests;
+
+bool tested = false;
+foreach (string arg in args)
+{
+    if (arg == "--test")
+    {
+        // Do testing
+        Console.WriteLine("Testing instead of running.");
+
+        Tester tester = new();
+        try
+        {
+            bool success = await tester.Test();
+            if (success)
+            {
+                Console.WriteLine();
+                Console.WriteLine("All tests succeeded");
+            }
+            else
+            {
+                Console.WriteLine();
+                Console.WriteLine("Some tests failed!");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine();
+            Console.WriteLine($"Error during testing: {ex.Message}");
+        }
+
+
+        tested = true;
+    }
+}
+Console.WriteLine();
+
+// Don't start server if just in testing mode
+if (tested)
+{
+    return;
+}
 // using Microsoft.AspNetCore.Authentication.JwtBearer;
 // using Microsoft.IdentityModel.Tokens;
 
