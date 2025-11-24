@@ -3,7 +3,7 @@ name: Build and Deploy Backend to Cloud Run
 on:
   push:
     branches:
-      - docker-cloudrun-hosting
+      - main
     # only triggers if these files change
     paths:
       - 'GameVault.Server/**'
