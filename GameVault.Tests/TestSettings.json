@@ -1,0 +1,20 @@
+{
+  "BaseUrl": "http://localhost:5166",
+  "Users": {
+    "Customer": {
+      "Email": "customer@gmail.com",
+      "Password": "password"
+    },
+    "Vendor": {
+      "Email": "vendor@gmail.com",
+      "Password": "password"
+    },
+    "Admin": {
+      "Email": "admin@gmail.com",
+      "Password":  "password"
+    }
+  },
+  "Timeouts": {
+    "PageLoad": 15000
+  }
+}
