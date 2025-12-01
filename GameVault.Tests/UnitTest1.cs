@@ -1,4 +1,4 @@
-﻿using Microsoft.Playwright;
+using Microsoft.Playwright;
 using Xunit;
 
 public class HomePageTests
@@ -17,7 +17,7 @@ public class HomePageTests
         var context = await browser.NewContextAsync(new()
         {
             //prevents redirect due to old login
-            StorageState = null,         
+            StorageState = null,
             IgnoreHTTPSErrors = true
         });
 
@@ -27,7 +27,7 @@ public class HomePageTests
 
         var page = await context.NewPageAsync();
 
-        
+
         await page.GotoAsync("http://localhost:5166/", new()
         {
             WaitUntil = WaitUntilState.NetworkIdle
@@ -56,4 +56,17 @@ public class HomePageTests
         // Final sanity check: ensure page did NOT redirect due to auth
         Assert.EndsWith("/", page.Url);
     }
+
+    // [Fact]
+    // public void InstallBrowsers()
+    // {
+
+    //     // Test
+    //     var exitCode = Microsoft.Playwright.Program.Main(new[] { "install" });
+    //     if (exitCode != 0)
+    //     {
+    //         throw new Exception($"Playwright exited with code {exitCode}");
+    //     }
+
+    // }
 }
