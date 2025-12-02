@@ -17,7 +17,7 @@
 else
 {
     <div class="alert alert-success mb-3">
-        <strong>Account Balance:</strong> $@((balance / 100.0).ToString("F2"))
+        <strong>Account Balance:</strong>&nbsp;$@((balance / 100.0).ToString("F2"))
     </div>
 }
 
@@ -35,8 +35,8 @@ else
         try
         {
             BreadcrumbService.Set(
-                new BreadcrumbItem("Home", "/"),
-                new BreadcrumbItem("Vendor Dashboard")
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Vendor Dashboard")
             );
             var userId = AuthService.CurrentUserId;
             if (!string.IsNullOrEmpty(userId))
