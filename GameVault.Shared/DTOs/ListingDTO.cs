@@ -37,5 +37,5 @@ public class VendorListingDTO : ListingDTO
 public class ListingStockDTO
 {
   public required string Id { get; set; }
-  public required int Stock { get; set; }
+  public required int AddStock { get; set; }
 }
