@@ -488,14 +488,15 @@ namespace GameVault.Server.Controllers
 
             // TODO: Make sure owner
             // Make sure within valid range of stock
-            if (stockDTO.AddStock <= 0)
-            {
-                return BadRequest(new BaseResponse()
-                {
-                    Success = false,
-                    Message = "Adding stock must be positive"
-                });
-            }
+            // Allow negative stocking for auditing purposes
+            // if (stockDTO.AddStock <= 0)
+            // {
+            //     return BadRequest(new BaseResponse()
+            //     {
+            //         Success = false,
+            //         Message = "Adding stock must be positive"
+            //     });
+            // }
 
             // Get listing
             FirestoreListing? listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", stockDTO.Id);

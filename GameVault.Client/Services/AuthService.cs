@@ -57,6 +57,16 @@ public class AuthService
                 _httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
 
+                var response = await _httpClient.GetAsync("api/auth/verify");
+                var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+                if (!(result?.Success ?? false))
+                {
+                    // Failed to verify token
+                    Console.WriteLine($"Failed to verify token: {result?.Message ?? "Unknown error"}");
+                    await Logout();
+                }
+
                 OnAuthStateChanged?.Invoke();
             }
         }

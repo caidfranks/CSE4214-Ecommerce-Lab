@@ -32,22 +32,26 @@ else if (model == null)
 }
 else
 {
+  if (!string.IsNullOrEmpty(error))
+  {
+    <h2 class="alert alert-danger">@error</h2>
+  }
   <EditForm Model="@model" OnValidSubmit="@HandleUpdate">
     <div style="margin-bottom:8px;">
       <label>Name</label><br />
-      <InputText @bind-Value="model.Name" />
+      <InputText @bind-Value="model.Name" placeholder="Unnamed Listing" />
     </div>
     <div style="margin-bottom:8px;">
       <label>Description</label><br />
-      <InputText @bind-Value="model.Description" />
+      <InputText @bind-Value="model.Description" placeholder="Optional Description" />
     </div>
     <div style="margin-bottom:8px;">
       <label>Price</label><br />
-      <InputNumber @bind-Value="model.Price" />
+      <InputNumber @bind-Value="model.Price" placeholder="0.0" />
     </div>
     <div style="margin-bottom:8px;">
       <label>Stock</label><br />
-      <InputNumber @bind-Value="model.Stock" />
+      <InputNumber @bind-Value="model.Stock" placeholder="0" />
     </div>
     <div style="margin-bottom:8px;">
       <label>Category</label>
@@ -136,12 +140,36 @@ else
     categories = await ProductService.GetCategoriesAsync();
   }
 
+  private bool ValidateForm()
+  {
+    if (string.IsNullOrWhiteSpace(model?.Name))
+    {
+      error = "Please provide a valid name";
+      return false;
+    }
+    else if (model.Price <= 0.0M)
+    {
+      error = "Please choose a valid price";
+      return false;
+    }
+    else if (model.Stock < 0)
+    {
+      error = "Please choose a valid stock";
+      return false;
+    }
+    error = "";
+    return true;
+  }
+
   private async Task HandleUpdate()
   {
     if (model is not null && Id is not null)
     {
       // TODO: Confirm intent to change status back to inactive if editing a removed listing
       @* if (wasRemoved && confirm()) *@
+
+      if (!ValidateForm()) return;
+
       BaseResponse result = await ListingService.UpdateAsync(Id, model.Name, model.Description, model.Price, model.Stock,
       model?.Category ?? "", model?.Image ?? "");
       if (result.Success)
@@ -184,7 +212,7 @@ else
           if (result.Listing!.OwnerID == AuthService.CurrentUserId)
           {
             model = EditableListing.FromListingDTO(result.Listing!);
-            Console.WriteLine(model.Category);
+            @* Console.WriteLine(model.Category); *@
             wasRemoved = result.Listing.Status == ListingStatus.Removed;
           }
           else

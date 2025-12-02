@@ -24,19 +24,19 @@
 <EditForm Model="@model" OnValidSubmit="@HandleCreate">
   <div style="margin-bottom:8px;">
     <label>Name</label><br />
-    <InputText @bind-Value="model.Name" />
+    <InputText @bind-Value="model.Name" placeholder="Unnamed Listing" />
   </div>
   <div style="margin-bottom:8px;">
     <label>Description</label><br />
-    <InputText @bind-Value="model.Description" />
+    <InputText @bind-Value="model.Description" placeholder="Optional Description" />
   </div>
   <div style="margin-bottom:8px;">
     <label>Price</label><br />
-    <InputNumber @bind-Value="model.Price" />
+    <InputNumber @bind-Value="model.Price" placeholder="0.0" />
   </div>
   <div style="margin-bottom:8px;">
     <label>Stock</label><br />
-    <InputNumber @bind-Value="model.Stock" />
+    <InputNumber @bind-Value="model.Stock" placeholder="0" />
   </div>
   <div style="margin-bottom:8px;">
     <label>Category</label>
@@ -208,11 +208,34 @@
     _imageError = null;
   }
 
+  private bool ValidateForm()
+  {
+    if (string.IsNullOrWhiteSpace(model.Name))
+    {
+      errorMessage = "Please provide a valid name";
+      return false;
+    }
+    else if (model.Price <= 0.0M)
+    {
+      errorMessage = "Please choose a valid price";
+      return false;
+    }
+    else if (model.Stock < 0)
+    {
+      errorMessage = "Please choose a valid stock";
+      return false;
+    }
+    errorMessage = "";
+    return true;
+  }
+
   private async Task HandleCreate()
   {
     isSubmitting = true;
     errorMessage = "";
     successMessage = "";
+
+    if (!ValidateForm()) return;
 
     var result = await ListingService.CreateAsync(
     model.Name,

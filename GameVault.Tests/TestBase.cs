@@ -14,8 +14,8 @@ public class TestBase : IAsyncLifetime
         _playwright = await Playwright.CreateAsync();
         _browser = await _playwright.Chromium.LaunchAsync(new()
         {
-            Headless = false,
-            SlowMo = 50
+            // Headless = false,
+            // SlowMo = 5
         });
     }
 
