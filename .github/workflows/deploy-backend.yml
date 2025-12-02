@@ -4,8 +4,17 @@ on:
   push:
     branches:
       - main
-      - unit-testing
     # only triggers if these files change
+    paths:
+      - 'GameVault.Server/**'
+      - 'GameVault.Shared/**'
+      - 'GameVault.Server.Tests/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-backend.yml'
+  # run tests on any PR targeting main
+  pull_request:
+    branches:
+      - main
     paths:
       - 'GameVault.Server/**'
       - 'GameVault.Shared/**'
