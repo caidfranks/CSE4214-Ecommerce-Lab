@@ -16,7 +16,7 @@ on:
 env: 
   PROJECT_ID: gamevault-9a27e
   REGION: us-central1
-  SERVICE_NAME: gamevault-9a27e
+  SERVICE_NAME: gamevault-server
   REGISTRY: us-central1-docker.pkg.dev
 
 
