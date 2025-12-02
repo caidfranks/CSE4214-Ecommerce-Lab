@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameVault.Client", "GameVau
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameVault.Shared", "GameVault.Shared\GameVault.Shared.csproj", "{186E9DA9-EB65-412F-AF99-F63CAE081FF9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameVault.Tests", "GameVault.Tests\GameVault.Tests.csproj", "{EEE6B817-C44B-403E-BBA5-B0C366752F41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{186E9DA9-EB65-412F-AF99-F63CAE081FF9}.Release|x64.Build.0 = Release|Any CPU
 		{186E9DA9-EB65-412F-AF99-F63CAE081FF9}.Release|x86.ActiveCfg = Release|Any CPU
 		{186E9DA9-EB65-412F-AF99-F63CAE081FF9}.Release|x86.Build.0 = Release|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Debug|x64.Build.0 = Debug|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Debug|x86.Build.0 = Debug|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Release|x64.ActiveCfg = Release|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Release|x64.Build.0 = Release|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Release|x86.ActiveCfg = Release|Any CPU
+		{EEE6B817-C44B-403E-BBA5-B0C366752F41}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
