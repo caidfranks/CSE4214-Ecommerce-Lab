@@ -30,7 +30,7 @@ public class OrderService
         _logger = logger;
     }
 
-    public async Task<(bool success, string? orderId, List<string>? invoiceIds, string? errorMessage)> 
+    public async Task<(bool success, string? orderId, List<string>? invoiceIds, string? errorMessage)>
         CreateOrderFromCartAsync(string customerId, string paymentMethodId, Address shippingAddress)
     {
         try
@@ -46,6 +46,21 @@ public class OrderService
             {
                 var populatedItem = await _cartService.PopulateCartItem(item);
                 cartItems.Add(populatedItem);
+            }
+
+            // Check all in stock
+            foreach (var item in cartItems)
+            {
+                if (!(await _cartService.IsInStock(item.ListingId, item.Quantity)))
+                {
+                    return (false, null, null, "One or more products out of stock or quantity too high");
+                }
+            }
+
+            // Decrease all stock accordingly
+            foreach (var item in cartItems)
+            {
+                await _cartService.DecrementStock(item.ListingId, item.Quantity);
             }
 
             int subtotalInCents = cartItems.Sum(item => item.PriceInCents * item.Quantity);
@@ -78,9 +93,9 @@ public class OrderService
             if (!paymentSuccess)
             {
                 _logger.LogError("Payment failed for order {orderId}: {error}", order.Id, paymentError);
-                
+
                 await _firestore.DeleteDocumentAsync("orders", order.Id);
-                
+
                 return (false, null, null, paymentError ?? "Payment failed");
             }
 
@@ -107,7 +122,7 @@ public class OrderService
 
             await _cartService.ClearCartAsync(customerId);
 
-            _logger.LogInformation("Order {orderId} completed successfully with {invoiceCount} invoices", 
+            _logger.LogInformation("Order {orderId} completed successfully with {invoiceCount} invoices",
                 order.Id, invoiceIds.Count);
 
             return (true, order.Id, invoiceIds, null);

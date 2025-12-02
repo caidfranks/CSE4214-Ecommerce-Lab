@@ -176,4 +176,45 @@ public class CartService
             VendorName = vendorName
         };
     }
+
+    public async Task<bool> IsInStock(string listingId, int quantity)
+    {
+        // Get listing
+        FirestoreListing? listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", listingId);
+
+        if (listing is null)
+        {
+            Console.WriteLine("Check stock: Listing not found!");
+            return false;
+        }
+
+        // Console.WriteLine($"Listing found with stock {listing.Stock}");
+
+        // Confirm stock >= quantity
+        return listing.Stock >= quantity;
+    }
+
+    public async Task DecrementStock(string listingId, int quantity)
+    {
+        // Get listing
+        FirestoreListing? listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", listingId);
+
+        if (listing is null)
+        {
+            Console.WriteLine("Decrement stock: Listing not found!");
+            return;
+        }
+
+        int newStock = listing.Stock - quantity;
+
+        if (newStock < 0)
+        {
+            Console.WriteLine($"Decrement stock: Negative stock: {newStock}");
+            newStock = 0;
+        }
+
+        // Console.WriteLine($"New stock: {newStock}");
+
+        await _firestore.SetDocumentFieldAsync("listings", listingId, "Stock", newStock);
+    }
 }
