@@ -132,8 +132,12 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut("{userId}/bank-info")]
-    public async Task<ActionResult> UpdateBankInfo(string userId, [FromBody] UpdateBankInfoRequest request)
+    public async Task<ActionResult> UpdateBankInfo(string userId, [FromBody] UpdateBankInfoRequest request, [FromHeader] string? Authorization)
     {
+        var authUser = await _userService.GetUserFromHeader(Authorization);
+        if (authUser == null) return Unauthorized();
+        if (authUser.Id != userId) return Forbid();
+
         var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", userId);
         if (user == null) return NotFound();
 
@@ -145,8 +149,12 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("{userId}/cashout")]
-    public async Task<ActionResult> Cashout(string userId, [FromBody] CashoutRequest request)
+    public async Task<ActionResult> Cashout(string userId, [FromBody] CashoutRequest request, [FromHeader] string? Authorization)
     {
+        var authUser = await _userService.GetUserFromHeader(Authorization);
+        if (authUser == null) return Unauthorized();
+        if (authUser.Id != userId) return Forbid();
+
         var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", userId);
         if (user == null) return NotFound();
 
