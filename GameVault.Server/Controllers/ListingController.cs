@@ -488,8 +488,33 @@ namespace GameVault.Server.Controllers
 
             // TODO: Make sure owner
             // Make sure within valid range of stock
+            if (stockDTO.AddStock <= 0)
+            {
+                return BadRequest(new BaseResponse()
+                {
+                    Success = false,
+                    Message = "Adding stock must be positive"
+                });
+            }
 
-            await _firestore.SetDocumentFieldAsync("listings", stockDTO.Id, "Stock", stockDTO.Stock);
+            // Get listing
+            FirestoreListing? listing = await _firestore.GetDocumentAsync<FirestoreListing>("listings", stockDTO.Id);
+
+            if (listing is null)
+            {
+                Console.WriteLine("Updating stock: Listing not found!");
+                return NotFound(new BaseResponse()
+                {
+                    Success = false,
+                    Message = "Listing not found"
+                });
+            }
+
+            int newStock = listing.Stock + stockDTO.AddStock;
+
+            Console.WriteLine($"New stock: {newStock}");
+
+            await _firestore.SetDocumentFieldAsync("listings", stockDTO.Id, "Stock", newStock);
 
             // TODO: Handle firestore errors
 
@@ -502,9 +527,9 @@ namespace GameVault.Server.Controllers
 
         [HttpPost("{listingId}/upload-image")]
         public async Task<ActionResult<DataResponse<string>>> UploadListingImage(
-    string listingId,
-    IFormFile file,
-    [FromHeader] string? Authorization)
+            string listingId,
+            IFormFile file,
+            [FromHeader] string? Authorization)
         {
             try
             {
