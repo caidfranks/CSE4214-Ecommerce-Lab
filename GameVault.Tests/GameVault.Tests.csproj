@@ -25,5 +25,10 @@
 	<ItemGroup>
 		<Using Include="Microsoft.Playwright" />
 	</ItemGroup>
+	<ItemGroup>
+		<None Include="TestSettings.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
 
 </Project>
