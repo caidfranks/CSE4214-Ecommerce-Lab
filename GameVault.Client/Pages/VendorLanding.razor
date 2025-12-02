@@ -4,6 +4,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
+@using System.Net.Http.Json
 @inject Services.AuthService AuthService
 @inject HttpClient Http
 @inject BreadcrumbService BreadcrumbService
@@ -12,12 +13,13 @@
 
 @if (isLoading)
 {
-    <p>Loading balance...</p>
+    <p>Loading...</p>
 }
 else
 {
     <div class="alert alert-success mb-3">
         <strong>Account Balance:</strong> $@((balance / 100.0).ToString("F2"))
+        <button class="btn btn-sm btn-outline-primary ms-3" @onclick="OpenCashoutModal">Cashout</button>
     </div>
 }
 
@@ -26,9 +28,85 @@ else
 <p><a href="/vendor/orders">View Orders</a></p>
 @* <p><a href="/vendor/orders/returns">View Returns</a></p> *@
 
+@if (showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cashout</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Available Balance:</strong> $@((balance / 100.0).ToString("F2"))</p>
+
+                    @if (!editingBankInfo && !string.IsNullOrEmpty(bankRouting) && !string.IsNullOrEmpty(bankAccount))
+                    {
+                        <p>
+                            <strong>Bank Account:</strong> ****@(bankAccount?.Length > 4 ? bankAccount.Substring(bankAccount.Length - 4) : bankAccount)
+                            <button class="btn btn-link btn-sm p-0 ms-2" @onclick="() => editingBankInfo = true">Edit</button>
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Routing Number</label>
+                                <input type="text" class="form-control" @bind="bankRouting" placeholder="9 digits" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Account Number</label>
+                                <input type="text" class="form-control" @bind="bankAccount" placeholder="Account number" />
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm mb-3" @onclick="SaveBankInfo" disabled="@isSaving">
+                            @(isSaving ? "Saving..." : "Save Bank Info")
+                        </button>
+                    }
+
+                    @if (!string.IsNullOrEmpty(bankRouting) && !string.IsNullOrEmpty(bankAccount) && !editingBankInfo)
+                    {
+                        <hr />
+                        <div class="mb-3">
+                            <label class="form-label">Amount to Transfer</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" @bind="cashoutAmount" min="0.01" max="@(balance / 100.0)" step="0.01" />
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(message))
+                    {
+                        <div class="alert @(isError ? "alert-danger" : "alert-success")">@message</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    @if (!string.IsNullOrEmpty(bankRouting) && !string.IsNullOrEmpty(bankAccount) && !editingBankInfo)
+                    {
+                        <button type="button" class="btn btn-primary" @onclick="DoCashout" disabled="@(isCashingOut || cashoutAmount <= 0)">
+                            @(isCashingOut ? "Processing..." : "Transfer")
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private int balance = 0;
     private bool isLoading = true;
+    private string? bankRouting;
+    private string? bankAccount;
+    private decimal cashoutAmount;
+    private bool isSaving;
+    private bool isCashingOut;
+    private string? message;
+    private bool isError;
+    private bool showModal;
+    private bool editingBankInfo;
 
     protected override async Task OnInitializedAsync()
     {
@@ -45,16 +123,104 @@ else
                 if (user != null)
                 {
                     balance = user.BalanceInCents ?? 0;
+                    bankRouting = user.BankRouting;
+                    bankAccount = user.BankAccount;
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading balance: {ex.Message}");
+            Console.WriteLine($"Error loading: {ex.Message}");
         }
         finally
         {
             isLoading = false;
         }
+    }
+
+    private void OpenCashoutModal()
+    {
+        showModal = true;
+        message = null;
+        cashoutAmount = 0;
+        editingBankInfo = string.IsNullOrEmpty(bankRouting) || string.IsNullOrEmpty(bankAccount);
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+        editingBankInfo = false;
+    }
+
+    private async Task SaveBankInfo()
+    {
+        isSaving = true;
+        message = null;
+        try
+        {
+            var userId = AuthService.CurrentUserId;
+            var response = await Http.PutAsJsonAsync($"api/users/{userId}/bank-info", new { BankRouting = bankRouting, BankAccount = bankAccount });
+            if (response.IsSuccessStatusCode)
+            {
+                message = "Bank info saved!";
+                isError = false;
+                editingBankInfo = false;
+            }
+            else
+            {
+                message = "Failed to save bank info";
+                isError = true;
+            }
+        }
+        catch
+        {
+            message = "Error saving bank info";
+            isError = true;
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task DoCashout()
+    {
+        isCashingOut = true;
+        message = null;
+        try
+        {
+            var userId = AuthService.CurrentUserId;
+            var amountInCents = (int)(cashoutAmount * 100);
+            var response = await Http.PostAsJsonAsync($"api/users/{userId}/cashout", new { AmountInCents = amountInCents });
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<CashoutResponse>();
+                balance = result?.NewBalance ?? 0;
+                cashoutAmount = 0;
+                message = $"Successfully transferred ${amountInCents / 100.0:F2}!";
+                isError = false;
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                message = "Cashout failed: " + error;
+                isError = true;
+            }
+        }
+        catch
+        {
+            message = "Error processing cashout";
+            isError = true;
+        }
+        finally
+        {
+            isCashingOut = false;
+        }
+    }
+
+    private class CashoutResponse
+    {
+        public string? Message { get; set; }
+        public int NewBalance { get; set; }
     }
 }
