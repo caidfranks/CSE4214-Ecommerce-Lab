@@ -8,12 +8,23 @@ on:
     paths:
       - 'GameVault.Server/**'
       - 'GameVault.Shared/**'
+      - 'GameVault.Server.Tests/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-backend.yml'
+  # run tests on any PR targeting main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'GameVault.Server/**'
+      - 'GameVault.Shared/**'
+      - 'GameVault.Server.Tests/**'
       - 'Dockerfile'
       - '.github/workflows/deploy-backend.yml'
   # allows UI triggering
   workflow_dispatch:
 
-env: 
+env:
   PROJECT_ID: gamevault-9a27e
   REGION: us-central1
   SERVICE_NAME: gamevault-server
@@ -21,33 +32,32 @@ env:
 
 
 jobs:
-  #first job id - uncomment when we have xunit tests
-  # test:
-  #   name: Run Tests
-  #   runs-on: ubuntu-latest
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #     - name: Set up .NET
-  #       uses: actions/setup-dotnet@v4
-  #       with:
-  #         dotnet-version: '9.0.x'
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
 
-  #     - name: Restore dependencies
-  #       run: dotnet restore
+      - name: Restore dependencies
+        run: dotnet restore
 
-  #     - name: Build
-  #       run: dotnet build --no-restore --configuration Release
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
 
-  #     # - name: Run unit Tests
-  #     #   run: dotnet test --no-build --configuration Release --verbosity normal
+      - name: Run unit tests
+        run: dotnet test GameVault.Server.Tests --no-build --configuration Release --verbosity normal
 
-  # second job id
   build-and-deploy:
     name: Build and Deploy to Cloud Run
-    # needs: test
+    needs: test
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     permissions:
