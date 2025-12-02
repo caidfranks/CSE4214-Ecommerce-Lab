@@ -1,4 +1,5 @@
 ﻿@page "/actionLogs"
+@attribute [Authorize(Roles = "Admin")]
 @using GameVault.Client.Services
 @using GameVault.Shared.Models
 @using GameVault.Shared.DTOs
@@ -45,7 +46,7 @@ else
                             @entry.ObjectId
                         </button>
                     </td>
-                   
+
                     @* TODO: Display logs differently by type *@
                     <td>@entry.Status</td>
                     <td>@entry.Summary</td>
@@ -94,7 +95,8 @@ else
                 </div>
 
                 <div class="modal-footer fixed-bottom bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-ban" @onclick='async () => { OpenBanPopup(selectedUser); }'>Ban</button>
+                    <button type="button" class="btn-ban"
+                        @onclick='async () => { OpenBanPopup(selectedUser); }'>Ban</button>
                 </div>
             </div>
         </div>
@@ -115,11 +117,10 @@ else
                     <p>Are you sure?</p>
                     <p>Enter reason for ban</p>
                     <input type="text" id="reason" class="form-control" @bind="RejectionReason"
-                           placeholder="Enter reason" />
+                        placeholder="Enter reason" />
                 </div>
                 <div class="modal-footer bg-light p-3 d-flex justify-content-end gap-2">
-                    <button type="button" class="btn-approve"
-                            @onclick='HandleBanUser'>
+                    <button type="button" class="btn-approve" @onclick='HandleBanUser'>
                         Ban User
                     </button>
                     <button type="button" class="btn-deny" @onclick='CloseBanPopup'>Cancel</button>
@@ -153,9 +154,9 @@ else
     protected override async Task OnInitializedAsync()
     {
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Admin Dashboard", "/adminLanding"),
-            new BreadcrumbItem("Action Logs")
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Admin Dashboard", "/adminLanding"),
+        new BreadcrumbItem("Action Logs")
         );
         try
         {
@@ -201,9 +202,9 @@ else
         await ListingService.DeactivateAllUserListingsAsync(selectedUser.Id);
 
         await LogService.LogAccountBanAsync(
-            selectedUser.Id,
-            selectedUser.Email,
-            RejectionReason
+        selectedUser.Id,
+        selectedUser.Email,
+        RejectionReason
         );
 
         await LoadData();

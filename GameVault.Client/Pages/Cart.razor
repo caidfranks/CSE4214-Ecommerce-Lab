@@ -1,5 +1,5 @@
 @page "/cart"
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Customer")]
 @using GameVault.Client.Components
 @using GameVault.Client.Services
 @using GameVault.Shared.DTOs
@@ -51,8 +51,8 @@ else if (!AuthService.IsAuthenticated)
     protected override async Task OnInitializedAsync()
     {
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Shopping Cart")
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Shopping Cart")
         );
         await LoadCartAsync();
     }

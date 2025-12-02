@@ -1,4 +1,5 @@
 ﻿@page "/manageAccounts"
+@attribute [Authorize(Roles = "Admin")]
 @inject NavigationManager Nav
 @inject BreadcrumbService BreadcrumbService
 
@@ -23,9 +24,9 @@
     protected override async Task OnInitializedAsync()
     {
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Admin Dashboard", "/adminLanding"),
-            new BreadcrumbItem("Manage Accounts")
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Admin Dashboard", "/adminLanding"),
+        new BreadcrumbItem("Manage Accounts")
         );
     }
 }
