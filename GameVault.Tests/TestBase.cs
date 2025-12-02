@@ -15,7 +15,7 @@ public class TestBase : IAsyncLifetime
         _browser = await _playwright.Chromium.LaunchAsync(new()
         {
             // Headless = false,
-            // SlowMo = 5
+            // SlowMo = 1000
         });
     }
 
@@ -43,6 +43,8 @@ public class TestBase : IAsyncLifetime
     {
         await page.GotoAsync($"{TestSettings.BaseUrl}/");
         await page.ClickAsync("a.home-button.home-button-outline:has-text('Sign In')");
+
+        await page.WaitForURLAsync(url => url.Contains("/login"));
 
         await page.FillAsync("#email", email);
         await page.FillAsync("#password", password);
