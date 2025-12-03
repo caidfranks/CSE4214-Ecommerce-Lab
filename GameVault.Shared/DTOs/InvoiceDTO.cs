@@ -57,6 +57,7 @@ public class InvoiceItemDTO
   public required int PriceAtOrder { get; set; }
   public required string NameAtOrder { get; set; } = string.Empty;
   public required string DescAtOrder { get; set; } = string.Empty;
+  public required RatingChoice Rating { get; set; }
 }
 
 public class InvoiceUpdateStatusDTO
@@ -64,4 +65,11 @@ public class InvoiceUpdateStatusDTO
   public required string Id { get; set; }
   public required InvoiceStatus Status { get; set; }
   public string? Message { get; set; }
+}
+
+public class RatingDTO
+{
+  public required string InvoiceId { get; set; }
+  public required string ListingId { get; set; }
+  public required RatingChoice Rating { get; set; }
 }

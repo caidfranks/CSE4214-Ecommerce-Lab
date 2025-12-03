@@ -1,5 +1,5 @@
 @page "/checkout"
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Customer")]
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @using GameVault.Client.Services
@@ -41,20 +41,16 @@
                 <div class="card mb-4">
                     <div class="card-body">
                         <h2 class="card-title h5 mb-3">1. Shipping Address</h2>
-                        <ShipAddressForm 
-                            Address="@shippingAddress" 
-                            OnAddressChanged="@HandleAddressChanged" />
+                        <ShipAddressForm Address="@shippingAddress" OnAddressChanged="@HandleAddressChanged" />
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-body">
                         <h2 class="card-title h5 mb-3">2. Payment Information</h2>
-                        <SquarePaymentForm 
-                            @ref="paymentFormRef"
-                            OnPaymentMethodCreated="@HandlePaymentMethodCreated"
+                        <SquarePaymentForm @ref="paymentFormRef" OnPaymentMethodCreated="@HandlePaymentMethodCreated"
                             IsEnabled="@isAddressComplete" />
-                        
+
                         @if (!isAddressComplete)
                         {
                             <p class="text-muted small mt-2">
@@ -69,15 +65,10 @@
                 <div class="card sticky-top" style="top: 20px;">
                     <div class="card-body">
                         <h2 class="card-title h5 mb-3">Order Summary</h2>
-                        <OrderSummary 
-                            SubtotalInCents="@subtotalInCents"
-                            TaxInCents="@taxInCents"
-                            TotalInCents="@totalInCents"
-                            State="@shippingAddress.State" />
-                        
-                        <button 
-                            @onclick="ProcessCheckout"
-                            disabled="@(!canCheckout || isProcessing)"
+                        <OrderSummary SubtotalInCents="@subtotalInCents" TaxInCents="@taxInCents"
+                            TotalInCents="@totalInCents" State="@shippingAddress.State" />
+
+                        <button @onclick="ProcessCheckout" disabled="@(!canCheckout || isProcessing)"
                             class="btn btn-primary w-100 mt-3">
                             @if (isProcessing)
                             {
@@ -129,11 +120,11 @@
     private bool isProcessing = false;
     private string? errorMessage;
 
-    private bool isAddressComplete => 
-        !string.IsNullOrWhiteSpace(shippingAddress.Street) &&
-        !string.IsNullOrWhiteSpace(shippingAddress.City) &&
-        !string.IsNullOrWhiteSpace(shippingAddress.State) &&
-        !string.IsNullOrWhiteSpace(shippingAddress.PostalCode);
+    private bool isAddressComplete =>
+    !string.IsNullOrWhiteSpace(shippingAddress.Street) &&
+    !string.IsNullOrWhiteSpace(shippingAddress.City) &&
+    !string.IsNullOrWhiteSpace(shippingAddress.State) &&
+    !string.IsNullOrWhiteSpace(shippingAddress.PostalCode);
 
     private bool canCheckout => isAddressComplete && !isProcessing;
 
@@ -144,9 +135,9 @@
         isProcessing = false;
 
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Shopping Cart", "/cart"),
-            new BreadcrumbItem("Checkout")
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Shopping Cart", "/cart"),
+        new BreadcrumbItem("Checkout")
         );
         await CalculateTotal();
     }
@@ -269,7 +260,8 @@
                 }
                 Navigation.NavigateTo($"/order-confirmation/{response.OrderId}");
                 await LogService.LogTransactionAsync(response.OrderId, "Successful", response.TotalAmountInCents);// / 100);
-                await LogService.LogOrderPlacedAsync(response.OrderId, AuthService.CurrentUserId, response.TotalAmountInCents, response.InvoiceIds.Count);
+                await LogService.LogOrderPlacedAsync(response.OrderId, AuthService.CurrentUserId, response.TotalAmountInCents,
+                response.InvoiceIds.Count);
             }
             else
             {

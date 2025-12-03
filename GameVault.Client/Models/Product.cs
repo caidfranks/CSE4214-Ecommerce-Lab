@@ -14,6 +14,8 @@ namespace GameVault.Client.Models
         public int Stock { get; set; }
         public string Description { get; set; } = "";
         public string OwnerId { get; set; } = "";
+        public int Rating { get; set; } = -1;
+        public int NumReviews { get; set; } = 0;
 
         public static Product FromFullListingDTO(FullListingDTO dto)
         {
@@ -28,7 +30,9 @@ namespace GameVault.Client.Models
                 CategoryName = dto.CategoryName,
                 Stock = dto.Stock,
                 Description = dto.Description,
-                OwnerId = dto.OwnerID
+                OwnerId = dto.OwnerID,
+                Rating = dto.Rating ?? -1,
+                NumReviews = dto.NumReviews ?? 0
                 // Leaving out:
                 // Status
                 // LastModified

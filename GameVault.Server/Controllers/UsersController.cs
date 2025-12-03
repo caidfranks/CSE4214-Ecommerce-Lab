@@ -38,7 +38,9 @@ public class UsersController : ControllerBase
             Name = firestoreUser.Name,
             Type = firestoreUser.Type,
             Banned = firestoreUser.Banned,
-            BalanceInCents = firestoreUser.BalanceInCents
+            BalanceInCents = firestoreUser.BalanceInCents,
+            BankRouting = firestoreUser.BankRouting,
+            BankAccount = firestoreUser.BankAccount
         });
     }
 
@@ -128,9 +130,62 @@ public class UsersController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPut("{userId}/bank-info")]
+    public async Task<ActionResult> UpdateBankInfo(string userId, [FromBody] UpdateBankInfoRequest request, [FromHeader] string? Authorization)
+    {
+        var authUser = await _userService.GetUserFromHeader(Authorization);
+        if (authUser == null) return Unauthorized();
+        if (authUser.Id != userId) return Forbid();
+
+        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", userId);
+        if (user == null) return NotFound();
+
+        user.BankRouting = request.BankRouting;
+        user.BankAccount = request.BankAccount;
+
+        await _firestore.SetDocumentAsync("users", userId, user);
+        return Ok(new { message = "Bank info updated" });
+    }
+
+    [HttpPost("{userId}/cashout")]
+    public async Task<ActionResult> Cashout(string userId, [FromBody] CashoutRequest request, [FromHeader] string? Authorization)
+    {
+        var authUser = await _userService.GetUserFromHeader(Authorization);
+        if (authUser == null) return Unauthorized();
+        if (authUser.Id != userId) return Forbid();
+
+        var user = await _firestore.GetDocumentAsync<FirestoreUser>("users", userId);
+        if (user == null) return NotFound();
+
+        if (string.IsNullOrEmpty(user.BankRouting) || string.IsNullOrEmpty(user.BankAccount))
+            return BadRequest(new { message = "Bank info not set" });
+
+        if (request.AmountInCents <= 0)
+            return BadRequest(new { message = "Invalid amount" });
+
+        if (request.AmountInCents > user.BalanceInCents)
+            return BadRequest(new { message = "Insufficient balance" });
+
+        user.BalanceInCents -= request.AmountInCents;
+        await _firestore.SetDocumentAsync("users", userId, user);
+
+        return Ok(new { message = "Cashout successful", newBalance = user.BalanceInCents });
+    }
 }
 
 public class UpdateUserRequest
 {
     public string? DisplayName { get; set; }
+}
+
+public class UpdateBankInfoRequest
+{
+    public string? BankRouting { get; set; }
+    public string? BankAccount { get; set; }
+}
+
+public class CashoutRequest
+{
+    public int AmountInCents { get; set; }
 }

@@ -1,4 +1,5 @@
 ﻿@page "/vendorDetails/{UserID}"
+@attribute [Authorize]
 @inject NavigationManager Nav
 @inject Services.AccountService AccountService
 @inject Services.AuthService AuthService
@@ -29,8 +30,8 @@ else
     protected override async Task OnParametersSetAsync()
     {
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Vendor Details")
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Vendor Details")
         );
         if (UserID is not null)
         {

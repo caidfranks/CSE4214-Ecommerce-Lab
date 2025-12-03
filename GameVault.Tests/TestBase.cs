@@ -1,6 +1,5 @@
 ﻿using Microsoft.Playwright;
 using System.Threading.Tasks;
-using System.Text.RegularExpressions;
 using Xunit;
 
 namespace GameVault.Tests.Client;
@@ -9,26 +8,15 @@ public class TestBase : IAsyncLifetime
 {
     protected IPlaywright _playwright;
     protected IBrowser _browser;
-    protected IPage Page;
-    protected IBrowserContext _context;
-
-
 
     public async Task InitializeAsync()
     {
         _playwright = await Playwright.CreateAsync();
         _browser = await _playwright.Chromium.LaunchAsync(new()
         {
-            Headless = true
+            // Headless = false,
+            // SlowMo = 1000
         });
-
-        _context = await _browser.NewContextAsync(new()
-        {
-            StorageState = null,
-            IgnoreHTTPSErrors = true
-        });
-
-        Page = await _context.NewPageAsync();   // <-- ADD THIS
     }
 
     public async Task DisposeAsync()

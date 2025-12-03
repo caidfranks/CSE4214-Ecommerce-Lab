@@ -17,12 +17,14 @@ namespace GameVault.Server.Controllers
     {
         private readonly IFirestoreService _firestore;
         private readonly UserService _userService;
+        private readonly NotificationService _notifService;
         private readonly IConfiguration _configuration;
         private readonly ICurrentUserService _currentUser;
-        public AccountController(IFirestoreService firestore, IConfiguration configuration, UserService userService, ICurrentUserService currentUser)
+        public AccountController(IFirestoreService firestore, IConfiguration configuration, UserService userService, NotificationService notifService, ICurrentUserService currentUser)
         {
             _firestore = firestore;
             _userService = userService;
+            _notifService = notifService;
             _configuration = configuration;
             _currentUser = currentUser;
         }
@@ -81,6 +83,7 @@ namespace GameVault.Server.Controllers
 
             await _firestore.SetDocumentFieldAsync("users", dto.Id, "BanMsg", dto.BanMsg);
             await _firestore.SetDocumentFieldAsync("users", dto.Id, "Banned", true);
+            await _notifService.CreateNotifAsync(dto.Id, "Account Ban", $"Your account has been terminated due to the following reason: {dto.BanMsg}.");
 
             // TODO: Handle firestore errors
 
@@ -117,6 +120,7 @@ namespace GameVault.Server.Controllers
             }
 
             await _firestore.SetDocumentFieldAsync("users", dto.Id, "Banned", false);
+            await _notifService.CreateNotifAsync(dto.Id, "Account Ban", $"Your account has been unbanned.");
 
             // TODO: Handle firestore errors
 
@@ -443,7 +447,7 @@ namespace GameVault.Server.Controllers
 
 
                 var requests = await _firestore.GetCollectionAsync<Models.Firestore.Request>("requests");
-                Console.WriteLine($"Received request: {System.Text.Json.JsonSerializer.Serialize(requests)}");
+                //Console.WriteLine($"Received request: {System.Text.Json.JsonSerializer.Serialize(requests)}");
                 if (requests == null || !requests.Any())
                 {
                     return Ok(new ListResponse<RequestDTO>

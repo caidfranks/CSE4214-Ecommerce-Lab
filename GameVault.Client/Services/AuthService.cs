@@ -48,7 +48,7 @@ public class AuthService
             {
                 _currentToken = token;
                 _currentUserId = userId;
-                
+
                 if (!string.IsNullOrEmpty(userJson))
                 {
                     _currentUser = System.Text.Json.JsonSerializer.Deserialize<UserDTO>(userJson);
@@ -57,12 +57,24 @@ public class AuthService
                 _httpClient.DefaultRequestHeaders.Authorization =
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
 
+                var response = await _httpClient.GetAsync("api/auth/verify");
+                var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+                if (!(result?.Success ?? false))
+                {
+                    // Failed to verify token
+                    Console.WriteLine($"Failed to verify token: {result?.Message ?? "Unknown error"}");
+                    await Logout();
+                }
+
                 OnAuthStateChanged?.Invoke();
             }
         }
         catch
         {
             // Silent fail
+            // Call Logout
+            await Logout();
         }
     }
 
@@ -109,13 +121,13 @@ public class AuthService
 
             await _cookies.SetCookieAsync("authToken", _currentToken, 30);
             await _cookies.SetCookieAsync("userId", _currentUserId ?? "", 30);
-            
+
             if (_currentUser != null)
             {
                 var userJson = System.Text.Json.JsonSerializer.Serialize(_currentUser);
                 await _cookies.SetCookieAsync("currentUser", userJson, 30);
             }
-            
+
             OnAuthStateChanged?.Invoke();
         }
 
@@ -179,15 +191,35 @@ public class AuthService
         var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
 
         // Don't do any of this because account not really created
-         if (result.IdToken != null){ 
-       
-             _currentToken = result.IdToken;
-            _currentUserId = result.Data?.Id ?? null;
-             _currentUser = result.Data;
+        if (result.IdToken != null)
+        {
 
-             _httpClient.DefaultRequestHeaders.Authorization =
-                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
-         }
+            _currentToken = result.IdToken;
+            _currentUserId = result.Data?.Id ?? null;
+            _currentUser = result.Data;
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _currentToken);
+        }
+
+        return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
+    }
+
+    public async Task<AuthResponse> CreateDeniedVendorAsync(RequestDTO request, string RejectionReason)
+    {
+        var vendorRequest = new RegisterVendorRequest
+        {
+            Id = request.Id,
+            Email = request.Email,
+            Password = request.Password,
+            DisplayName = request.Name,
+            Reason = RejectionReason
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("api/auth/deny/vendor", vendorRequest);
+        var result = await response.Content.ReadFromJsonAsync<AuthResponse>();
+
+        // Don't update tokens because not logged in (and can't log in because banned)
 
         return result ?? new AuthResponse { Success = false, Message = "Unknown error" };
     }
@@ -228,7 +260,7 @@ public class AuthService
         await _cookies.DeleteCookieAsync("authToken");
         await _cookies.DeleteCookieAsync("userId");
         await _cookies.DeleteCookieAsync("currentUser");
-        
+
         OnAuthStateChanged?.Invoke();
     }
 

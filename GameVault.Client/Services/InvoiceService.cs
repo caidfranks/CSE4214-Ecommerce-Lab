@@ -112,4 +112,54 @@ public class InvoiceService
       return new ListResponse<InvoiceDTO> { Success = false, Message = "Unknown error" };
     }
   }
+
+  public async Task<ListResponse<InvoiceItemDTO>> GetItemsByInvoice(string invoiceId)
+  {
+    System.Net.HttpStatusCode? statusCode = null;
+    try
+    {
+      var response = await _httpClient.GetAsync($"api/invoice/{Uri.EscapeDataString(invoiceId)}/items");
+      statusCode = response.StatusCode;
+      var result = await response.Content.ReadFromJsonAsync<ListResponse<InvoiceItemDTO>>();
+      return result ?? new ListResponse<InvoiceItemDTO> { Success = false, Message = "Unknown error" };
+    }
+    catch (Exception ex)
+    {
+      if (statusCode is not null)
+      {
+        Console.Write($"Get invoices for order failed with status: {statusCode}");
+        // TODO: Could narrow down errors from status code
+      }
+      else
+      {
+        Console.Write("Unexpected error getting invoices for order:");
+        Console.Write(ex);
+      }
+      return new ListResponse<InvoiceItemDTO> { Success = false, Message = "Unknown error" };
+    }
+  }
+
+  public async Task<BaseResponse> RateInvoiceItem(string invoiceId, string listingId, RatingChoice rating)
+  {
+    try
+    {
+      RatingDTO msg = new()
+      {
+        InvoiceId = invoiceId,
+        ListingId = listingId,
+        Rating = rating,
+      };
+      var response = await _httpClient.PostAsJsonAsync("api/invoice/rate", msg);
+
+      var result = await response.Content.ReadFromJsonAsync<BaseResponse>();
+
+      return result ?? new BaseResponse { Success = false, Message = "Unknown error" };
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine("Error setting order status:");
+      Console.WriteLine(ex);
+      return new BaseResponse { Success = false, Message = "Unknown error" };
+    }
+  }
 }

@@ -1,0 +1,126 @@
+name: Build and Deploy Backend to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    # only triggers if these files change
+    paths:
+      - 'GameVault.Server/**'
+      - 'GameVault.Shared/**'
+      - 'GameVault.Server.Tests/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-backend.yml'
+  # run tests on any PR targeting main
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'GameVault.Server/**'
+      - 'GameVault.Shared/**'
+      - 'GameVault.Server.Tests/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-backend.yml'
+  # allows UI triggering
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: gamevault-9a27e
+  REGION: us-central1
+  SERVICE_NAME: gamevault-server
+  REGISTRY: us-central1-docker.pkg.dev
+
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test GameVault.Server.Tests --no-build --configuration Release --verbosity normal
+
+  build-and-deploy:
+    name: Build and Deploy to Cloud Run
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        
+      - name: Configure Docker for Google Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Build and Push Docker Image
+        run: |
+          BUILD_ID=$(gcloud builds submit \
+            --tag ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest \
+            --format="value(id)" \
+            --async \
+            .)
+          echo "Build submitted with ID: $BUILD_ID"
+          echo "Waiting for build to complete..."
+
+          for i in {1..120}; do
+            STATUS=$(gcloud builds describe "$BUILD_ID" --format="value(status)")
+            echo "Build status: $STATUS"
+
+            if [ "$STATUS" = "SUCCESS" ]; then
+              echo "Build completed successfully!"
+              exit 0
+            elif [ "$STATUS" = "FAILURE" ] || [ "$STATUS" = "TIMEOUT" ] || [ "$STATUS" = "CANCELLED" ]; then
+              echo "Build failed with status: $STATUS"
+              exit 1
+            fi
+
+            sleep 10
+          done
+
+          echo "Build timeout after 20 minutes"
+          exit 1
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/gamevault-repo/${{ env.SERVICE_NAME }}:latest \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --service-account gamevault-9a27e@appspot.gserviceaccount.com \
+            --set-env-vars ASPNETCORE_ENVIRONMENT=Production \
+            --clear-secrets \
+            --timeout=300
+
+
+

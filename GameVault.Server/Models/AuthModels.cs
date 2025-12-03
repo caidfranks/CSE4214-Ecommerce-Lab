@@ -11,11 +11,6 @@ public class UserProfile
     public string? BusinessDescription { get; set; }
 }
 
-public class VerifyTokenRequest
-{
-    public string IdToken { get; set; } = string.Empty;
-}
-
 public class VendorApprovalRequest
 {
     public string VendorUserId { get; set; } = string.Empty;

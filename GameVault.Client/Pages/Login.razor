@@ -12,8 +12,8 @@
         <form class="login-form" @onsubmit="HandleLogin" @onsubmit:preventDefault="true">
             <div class="form-group">
                 <label for="email" class="form-label">Email Address</label>
-                <input type="email" id="email" class="form-control @(_emailError != null ? "is-invalid" : "")" @bind="_email"
-                       @oninput="ClearEmailError" placeholder="Enter your email" required />
+                <input type="email" id="email" class="form-control @(_emailError != null ? "is-invalid" : "")"
+                    @bind="_email" @oninput="ClearEmailError" placeholder="Enter your email" required />
                 @if (!string.IsNullOrEmpty(_emailError))
                 {
                     <div class="invalid-feedback">@_emailError</div>
@@ -24,10 +24,10 @@
                 <label for="password" class="form-label">Password</label>
                 <div class="password-input-group">
                     <input type="@(_showPassword ? "text" : "password")" id="password"
-                           class="form-control @(_passwordError != null ? "is-invalid" : "")" @bind="_password"
-                           @oninput="ClearPasswordError" placeholder="Enter your password" required />
+                        class="form-control @(_passwordError != null ? "is-invalid" : "")" @bind="_password"
+                        @oninput="ClearPasswordError" placeholder="Enter your password" required />
                     <button type="button" class="password-toggle" @onclick="TogglePasswordVisibility"
-                            title="@(_showPassword ? "Hide password" : "Show password")">
+                        title="@(_showPassword ? "Hide password" : "Show password")">
                         <i class="bi @(_showPassword ? "bi-eye-slash" : "bi-eye")"></i>
                     </button>
                 </div>
@@ -42,7 +42,8 @@
                     <input type="checkbox" class="form-check-input" id="rememberMe" @bind="_rememberMe" />
                     <label class="form-check-label" for="rememberMe">Remember me</label>
                 </div>
-                <a href="#" class="forgot-password" @onclick="() => _showForgotPassword = true" @onclick:preventDefault="true">Forgot password?</a>
+                <a href="#" class="forgot-password" @onclick="() => _showForgotPassword = true"
+                    @onclick:preventDefault="true">Forgot password?</a>
             </div>
 
             @if (!string.IsNullOrEmpty(_error))
@@ -90,7 +91,8 @@
                 <p>Enter your email address and we'll send you a link to reset your password.</p>
                 <div class="form-group">
                     <label for="resetEmail" class="form-label">Email Address</label>
-                    <input type="email" id="resetEmail" class="form-control" @bind="_resetEmail" placeholder="Enter your email" />
+                    <input type="email" id="resetEmail" class="form-control" @bind="_resetEmail"
+                        placeholder="Enter your email" />
                 </div>
                 @if (!string.IsNullOrEmpty(_resetMessage))
                 {
@@ -100,7 +102,8 @@
                 }
             </div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" @onclick="CloseForgotPasswordModal" disabled="@_isResetting">Cancel</button>
+                <button class="btn btn-secondary" @onclick="CloseForgotPasswordModal"
+                    disabled="@_isResetting">Cancel</button>
                 <button class="btn btn-primary" @onclick="HandlePasswordReset" disabled="@_isResetting">
                     @if (_isResetting)
                     {
@@ -114,6 +117,8 @@
 }
 
 @code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    private string? returnUrl { get; set; }
     private string _email = "";
     private string _password = "";
     private string? _error;
@@ -201,7 +206,14 @@
 
             if (result is not null && result.Success)
             {
-                Navigation.NavigateTo("/");
+                if (!String.IsNullOrEmpty(returnUrl))
+                {
+                    Navigation.NavigateTo(returnUrl);
+                }
+                else
+                {
+                    Navigation.NavigateTo("/");
+                }
             }
             else
             {

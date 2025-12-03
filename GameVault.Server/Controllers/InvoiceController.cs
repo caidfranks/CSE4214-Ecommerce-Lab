@@ -1,9 +1,10 @@
-using GameVault.Server.Services;
 using GameVault.Server.Models;
 using GameVault.Server.Models.Firestore;
+using GameVault.Server.Services;
 using GameVault.Shared.DTOs;
 using GameVault.Shared.Models;
 using Microsoft.AspNetCore.Mvc;
+using static Google.Rpc.Context.AttributeContext.Types;
 
 namespace GameVault.Server.Controllers;
 
@@ -13,17 +14,20 @@ public class InvoiceController : ControllerBase
 {
     private readonly InvoiceService _invoiceService;
     private readonly UserService _userService;
+    private readonly NotificationService _notifService;
     private readonly IFirestoreService _firestore;
     private readonly ILogger<InvoiceController> _logger;
 
     public InvoiceController(
         InvoiceService invoiceService,
         UserService userService,
+        NotificationService notifService,
         IFirestoreService firestore,
         ILogger<InvoiceController> logger)
     {
         _invoiceService = invoiceService;
         _userService = userService;
+        _notifService = notifService;
         _firestore = firestore;
         _logger = logger;
     }
@@ -216,7 +220,7 @@ public class InvoiceController : ControllerBase
     }
 
     [HttpGet("{invoiceId}/items")]
-    public async Task<ActionResult<List<InvoiceItem>>> GetInvoiceItems(
+    public async Task<ActionResult<ListResponse<InvoiceItemDTO>>> GetInvoiceItems(
         string invoiceId,
         [FromHeader] string? Authorization)
     {
@@ -234,18 +238,40 @@ public class InvoiceController : ControllerBase
                 return NotFound();
             }
 
+            // Also check if owner of order
+
             if (user.Type == AccountType.Vendor && invoice.VendorId != user.Id)
             {
                 return StatusCode(403, new { error = "Access denied" });
             }
 
             var items = await _invoiceService.GetInvoiceItemsAsync(invoiceId);
-            return Ok(items);
+
+            // Convert to DTOs
+
+            List<InvoiceItemDTO> dTOs = [];
+
+            foreach (InvoiceItem item in items)
+            {
+                InvoiceItemDTO dTO = new()
+                {
+                    InvoiceId = item.InvoiceId,
+                    ListingId = item.ListingId,
+                    Quantity = item.Quantity,
+                    PriceAtOrder = item.PriceAtOrder,
+                    NameAtOrder = item.NameAtOrder,
+                    DescAtOrder = item.DescAtOrder,
+                    Rating = item.Rating
+                };
+                dTOs.Add(dTO);
+            }
+
+            return Ok(new ListResponse<InvoiceItemDTO> { Success = true, List = dTOs });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting invoice items");
-            return StatusCode(500, new { error = ex.Message });
+            return StatusCode(500, new ListResponse<InvoiceItemDTO> { Success = false, Message = ex.Message });
         }
     }
 
@@ -280,6 +306,8 @@ public class InvoiceController : ControllerBase
             }
 
             await _invoiceService.UpdateInvoiceStatusAsync(invoiceId, request.Status, null);
+            var order = await _firestore.GetDocumentAsync<Order>("orders", invoice.OrderId);
+            await _notifService.CreateNotifAsync(order.CustomerId, "Order Status Change", $"Your order status has changed to {request.Status}.");
             return Ok();
         }
         catch (Exception ex)
@@ -326,7 +354,73 @@ public class InvoiceController : ControllerBase
         }
 
         await _invoiceService.UpdateInvoiceStatusAsync(dTO.Id, dTO.Status, dTO.Message);
+        var order = await _firestore.GetDocumentAsync<Order>("orders", invoice.OrderId);
+        if (dTO.Status == InvoiceStatus.Declined)
+        {
+            await _notifService.CreateNotifAsync(order.CustomerId, "Order Status Change", $"Your return status has changed to {dTO.Status}. Reason: {dTO.Message}.");
+        }
+        else if (dTO.Status == InvoiceStatus.PendingReturn)
+        {
+            await _notifService.CreateNotifAsync(invoice.VendorId, "Return Requested", $"An order has been marked {dTO.Status}. Reason: {dTO.Message}.");
+        }
+        else if (dTO.Status == InvoiceStatus.AwaitingReturn) {
+            await _notifService.CreateNotifAsync(order.CustomerId, "Return Disputed", $"Your return's status has changed to {dTO.Status}. Reason: {dTO.Message}.");
+            var adminUsers = await _firestore.QueryDocumentsAsyncWithId<User>("users", "Type", (int)AccountType.Admin);
+            foreach (var admin in adminUsers)
+            {
+                await _notifService.CreateNotifAsync(admin.Id, "Return Disputed", $"A return's status has changed to {dTO.Status}. Reason: {dTO.Message}.");
+            }
+        }
+        else
+        {
+            await _notifService.CreateNotifAsync(order.CustomerId, "Order Status Change", $"Your return status has changed to {dTO.Status}.");
+        }
 
-        return Ok();
+
+            return Ok();
+    }
+
+    [HttpPost("rate")]
+    public async Task<ActionResult<BaseResponse>> RateInvoiceItem([FromBody] RatingDTO dTO, [FromHeader] string? Authorization)
+    {
+        var user = await _userService.GetUserFromHeader(Authorization);
+        if (user is null)
+        {
+            return Unauthorized();
+        }
+
+        // Customer
+        if (user.Type != AccountType.Customer)
+        {
+            return Forbid();
+        }
+
+        // TODO: Look up invoice, then order, and confirm owner
+
+        // Query "invoice_items" for provided listingId and invoiceId
+
+        var invoiceItem = await _invoiceService.GetInvoiceItemWithIdByBothId(dTO.InvoiceId, dTO.ListingId);
+
+        if (invoiceItem is null)
+        {
+            return NotFound(new BaseResponse
+            {
+                Success = false,
+                Message = "Invoice item not found"
+            });
+        }
+
+        // Use Id only
+        await _invoiceService.RateInvoiceItem(invoiceItem.Id, dTO.Rating);
+
+        // Run in background since not relevant to this customer right now
+        // _ = // Discards result without having to await the async call
+        _ = _invoiceService.CalculateRating(dTO.ListingId);
+
+        return Ok(new BaseResponse
+        {
+            Success = true,
+            Message = "Rating successfully updated"
+        });
     }
 }

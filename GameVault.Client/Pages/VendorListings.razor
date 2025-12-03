@@ -1,4 +1,5 @@
 @page "/vendor/listings"
+@attribute [Authorize(Roles = "Vendor")]
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @using Grpc.Net.Client.Balancer
@@ -57,6 +58,9 @@ else if (listings.Count == 0)
         }
       <th>Name</th>
       <th>Price</th>
+      @if (filter == ListingStatus.Published) {
+        <th>Rating</th>
+      }
       <th>Stock</th>
       @if (filter == ListingStatus.Removed) {
         <th>Removal Message</th>
@@ -73,8 +77,19 @@ else if (listings.Count == 0)
         <td>@listing.LastModified.ToString()</td>
         <td>@listing.Name</td>
         <td>@((listing.Price / 100M).ToString("C2"))</td>
+        @if (filter == ListingStatus.Published) {
+          @if (listing.NumReviews > 0)
+          {
+              <td><i class="bi bi-hand-thumbs-up"></i> @(listing.Rating)% | @listing.NumReviews
+                  review@(listing.NumReviews == 1 ? "" : "s")</td>
+          }
+          else
+          {
+              <td><i class="bi bi-hand-thumbs-up"></i> -% | No reviews</td>
+          }
+        }
         @if (listing.Id == editingStock) {
-          <td><InputNumber @bind-Value="@stock" /></td>
+          <td>@listing.Stock + <InputNumber @bind-Value="@addStock" @oninput="async (ChangeEventArgs args) => await CalcStock(listing.Stock, args)"/> = @stock</td>
         } else {
           <td>@listing.Stock</td>
         }
@@ -82,6 +97,7 @@ else if (listings.Count == 0)
           <td>@listing.RemoveMsg</td>
         }
         <td>
+          <button @onclick='async () => Nav.NavigateTo($"/product/{listing.Id}")'>View</button>
           @if (filter == ListingStatus.Inactive || filter == ListingStatus.Removed) {
             <button @onclick='async () => Nav.NavigateTo($"/listings/edit/{listing.Id}")'>Edit</button>
           } else {
@@ -114,25 +130,39 @@ else if (listings.Count == 0)
 @code {
   public ListingStatus filter = 0;
   public string error = string.Empty;
+  public int addStock = -1;
   public int stock = -1;
   public string editingStock = string.Empty;
 
   private List<VendorListingDTO>? listings;
 
   private void EditStock(string listingId, int initialStock) {
+    addStock = 0;
     stock = initialStock;
     editingStock = listingId;
+  }
+  private async Task CalcStock(int old, ChangeEventArgs args) {
+    try {
+      int add = int.Parse((string)(args.Value ?? ""));
+      stock = old + add;
+      @* Console.WriteLine($"Stock changed to {stock}!"); *@
+      await InvokeAsync(StateHasChanged);
+    } catch (FormatException ex) {
+      Console.WriteLine($"Error processing stock: {ex}");
+    }
   }
   private void CancelStock() {
     editingStock = string.Empty;
     stock = -1;
+    addStock = -1;
   }
   private async Task UpdateStock() {
     // Assume logged in and all associated stuff
     // Verify within allowable range of stock
-    await ListingService.UpdateStockAsync(editingStock, stock);
+    await ListingService.UpdateStockAsync(editingStock, addStock);
     editingStock = string.Empty;
     stock = -1;
+    addStock = -1;
     await LoadData();
   }
   private async Task LoadData()

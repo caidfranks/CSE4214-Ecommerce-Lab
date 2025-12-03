@@ -106,7 +106,9 @@ public class ProductController : ControllerBase
                         LastModified = product.LastModified,
                         VendorName = vendorName,
                         Category = product?.Category ?? "",
-                        CategoryName = catName
+                        CategoryName = catName,
+                        Rating = product?.Rating ?? -1,
+                        NumReviews = product?.NumReviews ?? 0
                     });
                 }
             }
@@ -176,7 +178,9 @@ public class ProductController : ControllerBase
                     LastModified = product.LastModified,
                     VendorName = vendorName,
                     Category = product?.Category ?? "",
-                    CategoryName = categoryName
+                    CategoryName = categoryName,
+                    Rating = product?.Rating ?? -1,
+                    NumReviews = product?.NumReviews ?? 0,
                 }
             });
         }
@@ -196,7 +200,7 @@ public class ProductController : ControllerBase
     {
         try
         {
-            var products = await _firestore.QueryDocumentsAsyncWithId<Models.Firestore.Listing>("listings", "category", category);
+            var products = await _firestore.QueryDocumentsAsyncWithId<Models.Firestore.Listing>("listings", "Category", category);
             List<FullListingDTO> dTOs = [];
 
             // Look up category in database

@@ -27,10 +27,18 @@ public enum ListingStatus
   Published = 2
 }
 
-public enum AccountStatus { 
-    Denied = -1,
-    PendingVendor = 0,
-    ActiveVendor = 1,
-    Customer = 2,
-    Banned = 3
+public enum AccountStatus
+{
+  Denied = -1,
+  PendingVendor = 0,
+  ActiveVendor = 1,
+  Customer = 2,
+  Banned = 3
+}
+
+public enum RatingChoice
+{
+  None = 0,
+  Dislike = 1,
+  Like = 2,
 }

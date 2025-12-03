@@ -1,4 +1,5 @@
 ﻿@page "/register/admin"
+@attribute [Authorize(Roles = "Admin")]
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
 @inject Services.LogService LogService
@@ -17,7 +18,7 @@
             <div class="form-group">
                 <label for="email" class="form-label">Email Address</label>
                 <input type="email" id="email" class="form-control @(emailError != null ? "is-invalid" : "")"
-                       @bind="email" @oninput="ClearEmailError" placeholder="Enter your email" required />
+                    @bind="email" @oninput="ClearEmailError" placeholder="Enter your email" required />
                 @if (emailError != null)
                 {
                     <div class="invalid-feedback">@emailError</div>
@@ -27,10 +28,10 @@
                 <label for="password" class="form-label">Password</label>
                 <div class="password-input-group">
                     <input type="@(showPassword ? "text" : "password")" id="password"
-                           class="form-control @(passwordError != null ? "is-invalid" : "")" @bind="password"
-                           @oninput="ClearPasswordError" placeholder="Create a password" required />
+                        class="form-control @(passwordError != null ? "is-invalid" : "")" @bind="password"
+                        @oninput="ClearPasswordError" placeholder="Create a password" required />
                     <button type="button" class="password-toggle" @onclick="TogglePasswordVisibility"
-                            title="@(showPassword ? "Hide password" : "Show password")">
+                        title="@(showPassword ? "Hide password" : "Show password")">
                         <i class="bi @(showPassword ? "bi-eye-slash" : "bi-eye")"></i>
                     </button>
                 </div>
