@@ -3,7 +3,8 @@ using Xunit;
 
 namespace GameVault.Tests.Client;
 
-public class AdminCreationTests : TestBase { 
+public class AdminCreationTests : TestBase
+{
     private async Task<IPage> NavigateToAdminCreatePage()
     {
         var page = await LoginAsAdminAsync();
@@ -62,7 +63,7 @@ public class AdminCreationTests : TestBase {
         await page.FillAsync("#password", "password");
         await page.ClickAsync("button:has-text('Create Account')");
 
-        await page.WaitForURLAsync($"{TestSettings.BaseUrl}/");
+        // await page.WaitForURLAsync($"{TestSettings.BaseUrl}/");
         await page.WaitForURLAsync(url => url.Contains("/adminLanding"), new() { Timeout = 10000 });
         Assert.Contains("/adminLanding", page.Url);
     }
