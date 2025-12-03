@@ -29,8 +29,13 @@ public class FirestoreUser
   [FirestoreProperty]
   public string? ReviewedBy { get; set; }
   [FirestoreProperty]
-  public int BalanceInCents { get; set; } = 0; 
+  public int BalanceInCents { get; set; } = 0;
 
+  [FirestoreProperty]
+  public string? BankRouting { get; set; }
+
+  [FirestoreProperty]
+  public string? BankAccount { get; set; }
 }
 
 [FirestoreData]

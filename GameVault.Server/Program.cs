@@ -52,7 +52,12 @@ builder.Services.AddScoped<NotificationService>();
 
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? new[] { "https://localhost:5166", "http://localhost:5166" };
+    .Get<string[]>() ?? new[] {
+        "https://gamevault-9a27e.firebaseapp.com",
+        "https://gamevault-9a27e.web.app",
+        "https://localhost:5166",
+        "http://localhost:5166"
+    };
 
 builder.Services.AddCors(options =>
 {
