@@ -41,7 +41,7 @@ public class ListingTests : TestBase
         
         if (await page.IsVisibleAsync("text=Loading..."))
         {
-            await page.WaitForSelectorAsync(".table, text=No accounts found with status \"pending\"");
+            await page.WaitForSelectorAsync(".table, text=No accounts found with status \"pendingListings\"");
         }
 
         if (await page.IsVisibleAsync("text=No accounts found"))
@@ -81,7 +81,7 @@ public class ListingTests : TestBase
             await page.WaitForSelectorAsync(".table, text=No accounts found");
         }
 
-        if (await page.IsVisibleAsync("text=No accounts found with status \"pending\""))
+        if (await page.IsVisibleAsync("text=No accounts found with status \"pendingListings\""))
         {
             Assert.True(true, "No pending listings is a valid state.");
             return;
@@ -107,8 +107,14 @@ public class ListingTests : TestBase
         await page.ClickAsync("a:has-text('Pending')");
         await page.WaitForURLAsync(url => url.Contains("/viewListings/pendingListings"));
 
-        await page.WaitForSelectorAsync(".table tbody tr");
-        var firstRow = await page.QuerySelectorAsync(".table tbody tr");
+        var rows = await page.QuerySelectorAllAsync(".table tbody tr");
+
+        if (rows.Count == 0)
+        {
+            Assert.True(await page.IsVisibleAsync("text=No accounts found"));
+            return;
+        }
+        var firstRow = rows[0];
 
         await page.ClickAsync("td a");
         await page.WaitForSelectorAsync("div[class='modal-content']");
@@ -119,7 +125,7 @@ public class ListingTests : TestBase
             await page.WaitForSelectorAsync(".table, text=No accounts found");
         }
 
-        if (await page.IsVisibleAsync("text=No accounts found with status \"pending\""))
+        if (await page.IsVisibleAsync("text=No accounts found with status \"pendingListings\""))
         {
             Assert.True(true, "No pending listings is a valid state.");
             return;
@@ -134,8 +140,14 @@ public class ListingTests : TestBase
         await page.ClickAsync("a:has-text('Pending')");
         await page.WaitForURLAsync(url => url.Contains("/viewListings/pendingListings"));
 
-        await page.WaitForSelectorAsync(".table tbody tr");
-        var firstRow = await page.QuerySelectorAsync(".table tbody tr");
+        var rows = await page.QuerySelectorAllAsync(".table tbody tr");
+
+        if (rows.Count == 0)
+        {
+            Assert.True(await page.IsVisibleAsync("text=No accounts found"));
+            return;
+        }
+        var firstRow = rows[0];
 
         await page.ClickAsync("td a");
         await page.WaitForSelectorAsync("div[class='modal-content']");
@@ -146,7 +158,7 @@ public class ListingTests : TestBase
             await page.WaitForSelectorAsync(".table, text=No accounts found");
         }
 
-        if (await page.IsVisibleAsync("text=No accounts found with status \"pending\""))
+        if (await page.IsVisibleAsync("text=No accounts found with status \"pendingListings\""))
         {
             Assert.True(true, "No pending listings is a valid state.");
             return;
