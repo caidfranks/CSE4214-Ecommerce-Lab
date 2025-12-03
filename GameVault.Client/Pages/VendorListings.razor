@@ -1,4 +1,5 @@
 @page "/vendor/listings"
+@attribute [Authorize(Roles = "Vendor")]
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @using Grpc.Net.Client.Balancer
@@ -96,6 +97,7 @@ else if (listings.Count == 0)
           <td>@listing.RemoveMsg</td>
         }
         <td>
+          <button @onclick='async () => Nav.NavigateTo($"/product/{listing.Id}")'>View</button>
           @if (filter == ListingStatus.Inactive || filter == ListingStatus.Removed) {
             <button @onclick='async () => Nav.NavigateTo($"/listings/edit/{listing.Id}")'>Edit</button>
           } else {

@@ -91,12 +91,12 @@ public class AuthController : ControllerBase
             });
         }
 
-        if ( user.Banned == true)
+        if (user.Banned == true)
         {
             return StatusCode(403, new AuthResponse
             {
                 Success = false,
-                Message = string.IsNullOrEmpty(user.BanMsg) 
+                Message = string.IsNullOrEmpty(user.BanMsg)
                     ? "Your account has been banned. Please contact support for more information."
                     : $"Your account has been banned. {user.BanMsg}"
             });
@@ -233,7 +233,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("create/vendor")]
     public async Task<ActionResult<AuthResponse>> CreateVendor([FromBody] RegisterVendorRequest request, [FromHeader] string? Authorization)
-       
+
     {
         try
         {
@@ -249,27 +249,27 @@ public class AuthController : ControllerBase
                 Email = request.Email,
                 Name = request.DisplayName ?? string.Empty,
                 Type = AccountType.Vendor,
-                ReviewedBy = currentUserId.Id 
+                ReviewedBy = currentUserId.Id
             };
 
-             await _firestore.SetDocumentAsync("users", userId!, user);
-             await _notifService.CreateNotifAsync(userId, "Vendor Application Approved", "Your vendor account has been approved. You may now login.");
+            await _firestore.SetDocumentAsync("users", userId!, user);
+            await _notifService.CreateNotifAsync(userId, "Vendor Application Approved", "Your vendor account has been approved. You may now login.");
 
             return Ok(new AuthResponse
             {
-                 Success = true,
-                 Message = "Vendor account successfully created.",
-                 Data = new UserDTO
-                 {
-                     Id = userId,
-                     Email = user.Email,
-                     Name = user.Name,
-                     Type = user.Type,
-                     Banned = user.Banned,
-                     BanMsg = user.BanMsg,
-                     ReviewedBy = user.ReviewedBy
-                 }
-             });
+                Success = true,
+                Message = "Vendor account successfully created.",
+                Data = new UserDTO
+                {
+                    Id = userId,
+                    Email = user.Email,
+                    Name = user.Name,
+                    Type = user.Type,
+                    Banned = user.Banned,
+                    BanMsg = user.BanMsg,
+                    ReviewedBy = user.ReviewedBy
+                }
+            });
         }
         catch (InvalidOperationException ex)
         {
@@ -401,13 +401,21 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpPost("verify")]
-    public async Task<ActionResult<AuthResponse>> VerifyToken([FromBody] VerifyTokenRequest request)
+    [HttpGet("verify")]
+    public async Task<ActionResult<AuthResponse>> VerifyToken([FromHeader] string? Authorization)
     {
-        var userId = await _firebaseAuth.VerifyTokenAsync(request.IdToken);
+        if (Authorization is null) return Unauthorized(new AuthResponse
+        {
+            Success = false,
+            Message = "No token"
+        });
+
+        string token = Authorization.Split(" ").ToList()[1]; // Extract 2nd part of header formatted "Bearer [___Token___]"
+        var userId = await _firebaseAuth.VerifyTokenAsync(token);
 
         if (string.IsNullOrEmpty(userId))
         {
+            Console.WriteLine("Attempted access with expired token");
             return Unauthorized(new AuthResponse
             {
                 Success = false,

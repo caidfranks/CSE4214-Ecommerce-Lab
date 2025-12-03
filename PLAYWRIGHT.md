@@ -29,3 +29,24 @@ dotnet add package Microsoft.Playwright.Xunit
     2. Run ```dotnet test``` and it should fail but then download
     3. Comment code out
     4. Run ```dotnet test``` and it should succeed
+
+# Instructions for running Playwright tests
+
+After installing Playwright and the browsers it needs:
+
+1. First, run the Firestore emulators using the fresh emulator_baseline data:
+```firebase emulators:start --import ./emulator_baseline```
+from the root of the repository.
+
+2. Start the client and server as normal (```dotnet watch``` and setting corresponding local emulator environment vairables)
+
+3. Navigate to the ```GameVault.Tests``` directory
+
+4. Run ```dotnet test```
+
+If you want to watch the tests happening, uncomment lines 17-18 of TestBase.cs, then run dotnet test again.
+
+If you want to test specific modules, call
+```dotnet test --filter "ClassName"```
+or
+```dotnet test --filter "ClassName.Test_Name"```

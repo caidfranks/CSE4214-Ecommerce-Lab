@@ -1,4 +1,5 @@
 ﻿@page "/product/{id}"
+@attribute [Authorize]
 @using GameVault.Client.Services
 @using GameVault.Client.Models
 @using GameVault.Shared.DTOs
@@ -180,7 +181,7 @@ else
                         @if (showRemovalMessage)
                         {
                             <div class=" alert alert-success
-                                            mt-3">
+                                                        mt-3">
                                 <strong>Removed!</strong>
                                 <div class="mt-2">
                                     <button class="btn btn-sm btn-outline-success me-2" @onclick="ContinueShopping">
@@ -191,12 +192,12 @@ else
                         }
                     }
                     <!-- TODO: Diagnose cause of modal freezing at loading
-                                                            else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
-                                                            {
-                                                                <div class="alert alert-info">
-                                                                    <i class="bi bi-info-circle"></i> Only customers can purchase products.
-                                                                </div>
-                                                            }-->
+                                                                else if (AuthService.CurrentUser.Type != Shared.Models.AccountType.Customer)
+                                                                {
+                                                                    <div class="alert alert-info">
+                                                                        <i class="bi bi-info-circle"></i> Only customers can purchase products.
+                                                                    </div>
+                                                                }-->
 
                     <!-- Description (REQ-47) -->
                     <div class="product-description mt-4">

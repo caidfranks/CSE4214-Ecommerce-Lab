@@ -1,4 +1,5 @@
 ﻿@page "/viewListings"
+@attribute [Authorize(Roles = "Admin")]
 @inject Services.AuthService AuthService
 @inject NavigationManager Navigation
 @inject BreadcrumbService BreadcrumbService
@@ -8,10 +9,18 @@
 <header>
     <nav>
         <ul>
-            <li><p><a href="/viewListings/pendingListings">Pending Listings</a></p></li>
-            <li><p><a href="/viewListings/publishedListings">Published Listings</a></p></li>
-            <li><p><a href="/viewListings/removedListings">Removed Listings</a></p></li>
-            <li><p><a href="/viewListings/unpublishedListings">Unpublished Listings</a></p></li>
+            <li>
+                <p><a href="/viewListings/pendingListings">Pending Listings</a></p>
+            </li>
+            <li>
+                <p><a href="/viewListings/publishedListings">Published Listings</a></p>
+            </li>
+            <li>
+                <p><a href="/viewListings/removedListings">Removed Listings</a></p>
+            </li>
+            <li>
+                <p><a href="/viewListings/unpublishedListings">Unpublished Listings</a></p>
+            </li>
         </ul>
     </nav>
 </header>
@@ -20,8 +29,8 @@
     protected override void OnInitialized()
     {
         BreadcrumbService.Set(
-            new BreadcrumbItem("Admin Dashboard", "/viewListings"),
-            new BreadcrumbItem("Listing Management")
+        new BreadcrumbItem("Admin Dashboard", "/viewListings"),
+        new BreadcrumbItem("Listing Management")
         );
     }
 }

@@ -18,7 +18,7 @@
 else
 {
     <div class="alert alert-success mb-3">
-        <strong>Account Balance:</strong> $@((balance / 100.0).ToString("F2"))
+        <strong>Account Balance:</strong>&nbsp;$@((balance / 100.0).ToString("F2"))
         <button class="btn btn-sm btn-outline-primary ms-3" @onclick="OpenCashoutModal">Cashout</button>
     </div>
 }
@@ -43,7 +43,8 @@ else
                     @if (!editingBankInfo && !string.IsNullOrEmpty(bankRouting) && !string.IsNullOrEmpty(bankAccount))
                     {
                         <p>
-                            <strong>Bank Account:</strong> ****@(bankAccount?.Length > 4 ? bankAccount.Substring(bankAccount.Length - 4) : bankAccount)
+                            <strong>Bank Account:</strong> ****@(bankAccount?.Length > 4 ?
+                                                bankAccount.Substring(bankAccount.Length - 4) : bankAccount)
                             <button class="btn btn-link btn-sm p-0 ms-2" @onclick="() => editingBankInfo = true">Edit</button>
                         </p>
                     }
@@ -71,7 +72,8 @@ else
                             <label class="form-label">Amount to Transfer</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" class="form-control" @bind="cashoutAmount" min="0.01" max="@(balance / 100.0)" step="0.01" />
+                                <input type="number" class="form-control" @bind="cashoutAmount" min="0.01"
+                                    max="@(balance / 100.0)" step="0.01" />
                             </div>
                         </div>
                     }
@@ -85,7 +87,8 @@ else
                     <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
                     @if (!string.IsNullOrEmpty(bankRouting) && !string.IsNullOrEmpty(bankAccount) && !editingBankInfo)
                     {
-                        <button type="button" class="btn btn-primary" @onclick="DoCashout" disabled="@(isCashingOut || cashoutAmount <= 0)">
+                        <button type="button" class="btn btn-primary" @onclick="DoCashout"
+                            disabled="@(isCashingOut || cashoutAmount <= 0)">
                             @(isCashingOut ? "Processing..." : "Transfer")
                         </button>
                     }
@@ -113,8 +116,8 @@ else
         try
         {
             BreadcrumbService.Set(
-                new BreadcrumbItem("Home", "/"),
-                new BreadcrumbItem("Vendor Dashboard")
+            new BreadcrumbItem("Home", "/"),
+            new BreadcrumbItem("Vendor Dashboard")
             );
             var userId = AuthService.CurrentUserId;
             if (!string.IsNullOrEmpty(userId))
@@ -159,7 +162,12 @@ else
         try
         {
             var userId = AuthService.CurrentUserId;
-            var response = await Http.PutAsJsonAsync($"api/users/{userId}/bank-info", new { BankRouting = bankRouting, BankAccount = bankAccount });
+            var response = await Http.PutAsJsonAsync($"api/users/{userId}/bank-info", new
+            {
+                BankRouting = bankRouting,
+                BankAccount =
+            bankAccount
+            });
             if (response.IsSuccessStatusCode)
             {
                 message = "Bank info saved!";

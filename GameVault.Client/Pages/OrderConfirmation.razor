@@ -1,4 +1,5 @@
 @page "/order-confirmation/{OrderId}"
+@attribute [Authorize(Roles = "Customer")]
 @using GameVault.Client.Services
 @using GameVault.Shared.DTOs
 @inject CheckoutService CheckoutService
@@ -111,8 +112,8 @@
     protected override async Task OnInitializedAsync()
     {
         BreadcrumbService.Set(
-            new BreadcrumbItem("Home", "/"),
-            new BreadcrumbItem("Order Confirmation")
+        new BreadcrumbItem("Home", "/"),
+        new BreadcrumbItem("Order Confirmation")
         );
         if (!string.IsNullOrEmpty(OrderId))
         {

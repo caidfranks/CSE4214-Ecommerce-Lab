@@ -1,5 +1,5 @@
 @page "/orders"
-@attribute [Authorize]
+@attribute [Authorize(Roles = "Customer")]
 @using GameVault.Shared.DTOs
 @using GameVault.Shared.Models
 @inject Services.AuthService AuthService
