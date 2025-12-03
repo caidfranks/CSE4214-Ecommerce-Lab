@@ -5,6 +5,12 @@ using GameVault.Server.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+//builder.WebHost.ConfigureKestrel(serverOptions =>
+//{
+//    serverOptions.ListenAnyIP(int.Parse(port));
+//});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
