@@ -88,7 +88,7 @@ else if (listings.Count == 0)
           }
         }
         @if (listing.Id == editingStock) {
-          <td><InputNumber @bind-Value="@stock" /></td>
+          <td>@listing.Stock + <InputNumber @bind-Value="@addStock" @oninput="async (ChangeEventArgs args) => await CalcStock(listing.Stock, args)"/> = @stock</td>
         } else {
           <td>@listing.Stock</td>
         }
@@ -128,25 +128,39 @@ else if (listings.Count == 0)
 @code {
   public ListingStatus filter = 0;
   public string error = string.Empty;
+  public int addStock = -1;
   public int stock = -1;
   public string editingStock = string.Empty;
 
   private List<VendorListingDTO>? listings;
 
   private void EditStock(string listingId, int initialStock) {
+    addStock = 0;
     stock = initialStock;
     editingStock = listingId;
+  }
+  private async Task CalcStock(int old, ChangeEventArgs args) {
+    try {
+      int add = int.Parse((string)(args.Value ?? ""));
+      stock = old + add;
+      @* Console.WriteLine($"Stock changed to {stock}!"); *@
+      await InvokeAsync(StateHasChanged);
+    } catch (FormatException ex) {
+      Console.WriteLine($"Error processing stock: {ex}");
+    }
   }
   private void CancelStock() {
     editingStock = string.Empty;
     stock = -1;
+    addStock = -1;
   }
   private async Task UpdateStock() {
     // Assume logged in and all associated stuff
     // Verify within allowable range of stock
-    await ListingService.UpdateStockAsync(editingStock, stock);
+    await ListingService.UpdateStockAsync(editingStock, addStock);
     editingStock = string.Empty;
     stock = -1;
+    addStock = -1;
     await LoadData();
   }
   private async Task LoadData()
