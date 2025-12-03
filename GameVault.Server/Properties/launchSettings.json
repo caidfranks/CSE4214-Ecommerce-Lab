@@ -8,8 +8,8 @@
       "applicationUrl": "http://localhost:5080",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "FIRESTORE_EMULATOR_HOST": "localhost:8080",
-        "FIREBASE_AUTH_EMULATOR_HOST": "localhost:9099"
+        //"FIRESTORE_EMULATOR_HOST": "localhost:8080",
+        //"FIREBASE_AUTH_EMULATOR_HOST": "localhost:9099"
       }
     },
     "https": {
@@ -19,8 +19,8 @@
       "applicationUrl": "https://localhost:7164;http://localhost:5080",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "FIRESTORE_EMULATOR_HOST": "localhost:8080",
-        "FIREBASE_AUTH_EMULATOR_HOST": "localhost:9099"
+        //"FIRESTORE_EMULATOR_HOST": "localhost:8080",
+        //"FIREBASE_AUTH_EMULATOR_HOST": "localhost:9099"
       }
     }
   }
